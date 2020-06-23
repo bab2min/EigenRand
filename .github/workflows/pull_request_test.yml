@@ -1,0 +1,78 @@
+name: Pull Request Test
+
+on: 
+  pull_request:
+    branches: 
+      - master
+
+jobs:
+  build_linux:
+    name: Build for linux
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 4
+      matrix:
+        arch: [msse2, mssse3, mavx, mavx2]
+        os: [ubuntu-16.04, ubuntu-18.04]
+    steps:        
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        git clone https://github.com/eigenteam/eigen-git-mirror
+        cd eigen-git-mirror
+        git checkout tags/3.3.7
+        cd ..
+        mv eigen-git-mirror include
+    - name: Build
+      continue-on-error: True
+      run: |
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
+    - name: Test
+      run: |
+        cat /proc/cpuinfo
+        ./bench.out
+
+  build_macos:
+    name: Build for macOS
+    runs-on: macOS-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        arch: [msse2, mssse3, mavx]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        wget https://github.com/eigenteam/eigen-git-mirror/archive/3.3.7.tar.gz
+        tar -zxvf 3.3.7.tar.gz
+        mv eigen-git-mirror-3.3.7 include
+    - name: Build
+      run: |
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
+    - name: Test
+      run: |
+        sysctl -a | grep machdep.cpu
+        ./bench.out
+
+  build_windows:
+    name: Build for Windows
+    runs-on: windows-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        arch: ['/arch:SSE2', '/arch:AVX', '/arch:AVX2']
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        Invoke-WebRequest -OutFile 3.3.7.tar.gz https://github.com/eigenteam/eigen-git-mirror/archive/3.3.7.tar.gz
+        tar -zxvf 3.3.7.tar.gz
+        mv eigen-git-mirror-3.3.7 include
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Build
+      run: |
+        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:bench.exe .\test\benchmark.cpp
+    - name: Test
+      run: |
+        bash -c "cat /proc/cpuinfo"
+        .\bench.exe

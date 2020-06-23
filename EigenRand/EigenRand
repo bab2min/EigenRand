@@ -1,0 +1,8 @@
+#ifndef EIGENRAND_EIGENRAND_H
+#define EIGENRAND_EIGENRAND_H
+
+#include <Eigen/Dense>
+#include <EigenRand/Macro.h>
+#include <EigenRand/Core.h>
+
+#endif
