@@ -202,6 +202,82 @@ namespace Eigen
 			}
 		};
 
+		template<>
+		struct reinterpreter<Packet4d>
+		{
+			EIGEN_STRONG_INLINE Packet8f to_float(const Packet4d& x)
+			{
+				return _mm256_castpd_ps(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet4d to_double(const Packet4d& x)
+			{
+				return x;
+			}
+
+			EIGEN_STRONG_INLINE Packet8i to_int(const Packet4d& x)
+			{
+				return _mm256_castpd_si256(x);
+			}
+		};
+
+		template<>
+		struct reinterpreter<Packet4i>
+		{
+			EIGEN_STRONG_INLINE Packet4f to_float(const Packet4i& x)
+			{
+				return _mm_castsi128_ps(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet4i& x)
+			{
+				return _mm_castsi128_pd(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int(const Packet4i& x)
+			{
+				return x;
+			}
+		};
+
+		template<>
+		struct reinterpreter<Packet4f>
+		{
+			EIGEN_STRONG_INLINE Packet4f to_float(const Packet4f& x)
+			{
+				return x;
+			}
+
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet4f& x)
+			{
+				return _mm_castps_pd(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int(const Packet4f& x)
+			{
+				return _mm_castps_si128(x);
+			}
+		};
+
+		template<>
+		struct reinterpreter<Packet2d>
+		{
+			EIGEN_STRONG_INLINE Packet4f to_float(const Packet2d& x)
+			{
+				return _mm_castpd_ps(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet2d& x)
+			{
+				return x;
+			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int(const Packet2d& x)
+			{
+				return _mm_castpd_si128(x);
+			}
+		};
+
 		EIGEN_STRONG_INLINE void split_two(const Packet8i& x, Packet4i& a, Packet4i& b)
 		{
 			a = _mm256_extractf128_si256(x, 0);
@@ -346,6 +422,18 @@ namespace Eigen
 		}
 
 		template<>
+		EIGEN_STRONG_INLINE Packet8i pcmplt<Packet8i>(const Packet8i& a, const Packet8i& b)
+		{
+			return _mm256_cmpgt_epi32(b, a);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4i pcmplt<Packet4i>(const Packet4i& a, const Packet4i& b)
+		{
+			return _mm_cmplt_epi32(a, b);
+		}
+
+		template<>
 		EIGEN_STRONG_INLINE Packet8f pcmplt<Packet8f>(const Packet8f& a, const Packet8f& b)
 		{
 			return _mm256_cmp_ps(a, b, _CMP_LT_OQ);
@@ -355,6 +443,30 @@ namespace Eigen
 		EIGEN_STRONG_INLINE Packet8f pcmple<Packet8f>(const Packet8f& a, const Packet8f& b)
 		{
 			return _mm256_cmp_ps(a, b, _CMP_LE_OQ);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4d pcmplt<Packet4d>(const Packet4d& a, const Packet4d& b)
+		{
+			return _mm256_cmp_pd(a, b, _CMP_LT_OQ);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4d pcmple<Packet4d>(const Packet4d& a, const Packet4d& b)
+		{
+			return _mm256_cmp_pd(a, b, _CMP_LE_OQ);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4f pcmplt<Packet4f>(const Packet4f& a, const Packet4f& b)
+		{
+			return _mm_cmplt_ps(a, b);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4f pcmple<Packet4f>(const Packet4f& a, const Packet4f& b)
+		{
+			return _mm_cmple_ps(a, b);
 		}
 
 		template<> 
@@ -381,17 +493,17 @@ namespace Eigen
 		template<>
 		struct reinterpreter<Packet4i>
 		{
-			Packet4f to_float(const Packet4i& x)
+			EIGEN_STRONG_INLINE Packet4f to_float(const Packet4i& x)
 			{
 				return _mm_castsi128_ps(x);
 			}
 
-			Packet2d to_double(const Packet4i& x)
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet4i& x)
 			{
 				return _mm_castsi128_pd(x);
 			}
 
-			Packet4i to_int(const Packet4i& x)
+			EIGEN_STRONG_INLINE Packet4i to_int(const Packet4i& x)
 			{
 				return x;
 			}
@@ -400,19 +512,38 @@ namespace Eigen
 		template<>
 		struct reinterpreter<Packet4f>
 		{
-			Packet4f to_float(const Packet4f& x)
+			EIGEN_STRONG_INLINE Packet4f to_float(const Packet4f& x)
 			{
 				return x;
 			}
 
-			Packet2d to_double(const Packet4f& x)
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet4f& x)
 			{
 				return _mm_castps_pd(x);
 			}
 
-			Packet4i to_int(const Packet4f& x)
+			EIGEN_STRONG_INLINE Packet4i to_int(const Packet4f& x)
 			{
 				return _mm_castps_si128(x);
+			}
+		};
+
+		template<>
+		struct reinterpreter<Packet2d>
+		{
+			EIGEN_STRONG_INLINE Packet4f to_float(const Packet2d& x)
+			{
+				return _mm_castpd_ps(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet2d& x)
+			{
+				return x;
+			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int(const Packet2d& x)
+			{
+				return _mm_castpd_si128(x);
 			}
 		};
 
@@ -427,6 +558,16 @@ namespace Eigen
 			a = u[0];
 			b = u[1];
 #endif
+		}
+
+
+		EIGEN_STRONG_INLINE Packet4i combine_low32(const Packet4i& a, const Packet4i& b)
+		{
+			auto sa = _mm_shuffle_epi32(a, _MM_SHUFFLE(3, 1, 2, 0));
+			auto sb = _mm_shuffle_epi32(b, _MM_SHUFFLE(2, 0, 3, 1));
+			sa = _mm_and_si128(sa, _mm_setr_epi32(-1, -1, 0, 0));
+			sb = _mm_and_si128(sb, _mm_setr_epi32(0, 0, -1, -1));
+			return _mm_or_si128(sa, sb);
 		}
 
 		template<>
@@ -460,6 +601,12 @@ namespace Eigen
 		}
 
 		template<>
+		EIGEN_STRONG_INLINE Packet4i pcmplt<Packet4i>(const Packet4i& a, const Packet4i& b)
+		{
+			return _mm_cmplt_epi32(a, b);
+		}
+
+		template<>
 		EIGEN_STRONG_INLINE Packet4f pcmplt<Packet4f>(const Packet4f& a, const Packet4f& b)
 		{
 			return _mm_cmplt_ps(a, b);
@@ -469,6 +616,18 @@ namespace Eigen
 		EIGEN_STRONG_INLINE Packet4f pcmple<Packet4f>(const Packet4f& a, const Packet4f& b)
 		{
 			return _mm_cmple_ps(a, b);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet2d pcmplt<Packet2d>(const Packet2d& a, const Packet2d& b)
+		{
+			return _mm_cmplt_pd(a, b);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet2d pcmple<Packet2d>(const Packet2d& a, const Packet2d& b)
+		{
+			return _mm_cmple_pd(a, b);
 		}
 
 		template<> 
