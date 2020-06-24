@@ -396,7 +396,7 @@ namespace Eigen
 			{
 				if (sizeof(decltype(rng())) == 8)
 				{
-					return _mm_setr_epi64x(rng(), 0);
+					return _mm_set_epi64x(0, rng());
 				}
 				else
 				{
