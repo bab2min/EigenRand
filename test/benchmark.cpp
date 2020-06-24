@@ -152,7 +152,7 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 		auto scope = bh.measure("discreteDistI32/int(s=250)" + suffix, xi);
 		xi = Eigen::Rand::discreteDistI32Like(xi, urng, ws.begin(), ws.end());
 	}
-	return ret;
+	
 	{
 		auto scope = bh.measure("balanced" + suffix, x);
 		x = Eigen::Rand::balancedLike(x, urng);
@@ -292,7 +292,7 @@ std::map<std::string, double> test_nullary(size_t size, const std::string& suffi
 		std::discrete_distribution<> dist{ ws.begin(), ws.end() };
 		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
-	return ret;
+	
 	{
 		auto scope = bh.measure("uniformReal" + suffix, x);
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return std::generate_canonical<float, 32>(urng); });
