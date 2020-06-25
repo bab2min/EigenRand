@@ -16,20 +16,17 @@ namespace Eigen
 		template<typename Ty>
 		struct HalfPacket;
 
-#ifdef EIGEN_VECTORIZE_AVX
+#ifdef EIGEN_VECTORIZE_AVX2
 		template<>
 		struct IsIntPacket<Packet8i> : std::true_type {};
-
-		template<>
-		struct IsIntPacket<Packet4i> : std::true_type {};
 
 		template<>
 		struct HalfPacket<Packet8i>
 		{
 			using type = Packet4i;
 		};
-
-#elif defined(EIGEN_VECTORIZE_SSE2)
+#endif
+#ifdef EIGEN_VECTORIZE_SSE2
 		template<>
 		struct IsIntPacket<Packet4i> : std::true_type {};
 
@@ -70,8 +67,9 @@ namespace Eigen
 			u[3] = u[3] * b + c;
 			return _mm256_loadu_si256((__m256i*)u);
 		}
+#endif
 
-#elif defined(EIGEN_VECTORIZE_SSE2)
+#ifdef EIGEN_VECTORIZE_SSE2
 		template<>
 		EIGEN_STRONG_INLINE Packet4i pcmpeq64<Packet4i>(const Packet4i& a, const Packet4i& b)
 		{
@@ -129,7 +127,7 @@ namespace Eigen
 		};
 
 		template<typename Ty>
-		struct GetRandomEngieType : std::integral_constant <
+		struct GetRandomEngineType : std::integral_constant <
 			RandomEngineType,
 			IsPacketRandomEngine<Ty>::value ? RandomEngineType::packet :
 			(IsScalarRandomEngine<Ty>::value ? RandomEngineType::scalar : RandomEngineType::none)
@@ -137,19 +135,14 @@ namespace Eigen
 		{
 		};
 
+#ifndef EIGEN_DONT_VECTORIZE
 		template<typename Packet,
-			int _Nx,
-			int _Mx,
-			int _Rx,
-			uint64_t _Px,
-			int _Ux,
-			uint64_t _Dx,
-			int _Sx,
-			uint64_t _Bx,
-			int _Tx,
-			uint64_t _Cx,
-			int _Lx,
-			uint64_t _Fx>
+			int _Nx, int _Mx,
+			int _Rx, uint64_t _Px,
+			int _Ux, uint64_t _Dx,
+			int _Sx, uint64_t _Bx,
+			int _Tx, uint64_t _Cx,
+			int _Lx, uint64_t _Fx>
 		class MersenneTwister
 		{
 		public:
@@ -328,14 +321,92 @@ namespace Eigen
 			0x5555555555555555, 17,
 			0x71d67fffeda60000, 37,
 			0xfff7eee000000000, 43, 6364136223846793005>;
+#endif
 
-#ifdef EIGEN_VECTORIZE_AVX
+		template<typename UIntType, typename BaseRng>
+		class PacketRandomEngineAdaptor
+		{
+			static_assert(IsPacketRandomEngine<BaseRng>::value, "BaseRNG must be a kind of PacketRandomEngine.");
+		public:
+			using result_type = UIntType;
+
+			PacketRandomEngineAdaptor(const BaseRng& _rng)
+				: rng{ _rng }
+			{
+			}
+			
+			PacketRandomEngineAdaptor(BaseRng&& _rng)
+				: rng{ _rng }
+			{
+			}
+
+			PacketRandomEngineAdaptor(const PacketRandomEngineAdaptor&) = default;
+			PacketRandomEngineAdaptor(PacketRandomEngineAdaptor&&) = default;
+
+			static constexpr result_type min()
+			{
+				return std::numeric_limits<result_type>::min();
+			}
+
+			static constexpr result_type max()
+			{
+				return std::numeric_limits<result_type>::max();
+			}
+
+			result_type operator()()
+			{
+				if (cnt >= buf_size)
+				{
+					refill_buffer();
+				}
+				return buf[cnt++];
+			}
+
+		private:
+			static constexpr size_t buf_size = 64 / sizeof(result_type);
+
+			void refill_buffer()
+			{
+				cnt = 0;
+				const size_t stride = sizeof(typename BaseRng::result_type) / sizeof(result_type);
+				for (size_t i = 0; i < buf_size; i += stride)
+				{
+					*(typename BaseRng::result_type*)&buf[i] = rng();
+				}
+			}
+
+			BaseRng rng;
+			std::array<result_type, buf_size> buf;
+			size_t cnt = buf_size;
+
+		};
+
+		template<typename UIntType, typename Rng> 
+		typename std::enable_if<
+			IsPacketRandomEngine<typename std::remove_reference<Rng>::type>::value, 
+			PacketRandomEngineAdaptor<UIntType, typename std::remove_reference<Rng>::type>
+		>::type makeScalarRng(Rng&& rng)
+		{
+			return { std::forward<Rng>(rng) };
+		}
+
+		template<typename UIntType, typename Rng>
+		typename std::enable_if<
+			IsScalarRandomEngine<typename std::remove_reference<Rng>::type>::value,
+			typename std::remove_reference<Rng>::type
+		>::type makeScalarRng(Rng&& rng)
+		{
+			return std::forward<Rng>(rng);
+		}
+
+#ifdef EIGEN_VECTORIZE_AVX2
 		using vmt19937_64 = pmt19937_64<internal::Packet8i>;
-#elif defined(EIGEN_VECTORIZE_SSE2)
+#elif defined(EIGEN_VECTORIZE_AVX) || defined(EIGEN_VECTORIZE_SSE2)
 		using vmt19937_64 = pmt19937_64<internal::Packet4i>;
 #else
 		using vmt19937_64 = std::mt19937_64;
 #endif
+
 	}
 }
 

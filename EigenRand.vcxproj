@@ -47,10 +47,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EigenRand\Core.h" />
+    <ClInclude Include="EigenRand\Dists\Basic.h" />
+    <ClInclude Include="EigenRand\Dists\Discrete.h" />
+    <ClInclude Include="EigenRand\Dists\NormalExp.h" />
     <ClInclude Include="EigenRand\Macro.h" />
     <ClInclude Include="EigenRand\MorePacketMath.h" />
     <ClInclude Include="EigenRand\PacketFilter.h" />
     <ClInclude Include="EigenRand\PacketRandomEngine.h" />
+    <ClInclude Include="EigenRand\RandUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EigenRand\EigenRand">
@@ -234,9 +238,9 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>USE_ADDON;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEIGEN_DONT_VECTORIZE;USE_ADDON;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

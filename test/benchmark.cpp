@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <numeric>
 #include <chrono>
 #include <random>
 
@@ -36,8 +37,8 @@ public:
 			{
 				bh.timing[name] = (std::chrono::high_resolution_clock::now() - start).count() / 1e+6;
 
-				double mean = results.template cast<float>().sum() / results.size();
-				double sqmean = results.template cast<float>().array().square().sum() / results.size();
+				double mean = results.template cast<double>().sum() / results.size();
+				double sqmean = results.template cast<double>().array().square().sum() / results.size();
 				bh.mean_var[name] = std::make_pair(mean, sqmean - mean * mean);
 			}
 		}
@@ -74,6 +75,84 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 		xi = Eigen::Rand::randBitsLike(xi, urng);
 	}
 
+	{
+		auto scope = bh.measure("discreteDist/int(s=5)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistLike(xi, urng, { 1, 2, 3, 4, 5 });
+	}
+
+	{
+		auto scope = bh.measure("discreteDist/int(s=8)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistLike(xi, urng, { 8, 7, 6, 5, 4, 3, 2, 1 });
+	}
+
+	{
+		std::vector<double> ws(50);
+		std::iota(ws.begin(), ws.end(), 1);
+		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
+		auto scope = bh.measure("discreteDist/int(s=50)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistLike(xi, urng, ws.begin(), ws.end());
+	}
+
+	{
+		std::vector<double> ws(250);
+		std::iota(ws.begin(), ws.end(), 1);
+		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
+		auto scope = bh.measure("discreteDist/int(s=250)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistLike(xi, urng, ws.begin(), ws.end());
+	}
+
+	{
+		auto scope = bh.measure("discreteDistDP/int(s=5)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistDPLike(xi, urng, { 1, 2, 3, 4, 5 });
+	}
+
+	{
+		auto scope = bh.measure("discreteDistDP/int(s=8)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistDPLike(xi, urng, { 8, 7, 6, 5, 4, 3, 2, 1 });
+	}
+
+	{
+		std::vector<double> ws(50);
+		std::iota(ws.begin(), ws.end(), 1);
+		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
+		auto scope = bh.measure("discreteDistDP/int(s=50)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistDPLike(xi, urng, ws.begin(), ws.end());
+	}
+
+	{
+		std::vector<double> ws(250);
+		std::iota(ws.begin(), ws.end(), 1);
+		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
+		auto scope = bh.measure("discreteDistDP/int(s=250)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistDPLike(xi, urng, ws.begin(), ws.end());
+	}
+
+	{
+		auto scope = bh.measure("discreteDistI32/int(s=5)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistI32Like(xi, urng, { 1, 2, 3, 4, 5 });
+	}
+
+	{
+		auto scope = bh.measure("discreteDistI32/int(s=8)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistI32Like(xi, urng, { 8, 7, 6, 5, 4, 3, 2, 1 });
+	}
+
+	{
+		std::vector<double> ws(50);
+		std::iota(ws.begin(), ws.end(), 1);
+		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
+		auto scope = bh.measure("discreteDistI32/int(s=50)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistI32Like(xi, urng, ws.begin(), ws.end());
+	}
+
+	{
+		std::vector<double> ws(250);
+		std::iota(ws.begin(), ws.end(), 1);
+		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
+		auto scope = bh.measure("discreteDistI32/int(s=250)" + suffix, xi);
+		xi = Eigen::Rand::discreteDistI32Like(xi, urng, ws.begin(), ws.end());
+	}
+	
 	{
 		auto scope = bh.measure("balanced" + suffix, x);
 		x = Eigen::Rand::balancedLike(x, urng);
@@ -185,6 +264,36 @@ std::map<std::string, double> test_nullary(size_t size, const std::string& suffi
 	}
 
 	{
+		auto scope = bh.measure("discreteDist/int(s=5)" + suffix, xi);
+		std::discrete_distribution<> dist{ {1, 2, 3, 4, 5} };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("discreteDist/int(s=8)" + suffix, xi);
+		std::discrete_distribution<> dist{ {8, 7, 6, 5, 4, 3, 2, 1} };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		std::vector<double> ws(50);
+		std::iota(ws.begin(), ws.end(), 1);
+		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
+		auto scope = bh.measure("discreteDist/int(s=50)" + suffix, xi);
+		std::discrete_distribution<> dist{ ws.begin(), ws.end() };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		std::vector<double> ws(250);
+		std::iota(ws.begin(), ws.end(), 1);
+		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
+		auto scope = bh.measure("discreteDist/int(s=250)" + suffix, xi);
+		std::discrete_distribution<> dist{ ws.begin(), ws.end() };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+	
+	{
 		auto scope = bh.measure("uniformReal" + suffix, x);
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return std::generate_canonical<float, 32>(urng); });
 	}
@@ -295,6 +404,24 @@ std::map<std::string, double> test_old(size_t size, const std::string& suffix, s
 	return ret;
 }
 
+template<typename Rng>
+std::map<std::string, double> test_rng(Rng&& rng, size_t size, const std::string& suffix, std::map<std::string, std::pair<double, double> >& results)
+{
+	std::map<std::string, double> ret;
+	BenchmarkHelper bh{ ret, results };
+
+	Eigen::Array<uint64_t, -1, -1> x{ size, size };
+
+	{
+		auto scope = bh.measure(suffix, x);
+		for (size_t i = 0; i < size * size; ++i)
+		{
+			x.data()[i] = rng();
+		}
+	}
+	return ret;
+}
+
 int main(int argc, char** argv)
 {
 	size_t size = 1000, repeat = 20;
@@ -310,6 +437,30 @@ int main(int argc, char** argv)
 
 	for (size_t i = 0; i < repeat; ++i)
 	{
+		for (auto& p : test_rng(std::mt19937{}, size, "rng\tmt19937", results))
+		{
+			time[p.first] += p.second;
+			timeSq[p.first] += p.second * p.second;
+		}
+
+		for (auto& p : test_rng(Eigen::Rand::makeScalarRng<uint32_t>(Eigen::Rand::vmt19937_64{}), size, "rng\tvmt19937_64_32", results))
+		{
+			time[p.first] += p.second;
+			timeSq[p.first] += p.second * p.second;
+		}
+
+		for (auto& p : test_rng(std::mt19937_64{}, size, "rng\tmt19937_64", results))
+		{
+			time[p.first] += p.second;
+			timeSq[p.first] += p.second * p.second;
+		}
+
+		for (auto& p : test_rng(Eigen::Rand::makeScalarRng<uint64_t>(Eigen::Rand::vmt19937_64{}), size, "rng\tvmt19937_64", results))
+		{
+			time[p.first] += p.second;
+			timeSq[p.first] += p.second * p.second;
+		}
+
 		for (auto& p : test_old(size, "\t:Old", results))
 		{
 			time[p.first] += p.second;

@@ -43,6 +43,9 @@ namespace Eigen
 		EIGEN_STRONG_INLINE Packet psll(const Packet& a, int b);
 
 		template<typename Packet>
+		EIGEN_STRONG_INLINE Packet psrl(const Packet& a, int b);
+
+		template<typename Packet>
 		EIGEN_STRONG_INLINE Packet psll64(const Packet& a, int b);
 
 		template<typename Packet>
@@ -154,6 +157,15 @@ namespace Eigen
 
 		template<typename Packet>
 		EIGEN_STRONG_INLINE Packet pblendv(const Packet& ifPacket, const Packet& thenPacket, const Packet& elsePacket);
+
+		template<typename Packet>
+		EIGEN_STRONG_INLINE Packet pgather(const int* addr, const Packet& index);
+
+		template<typename Packet>
+		EIGEN_STRONG_INLINE auto pgather(const float* addr, const Packet& index) -> decltype(reinterpret_to_float(std::declval<Packet>()));
+
+		template<typename Packet>
+		EIGEN_STRONG_INLINE auto pgather(const double* addr, const Packet& index, bool upperhalf = false) -> decltype(reinterpret_to_double(std::declval<Packet>()));
 	}
 }
 
@@ -202,6 +214,25 @@ namespace Eigen
 			}
 		};
 
+		template<>
+		struct reinterpreter<Packet4d>
+		{
+			EIGEN_STRONG_INLINE Packet8f to_float(const Packet4d& x)
+			{
+				return _mm256_castpd_ps(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet4d to_double(const Packet4d& x)
+			{
+				return x;
+			}
+
+			EIGEN_STRONG_INLINE Packet8i to_int(const Packet4d& x)
+			{
+				return _mm256_castpd_si256(x);
+			}
+		};
+
 		EIGEN_STRONG_INLINE void split_two(const Packet8i& x, Packet4i& a, Packet4i& b)
 		{
 			a = _mm256_extractf128_si256(x, 0);
@@ -224,16 +255,21 @@ namespace Eigen
 			return _mm256_insertf128_ps(_mm256_castps128_ps256(a), b, 1);
 		}
 
+
+		EIGEN_STRONG_INLINE Packet4i combine_low32(const Packet8i& a)
+		{
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(a, _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7)));
+#else
+			auto sc = _mm256_permutevar_ps(_mm256_castsi256_ps(a), _mm256_setr_epi32(0, 2, 1, 3, 1, 3, 0, 2));
+			return _mm_castps_si128(_mm_blend_ps(_mm256_extractf128_ps(sc, 0), _mm256_extractf128_ps(sc, 1), 0b1100));
+#endif
+		}
+
 		template<>
 		EIGEN_STRONG_INLINE Packet8i pseti64<Packet8i>(uint64_t a)
 		{
 			return _mm256_set1_epi64x(a);
-		}
-
-		template<>
-		EIGEN_STRONG_INLINE Packet4i pseti64<Packet4i>(uint64_t a)
-		{
-			return _mm_set1_epi64x(a);
 		}
 
 		template<>
@@ -258,6 +294,18 @@ namespace Eigen
 			Packet4i a1, a2;
 			split_two(a, a1, a2);
 			return combine_two(_mm_slli_epi32(a1, b), _mm_slli_epi32(a2, b));
+#endif
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet8i psrl<Packet8i>(const Packet8i& a, int b)
+		{
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm256_srli_epi32(a, b);
+#else
+			Packet4i a1, a2;
+			split_two(a, a1, a2);
+			return combine_two(_mm_srli_epi32(a1, b), _mm_srli_epi32(a2, b));
 #endif
 		}
 
@@ -346,6 +394,12 @@ namespace Eigen
 		}
 
 		template<>
+		EIGEN_STRONG_INLINE Packet8i pcmplt<Packet8i>(const Packet8i& a, const Packet8i& b)
+		{
+			return _mm256_cmpgt_epi32(b, a);
+		}
+
+		template<>
 		EIGEN_STRONG_INLINE Packet8f pcmplt<Packet8f>(const Packet8f& a, const Packet8f& b)
 		{
 			return _mm256_cmp_ps(a, b, _CMP_LT_OQ);
@@ -357,10 +411,32 @@ namespace Eigen
 			return _mm256_cmp_ps(a, b, _CMP_LE_OQ);
 		}
 
+		template<>
+		EIGEN_STRONG_INLINE Packet4d pcmplt<Packet4d>(const Packet4d& a, const Packet4d& b)
+		{
+			return _mm256_cmp_pd(a, b, _CMP_LT_OQ);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4d pcmple<Packet4d>(const Packet4d& a, const Packet4d& b)
+		{
+			return _mm256_cmp_pd(a, b, _CMP_LE_OQ);
+		}
+
 		template<> 
 		EIGEN_STRONG_INLINE Packet8f pblendv(const Packet8f& ifPacket, const Packet8f& thenPacket, const Packet8f& elsePacket) 
 		{
 			return _mm256_blendv_ps(elsePacket, thenPacket, ifPacket);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet8i pblendv(const Packet8i& ifPacket, const Packet8i& thenPacket, const Packet8i& elsePacket)
+		{
+			return _mm256_castps_si256(_mm256_blendv_ps(
+				_mm256_castsi256_ps(elsePacket), 
+				_mm256_castsi256_ps(thenPacket), 
+				_mm256_castsi256_ps(ifPacket)
+			));
 		}
 
 		template<> 
@@ -368,10 +444,56 @@ namespace Eigen
 		{
 			return _mm256_blendv_pd(elsePacket, thenPacket, ifPacket);
 		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet8i pgather<Packet8i>(const int* addr, const Packet8i& index)
+		{
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm256_i32gather_epi32(addr, index, 4);
+#else
+			uint32_t u[8];
+			_mm256_storeu_si256((Packet8i*)u, index);
+			return _mm256_setr_epi32(addr[u[0]], addr[u[1]], addr[u[2]], addr[u[3]],
+				addr[u[4]], addr[u[5]], addr[u[6]], addr[u[7]]);
+#endif
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet8f pgather<Packet8i>(const float *addr, const Packet8i& index)
+		{
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm256_i32gather_ps(addr, index, 4);
+#else
+			uint32_t u[8];
+			_mm256_storeu_si256((Packet8i*)u, index);
+			return _mm256_setr_ps(addr[u[0]], addr[u[1]], addr[u[2]], addr[u[3]],
+				addr[u[4]], addr[u[5]], addr[u[6]], addr[u[7]]);
+#endif
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4d pgather<Packet8i>(const double *addr, const Packet8i& index, bool upperhalf)
+		{
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm256_i32gather_pd(addr, _mm256_castsi256_si128(index), 8);
+#else
+			uint32_t u[8];
+			_mm256_storeu_si256((Packet8i*)u, index);
+			if (upperhalf)
+			{
+				return _mm256_setr_pd(addr[u[4]], addr[u[5]], addr[u[6]], addr[u[7]]);
+			}
+			else
+			{
+				return _mm256_setr_pd(addr[u[0]], addr[u[1]], addr[u[2]], addr[u[3]]);
+			}
+#endif
+		}
 	}
 }
+#endif
 
-#elif defined(EIGEN_VECTORIZE_SSE2)
+#ifdef EIGEN_VECTORIZE_SSE2
 #include <xmmintrin.h>
 
 namespace Eigen
@@ -381,17 +503,17 @@ namespace Eigen
 		template<>
 		struct reinterpreter<Packet4i>
 		{
-			Packet4f to_float(const Packet4i& x)
+			EIGEN_STRONG_INLINE Packet4f to_float(const Packet4i& x)
 			{
 				return _mm_castsi128_ps(x);
 			}
 
-			Packet2d to_double(const Packet4i& x)
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet4i& x)
 			{
 				return _mm_castsi128_pd(x);
 			}
 
-			Packet4i to_int(const Packet4i& x)
+			EIGEN_STRONG_INLINE Packet4i to_int(const Packet4i& x)
 			{
 				return x;
 			}
@@ -400,19 +522,38 @@ namespace Eigen
 		template<>
 		struct reinterpreter<Packet4f>
 		{
-			Packet4f to_float(const Packet4f& x)
+			EIGEN_STRONG_INLINE Packet4f to_float(const Packet4f& x)
 			{
 				return x;
 			}
 
-			Packet2d to_double(const Packet4f& x)
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet4f& x)
 			{
 				return _mm_castps_pd(x);
 			}
 
-			Packet4i to_int(const Packet4f& x)
+			EIGEN_STRONG_INLINE Packet4i to_int(const Packet4f& x)
 			{
 				return _mm_castps_si128(x);
+			}
+		};
+
+		template<>
+		struct reinterpreter<Packet2d>
+		{
+			EIGEN_STRONG_INLINE Packet4f to_float(const Packet2d& x)
+			{
+				return _mm_castpd_ps(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet2d& x)
+			{
+				return x;
+			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int(const Packet2d& x)
+			{
+				return _mm_castpd_si128(x);
 			}
 		};
 
@@ -427,6 +568,15 @@ namespace Eigen
 			a = u[0];
 			b = u[1];
 #endif
+		}
+
+		EIGEN_STRONG_INLINE Packet4i combine_low32(const Packet4i& a, const Packet4i& b)
+		{
+			auto sa = _mm_shuffle_epi32(a, _MM_SHUFFLE(3, 1, 2, 0));
+			auto sb = _mm_shuffle_epi32(b, _MM_SHUFFLE(2, 0, 3, 1));
+			sa = _mm_and_si128(sa, _mm_setr_epi32(-1, -1, 0, 0));
+			sb = _mm_and_si128(sb, _mm_setr_epi32(0, 0, -1, -1));
+			return _mm_or_si128(sa, sb);
 		}
 
 		template<>
@@ -448,6 +598,13 @@ namespace Eigen
 		}
 
 		template<>
+		Packet4i psrl<Packet4i>(const Packet4i& a, int b)
+		{
+			return _mm_srli_epi32(a, b);
+		}
+
+
+		template<>
 		Packet4i psll64<Packet4i>(const Packet4i& a, int b)
 		{
 			return _mm_slli_epi64(a, b);
@@ -457,6 +614,12 @@ namespace Eigen
 		Packet4i psrl64<Packet4i>(const Packet4i& a, int b)
 		{
 			return _mm_srli_epi64(a, b);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4i pcmplt<Packet4i>(const Packet4i& a, const Packet4i& b)
+		{
+			return _mm_cmplt_epi32(a, b);
 		}
 
 		template<>
@@ -471,6 +634,18 @@ namespace Eigen
 			return _mm_cmple_ps(a, b);
 		}
 
+		template<>
+		EIGEN_STRONG_INLINE Packet2d pcmplt<Packet2d>(const Packet2d& a, const Packet2d& b)
+		{
+			return _mm_cmplt_pd(a, b);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet2d pcmple<Packet2d>(const Packet2d& a, const Packet2d& b)
+		{
+			return _mm_cmple_pd(a, b);
+		}
+
 		template<> 
 		EIGEN_STRONG_INLINE Packet4f pblendv(const Packet4f& ifPacket, const Packet4f& thenPacket, const Packet4f& elsePacket) 
 		{
@@ -481,6 +656,16 @@ namespace Eigen
 #endif
 		}
 
+		template<>
+		EIGEN_STRONG_INLINE Packet4i pblendv(const Packet4i& ifPacket, const Packet4i& thenPacket, const Packet4i& elsePacket)
+		{
+#ifdef XXX_EIGEN_VECTORIZE_SSE4_1
+			return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(elsePacket), _mm_castsi128_ps(thenPacket), _mm_castsi128_ps(ifPacket)));
+#else
+			return _mm_or_si128(_mm_and_si128(ifPacket, thenPacket), _mm_andnot_si128(ifPacket, elsePacket));
+#endif
+		}
+
 		template<> 
 		EIGEN_STRONG_INLINE Packet2d pblendv(const Packet2d& ifPacket, const Packet2d& thenPacket, const Packet2d& elsePacket) 
 		{
@@ -488,6 +673,49 @@ namespace Eigen
 			return _mm_blendv_pd(elsePacket, thenPacket, ifPacket);
 #else
 			return _mm_or_pd(_mm_and_pd(ifPacket, thenPacket), _mm_andnot_pd(ifPacket, elsePacket));
+#endif
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4i pgather<Packet4i>(const int* addr, const Packet4i& index)
+		{
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm_i32gather_epi32(addr, index, 4);
+#else
+			uint32_t u[4];
+			_mm_storeu_si128((Packet4i*)u, index);
+			return _mm_setr_epi32(addr[u[0]], addr[u[1]], addr[u[2]], addr[u[3]]);
+#endif
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4f pgather<Packet4i>(const float* addr, const Packet4i& index)
+		{
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm_i32gather_ps(addr, index, 4);
+#else
+			uint32_t u[4];
+			_mm_storeu_si128((Packet4i*)u, index);
+			return _mm_setr_ps(addr[u[0]], addr[u[1]], addr[u[2]], addr[u[3]]);
+#endif
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet2d pgather<Packet4i>(const double* addr, const Packet4i& index, bool upperhalf)
+		{
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm_i32gather_pd(addr, index, 8);
+#else
+			uint32_t u[4];
+			_mm_storeu_si128((Packet4i*)u, index);
+			if (upperhalf)
+			{
+				return _mm_setr_pd(addr[u[2]], addr[u[3]]);
+			}
+			else
+			{
+				return _mm_setr_pd(addr[u[0]], addr[u[1]]);
+			}
 #endif
 		}
 	}

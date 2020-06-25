@@ -13,6 +13,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="EigenRand\Dists">
+      <UniqueIdentifier>{1470243f-1ac0-48c8-bc2e-406d292e8550}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EigenRand\MorePacketMath.h">
@@ -30,11 +33,21 @@
     <ClInclude Include="EigenRand\Core.h">
       <Filter>EigenRand</Filter>
     </ClInclude>
+    <ClInclude Include="EigenRand\EigenRand" />
+    <ClInclude Include="EigenRand\RandUtils.h">
+      <Filter>EigenRand</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\Dists\Basic.h">
+      <Filter>EigenRand\Dists</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\Dists\Discrete.h">
+      <Filter>EigenRand\Dists</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\Dists\NormalExp.h">
+      <Filter>EigenRand\Dists</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="EigenRand\EigenRand">
-      <Filter>EigenRand</Filter>
-    </None>
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
