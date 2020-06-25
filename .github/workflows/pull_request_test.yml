@@ -49,6 +49,7 @@ jobs:
       run: |
         g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
     - name: Test
+      continue-on-error: true
       run: |
         sysctl -a | grep machdep.cpu
         ./bench.out
