@@ -12,7 +12,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        arch: [msse2, mssse3, mavx, mavx2]
+        arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx, mavx2]
         os: [ubuntu-16.04, ubuntu-18.04]
     steps:        
     - uses: actions/checkout@v1
@@ -24,7 +24,6 @@ jobs:
         cd ..
         mv eigen-git-mirror include
     - name: Build
-      continue-on-error: True
       run: |
         g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
     - name: Test
@@ -38,7 +37,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        arch: [msse2, mssse3, mavx]
+        arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx]
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies
@@ -60,7 +59,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        arch: ['/arch:SSE2', '/arch:AVX', '/arch:AVX2']
+        arch: ['/D EIGEN_DONT_VECTORIZE', '/arch:SSE2', '/arch:AVX', '/arch:AVX2']
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies

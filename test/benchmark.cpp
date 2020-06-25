@@ -404,6 +404,24 @@ std::map<std::string, double> test_old(size_t size, const std::string& suffix, s
 	return ret;
 }
 
+template<typename Rng>
+std::map<std::string, double> test_rng(Rng&& rng, size_t size, const std::string& suffix, std::map<std::string, std::pair<double, double> >& results)
+{
+	std::map<std::string, double> ret;
+	BenchmarkHelper bh{ ret, results };
+
+	Eigen::Array<uint64_t, -1, -1> x{ size, size };
+
+	{
+		auto scope = bh.measure(suffix, x);
+		for (size_t i = 0; i < size * size; ++i)
+		{
+			x.data()[i] = rng();
+		}
+	}
+	return ret;
+}
+
 int main(int argc, char** argv)
 {
 	size_t size = 1000, repeat = 20;
@@ -419,6 +437,30 @@ int main(int argc, char** argv)
 
 	for (size_t i = 0; i < repeat; ++i)
 	{
+		for (auto& p : test_rng(std::mt19937{}, size, "rng\tmt19937", results))
+		{
+			time[p.first] += p.second;
+			timeSq[p.first] += p.second * p.second;
+		}
+
+		for (auto& p : test_rng(Eigen::Rand::makeScalarRng<uint32_t>(Eigen::Rand::vmt19937_64{}), size, "rng\tvmt19937_64_32", results))
+		{
+			time[p.first] += p.second;
+			timeSq[p.first] += p.second * p.second;
+		}
+
+		for (auto& p : test_rng(std::mt19937_64{}, size, "rng\tmt19937_64", results))
+		{
+			time[p.first] += p.second;
+			timeSq[p.first] += p.second * p.second;
+		}
+
+		for (auto& p : test_rng(Eigen::Rand::makeScalarRng<uint64_t>(Eigen::Rand::vmt19937_64{}), size, "rng\tvmt19937_64", results))
+		{
+			time[p.first] += p.second;
+			timeSq[p.first] += p.second * p.second;
+		}
+
 		for (auto& p : test_old(size, "\t:Old", results))
 		{
 			time[p.first] += p.second;

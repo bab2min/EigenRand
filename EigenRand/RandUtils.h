@@ -78,7 +78,7 @@ namespace Eigen
 
 		template<typename Packet, typename Rng,
 			typename RngResult = typename std::remove_reference<Rng>::type::result_type,
-			Rand::RandomEngineType reType = Rand::GetRandomEngieType<
+			Rand::RandomEngineType reType = Rand::GetRandomEngineType<
 			typename std::remove_reference<Rng>::type
 		>::value>
 			struct RawbitsMaker;

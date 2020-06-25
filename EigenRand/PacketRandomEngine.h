@@ -127,7 +127,7 @@ namespace Eigen
 		};
 
 		template<typename Ty>
-		struct GetRandomEngieType : std::integral_constant <
+		struct GetRandomEngineType : std::integral_constant <
 			RandomEngineType,
 			IsPacketRandomEngine<Ty>::value ? RandomEngineType::packet :
 			(IsScalarRandomEngine<Ty>::value ? RandomEngineType::scalar : RandomEngineType::none)
@@ -334,6 +334,82 @@ namespace Eigen
 #else
 		using vmt19937_64 = std::mt19937_64;
 #endif
+
+		template<typename UIntType, typename BaseRng>
+		class PacketRandomEngineAdaptor
+		{
+			static_assert(IsPacketRandomEngine<BaseRng>::value, "BaseRNG must be a kind of PacketRandomEngine.");
+		public:
+			using result_type = UIntType;
+
+			PacketRandomEngineAdaptor(const BaseRng& _rng)
+				: rng{ _rng }
+			{
+			}
+			
+			PacketRandomEngineAdaptor(BaseRng&& _rng)
+				: rng{ _rng }
+			{
+			}
+
+			PacketRandomEngineAdaptor(const PacketRandomEngineAdaptor&) = default;
+			PacketRandomEngineAdaptor(PacketRandomEngineAdaptor&&) = default;
+
+			static constexpr result_type min()
+			{
+				return std::numeric_limits<result_type>::min();
+			}
+
+			static constexpr result_type max()
+			{
+				return std::numeric_limits<result_type>::max();
+			}
+
+			result_type operator()()
+			{
+				if (cnt >= buf_size)
+				{
+					refill_buffer();
+				}
+				return buf[cnt++];
+			}
+
+		private:
+			static constexpr size_t buf_size = 64 / sizeof(result_type);
+
+			void refill_buffer()
+			{
+				cnt = 0;
+				const size_t stride = sizeof(typename BaseRng::result_type) / sizeof(result_type);
+				for (size_t i = 0; i < buf_size; i += stride)
+				{
+					*(typename BaseRng::result_type*)&buf[i] = rng();
+				}
+			}
+
+			BaseRng rng;
+			std::array<result_type, buf_size> buf;
+			size_t cnt = buf_size;
+
+		};
+
+		template<typename UIntType, typename Rng> 
+		typename std::enable_if<
+			IsPacketRandomEngine<typename std::remove_reference<Rng>::type>::value, 
+			PacketRandomEngineAdaptor<UIntType, typename std::remove_reference<Rng>::type>
+		>::type makeScalarRng(Rng&& rng)
+		{
+			return { std::forward<Rng>(rng) };
+		}
+
+		template<typename UIntType, typename Rng>
+		typename std::enable_if<
+			IsScalarRandomEngine<typename std::remove_reference<Rng>::type>::value,
+			typename std::remove_reference<Rng>::type
+		>::type makeScalarRng(Rng&& rng)
+		{
+			return std::forward<Rng>(rng);
+		}
 	}
 }
 
