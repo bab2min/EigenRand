@@ -134,7 +134,7 @@ It shows the average of 20 times.
 | `weibullDist` | - | 75.1 | 44.3 | 18.5 | 14.3 | 7.9 |
 
 |  | C++ std | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
-|---|---:|---:|---:|---:|---:|---:|
+|---|---:|---:|---:|---:|---:|
 | Mersenne Twister(int32) | 6.5 | 6.4 | 5.6 | 5.1 | 4.5 |
 | Mersenne Twister(int64) | 6.6 | 6.5 | 6.9 | 5.9 | 5.1 |
 
