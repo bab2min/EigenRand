@@ -33,7 +33,6 @@
     <ClInclude Include="EigenRand\Core.h">
       <Filter>EigenRand</Filter>
     </ClInclude>
-    <ClInclude Include="EigenRand\EigenRand" />
     <ClInclude Include="EigenRand\RandUtils.h">
       <Filter>EigenRand</Filter>
     </ClInclude>
@@ -45,6 +44,9 @@
     </ClInclude>
     <ClInclude Include="EigenRand\Dists\NormalExp.h">
       <Filter>EigenRand\Dists</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\EigenRand">
+      <Filter>EigenRand</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

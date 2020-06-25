@@ -1,3 +1,9 @@
+/**
+* EigenRand
+* Author: bab2min@gmail.com
+* Date: 2020-06-22
+*/
+
 #ifndef EIGENRAND_MORE_PACKET_MATH_H
 #define EIGENRAND_MORE_PACKET_MATH_H
 
