@@ -63,7 +63,7 @@
 ### Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Windows Server 2019)
 
 |  | Eigen | C++ std | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
-|---|---:|---:|---:|---:|---:|---:|---:|
+|---|---:|---:|---:|---:|---:|---:|
 | `balanced` | 20.7 | - | 7.2 | 3.3 | 4.0 | 2.2 |
 | `balanced`(double) | 21.9 | - | 8.8 | 6.7 | 4.3 | 4.3 |
 | `chiSquaredDist` | - | 243.0 | 147.3 | 63.5 | 34.1 | 24.0 |
@@ -83,7 +83,7 @@
 | `weibullDist` | - | 75.1 | 44.3 | 18.5 | 14.3 | 7.9 |
 
 |  | C++ std | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
-|---|---:|---:|---:|---:|---:|---:|
+|---|---:|---:|---:|---:|---:|
 | `rng`(int32) | 6.5 | 6.4 | 5.6 | 5.1 | 4.5 |
 | `rng`(int64) | 6.6 | 6.5 | 6.9 | 5.9 | 5.1 |
 
