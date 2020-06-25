@@ -135,19 +135,14 @@ namespace Eigen
 		{
 		};
 
+#ifndef EIGEN_DONT_VECTORIZE
 		template<typename Packet,
-			int _Nx,
-			int _Mx,
-			int _Rx,
-			uint64_t _Px,
-			int _Ux,
-			uint64_t _Dx,
-			int _Sx,
-			uint64_t _Bx,
-			int _Tx,
-			uint64_t _Cx,
-			int _Lx,
-			uint64_t _Fx>
+			int _Nx, int _Mx,
+			int _Rx, uint64_t _Px,
+			int _Ux, uint64_t _Dx,
+			int _Sx, uint64_t _Bx,
+			int _Tx, uint64_t _Cx,
+			int _Lx, uint64_t _Fx>
 		class MersenneTwister
 		{
 		public:
@@ -326,13 +321,6 @@ namespace Eigen
 			0x5555555555555555, 17,
 			0x71d67fffeda60000, 37,
 			0xfff7eee000000000, 43, 6364136223846793005>;
-
-#ifdef EIGEN_VECTORIZE_AVX2
-		using vmt19937_64 = pmt19937_64<internal::Packet8i>;
-#elif defined(EIGEN_VECTORIZE_AVX) || defined(EIGEN_VECTORIZE_SSE2)
-		using vmt19937_64 = pmt19937_64<internal::Packet4i>;
-#else
-		using vmt19937_64 = std::mt19937_64;
 #endif
 
 		template<typename UIntType, typename BaseRng>
@@ -410,6 +398,15 @@ namespace Eigen
 		{
 			return std::forward<Rng>(rng);
 		}
+
+#ifdef EIGEN_VECTORIZE_AVX2
+		using vmt19937_64 = pmt19937_64<internal::Packet8i>;
+#elif defined(EIGEN_VECTORIZE_AVX) || defined(EIGEN_VECTORIZE_SSE2)
+		using vmt19937_64 = pmt19937_64<internal::Packet4i>;
+#else
+		using vmt19937_64 = std::mt19937_64;
+#endif
+
 	}
 }
 
