@@ -114,7 +114,7 @@ It shows the average of 20 times.
 ### Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Windows Server 2019, MSVC2019)
 
 |  | Eigen | C++ std | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
-|---|---:|---:|---:|---:|---:|---:|---:|
+|---|---:|---:|---:|---:|---:|---:|
 | `balanced` | 20.7 | - | 7.2 | 3.3 | 4.0 | 2.2 |
 | `balanced`(double) | 21.9 | - | 8.8 | 6.7 | 4.3 | 4.3 |
 | `chiSquaredDist` | - | 243.0 | 147.3 | 63.5 | 34.1 | 24.0 |
