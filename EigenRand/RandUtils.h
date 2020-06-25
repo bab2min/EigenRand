@@ -115,51 +115,6 @@ namespace Eigen
 {
 	namespace internal
 	{
-		template<typename Rng, typename RngResult>
-		struct RawbitsMaker<Packet4i, Rng, RngResult, Rand::RandomEngineType::scalar>
-		{
-			EIGEN_STRONG_INLINE Packet4i rawbits(Rng& rng)
-			{
-				if (sizeof(RngResult) == 8)
-				{
-					return _mm_set_epi64x(rng(), rng());
-				}
-				else
-				{
-					return _mm_set_epi32(rng(), rng(), rng(), rng());
-				}
-			}
-
-			EIGEN_STRONG_INLINE Packet4i rawbits_34(Rng& rng)
-			{
-				if (sizeof(RngResult) == 8)
-				{
-					return _mm_set_epi64x(rng(), rng());
-				}
-				else
-				{
-					Packet4i p = _mm_setr_epi32(rng(), rng(), rng(), 0);
-					return _mm_shuffle_epi8(p, _mm_setr_epi8(
-						0, 1, 2, 3,
-						4, 5, 6, 7,
-						8, 9, 10, 11,
-						3, 7, 11, 11));
-				}
-			}
-
-			EIGEN_STRONG_INLINE Packet4i rawbits_half(Rng& rng)
-			{
-				if (sizeof(decltype(rng())) == 8)
-				{
-					return _mm_set_epi64x(rng(), 0);
-				}
-				else
-				{
-					return _mm_set_epi32(rng(), rng(), 0, 0);
-				}
-			}
-		};
-
 		template<typename Rng>
 		struct RawbitsMaker<Packet4i, Rng, Packet8i, Rand::RandomEngineType::packet>
 		{
@@ -176,6 +131,25 @@ namespace Eigen
 			EIGEN_STRONG_INLINE Packet4i rawbits_half(Rng& rng)
 			{
 				return rng.half();
+			}
+		};
+
+		template<typename Rng>
+		struct RawbitsMaker<Packet8i, Rng, Packet4i, Rand::RandomEngineType::packet>
+		{
+			EIGEN_STRONG_INLINE Packet8i rawbits(Rng& rng)
+			{
+				return _mm256_insertf128_si256(_mm256_castsi128_si256(rng()), rng(), 1);
+			}
+
+			EIGEN_STRONG_INLINE Packet8i rawbits_34(Rng& rng)
+			{
+				return _mm256_insertf128_si256(_mm256_castsi128_si256(rng()), rng(), 1);
+			}
+
+			EIGEN_STRONG_INLINE Packet4i rawbits_half(Rng& rng)
+			{
+				return rng();
 			}
 		};
 
@@ -287,7 +261,7 @@ namespace Eigen
 
 #ifndef EIGEN_VECTORIZE_AVX2
 		template<>
-		EIGEN_STRONG_INLINE  Packet8f bit_to_ur_float<Packet8i>(const Packet8i& x)
+		EIGEN_STRONG_INLINE Packet8f bit_to_ur_float<Packet8i>(const Packet8i& x)
 		{
 			const Packet4i lower = pset1<Packet4i>(0x7FFFFF),
 				upper = pset1<Packet4i>(127 << 23);
@@ -302,7 +276,7 @@ namespace Eigen
 		}
 
 		template<>
-		EIGEN_STRONG_INLINE  Packet4d bit_to_ur_double<Packet8i>(const Packet8i& x)
+		EIGEN_STRONG_INLINE Packet4d bit_to_ur_double<Packet8i>(const Packet8i& x)
 		{
 			const Packet4i lower = pseti64<Packet4i>(0xFFFFFFFFFFFFFull),
 				upper = pseti64<Packet4i>(1023ull << 52);
@@ -348,8 +322,9 @@ namespace Eigen
 		};
 	}
 }
+#endif
 
-#elif defined(EIGEN_VECTORIZE_SSE2)
+#ifdef EIGEN_VECTORIZE_SSE2
 #include <xmmintrin.h>
 
 namespace Eigen

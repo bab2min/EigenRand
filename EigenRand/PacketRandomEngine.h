@@ -16,20 +16,17 @@ namespace Eigen
 		template<typename Ty>
 		struct HalfPacket;
 
-#ifdef EIGEN_VECTORIZE_AVX
+#ifdef EIGEN_VECTORIZE_AVX2
 		template<>
 		struct IsIntPacket<Packet8i> : std::true_type {};
-
-		template<>
-		struct IsIntPacket<Packet4i> : std::true_type {};
 
 		template<>
 		struct HalfPacket<Packet8i>
 		{
 			using type = Packet4i;
 		};
-
-#elif defined(EIGEN_VECTORIZE_SSE2)
+#endif
+#ifdef EIGEN_VECTORIZE_SSE2
 		template<>
 		struct IsIntPacket<Packet4i> : std::true_type {};
 
@@ -70,8 +67,9 @@ namespace Eigen
 			u[3] = u[3] * b + c;
 			return _mm256_loadu_si256((__m256i*)u);
 		}
+#endif
 
-#elif defined(EIGEN_VECTORIZE_SSE2)
+#ifdef EIGEN_VECTORIZE_SSE2
 		template<>
 		EIGEN_STRONG_INLINE Packet4i pcmpeq64<Packet4i>(const Packet4i& a, const Packet4i& b)
 		{
@@ -329,9 +327,9 @@ namespace Eigen
 			0x71d67fffeda60000, 37,
 			0xfff7eee000000000, 43, 6364136223846793005>;
 
-#ifdef EIGEN_VECTORIZE_AVX
+#ifdef EIGEN_VECTORIZE_AVX2
 		using vmt19937_64 = pmt19937_64<internal::Packet8i>;
-#elif defined(EIGEN_VECTORIZE_SSE2)
+#elif defined(EIGEN_VECTORIZE_AVX) || defined(EIGEN_VECTORIZE_SSE2)
 		using vmt19937_64 = pmt19937_64<internal::Packet4i>;
 #else
 		using vmt19937_64 = std::mt19937_64;

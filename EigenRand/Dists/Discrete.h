@@ -14,7 +14,7 @@ namespace Eigen
 		{
 			std::unique_ptr<_Precision[]> arr;
 			std::unique_ptr<_Size[]> alias;
-			size_t msize = 0, bitsize = 0;
+			size_t msize = 0, bitsize = 0, bitmask = 0;
 
 		public:
 			AliasMethod()
@@ -35,6 +35,7 @@ namespace Eigen
 			{
 				msize = o.msize;
 				bitsize = o.bitsize;
+				bitmask = o.bitmask;
 				if (msize)
 				{
 					arr = std::unique_ptr<_Precision[]>(new _Precision[1 << bitsize]);
@@ -50,6 +51,7 @@ namespace Eigen
 			{
 				msize = o.msize;
 				bitsize = o.bitsize;
+				bitmask = o.bitmask;
 				std::swap(arr, o.arr);
 				std::swap(alias, o.alias);
 				return *this;
@@ -75,7 +77,7 @@ namespace Eigen
 				if (!std::isfinite(sum)) throw std::invalid_argument{ "cannot build NaN value distribution" };
 
 				// ceil to power of 2
-				nbsize = /*log2_ceil(msize)*/0;
+				nbsize = (size_t)std::ceil(std::log2(msize));
 				psize = (size_t)1 << nbsize;
 
 				if (nbsize != bitsize)
@@ -84,6 +86,7 @@ namespace Eigen
 					std::fill(arr.get(), arr.get() + psize, 0);
 					alias = std::unique_ptr<_Size[]>(new _Size[psize]);
 					bitsize = nbsize;
+					bitmask = ((1 << bitsize) - 1);
 				}
 
 				sum /= psize;
@@ -103,7 +106,14 @@ namespace Eigen
 
 				while (over < psize && under < psize)
 				{
-					arr[under] = f[under] * (std::numeric_limits<_Precision>::max() + 1.0);
+					if (std::is_integral<_Precision>::value)
+					{
+						arr[under] = (_Precision)(f[under] * (std::numeric_limits<_Precision>::max() + 1.0));
+					}
+					else
+					{
+						arr[under] = (_Precision)f[under];
+					}
 					alias[under] = over;
 					f[over] += f[under] - 1;
 					if (f[over] >= 1 || mm <= over)
@@ -123,20 +133,41 @@ namespace Eigen
 				{
 					if (f[over] >= 1)
 					{
-						arr[over] = std::numeric_limits<_Precision>::max();
+						if (std::is_integral<_Precision>::value)
+						{
+							arr[over] = std::numeric_limits<_Precision>::max();
+						}
+						else
+						{
+							arr[over] = 1;
+						}
 						alias[over] = over;
 					}
 				}
 
 				if (under < psize)
 				{
-					arr[under] = std::numeric_limits<_Precision>::max();
+					if (std::is_integral<_Precision>::value)
+					{
+						arr[under] = std::numeric_limits<_Precision>::max();
+					}
+					else
+					{
+						arr[under] = 1;
+					}
 					alias[under] = under;
 					for (under = mm; under < msize; ++under)
 					{
 						if (f[under] < 1)
 						{
-							arr[under] = std::numeric_limits<_Precision>::max();
+							if (std::is_integral<_Precision>::value)
+							{
+								arr[under] = std::numeric_limits<_Precision>::max();
+							}
+							else
+							{
+								arr[under] = 1;
+							}
 							alias[under] = under;
 						}
 					}
@@ -148,6 +179,11 @@ namespace Eigen
 				return bitsize;
 			}
 
+			size_t get_bitmask() const
+			{
+				return bitmask;
+			}
+
 			const _Precision* get_prob() const
 			{
 				return arr.get();
@@ -156,30 +192,6 @@ namespace Eigen
 			const _Size* get_alias() const
 			{
 				return alias.get();
-			}
-
-			template<typename _Rng>
-			size_t operator()(_Rng& rng) const
-			{
-				auto x = rng();
-				size_t a;
-				if (sizeof(_Precision) < sizeof(typename _Rng::result_type))
-				{
-					a = x >> (sizeof(x) * 8 - bitsize);
-				}
-				else
-				{
-					a = rng() & ((1 << bitsize) - 1);
-				}
-
-				_Precision b = (_Precision)x;
-				if (b < arr[a])
-				{
-					assert(a < msize);
-					return a;
-				}
-				assert(alias[a] < msize);
-				return alias[a];
 			}
 		};
 
@@ -194,40 +206,93 @@ namespace Eigen
 			using ur_base = scalar_randbits_op<Scalar, Rng>;
 
 			std::vector<uint32_t> cdf;
+			AliasMethod<int32_t, Scalar> alias_table;
 
 			template<typename RealIter>
 			scalar_discrete_dist_op(const Rng& _rng, RealIter first, RealIter last)
 				: ur_base{ _rng }
 			{
-				std::vector<double> _cdf;
-				double acc = 0;
-				for (; first != last; ++first)
+				if (std::distance(first, last) < 16)
 				{
-					_cdf.emplace_back(acc += *first);
-				}
+					// use linear or binary search
+					std::vector<double> _cdf;
+					double acc = 0;
+					for (; first != last; ++first)
+					{
+						_cdf.emplace_back(acc += *first);
+					}
 
-				for (auto& p : _cdf)
+					for (auto& p : _cdf)
+					{
+						cdf.emplace_back((uint32_t)(p / _cdf.back() * 0x80000000));
+					}
+				}
+				else
 				{
-					cdf.emplace_back((uint32_t)(p / _cdf.back() * 0x80000000));
+					// use alias table
+					alias_table = AliasMethod<int32_t, Scalar>{ first, last };
 				}
 			}
 
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
 			{
-				auto rx = ur_base::operator()() & 0x7FFFFFFF;
-				return (Scalar)(std::lower_bound(cdf.begin(), cdf.end(), rx) - cdf.begin());
+				if (!cdf.empty())
+				{
+					auto rx = ur_base::operator()() & 0x7FFFFFFF;
+					return (Scalar)(std::lower_bound(cdf.begin(), cdf.end() - 1, rx) - cdf.begin());
+				}
+				else
+				{
+					auto rx = ur_base::operator()();
+					auto albit = rx & alias_table.get_bitmask();
+					uint32_t alx = (uint32_t)(rx >> (sizeof(rx) * 8 - 31));
+					if (alx < alias_table.get_prob()[albit]) return albit;
+					return alias_table.get_alias()[albit];
+				}
 			}
 
 			template<typename Packet>
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
 			{
-				auto ret = pset1<Packet>(cdf.size() - 1);
-				auto rx = pand(ur_base::template packetOp<Packet>(), pset1<Packet>(0x7FFFFFFF));
-				for (size_t i = 0; i < cdf.size() - 1; ++i)
+#ifdef EIGEN_VECTORIZE_AVX2
+				thread_local Packet4i cache;
+				thread_local const scalar_discrete_dist_op* cache_ptr = nullptr;
+				if (cache_ptr == this)
 				{
-					ret = padd(ret, pcmplt(rx, pset1<Packet>(cdf[i])));
+					cache_ptr = nullptr;
+					return cache;
 				}
+
+				using PacketType = Packet8i;
+#else
+				using PacketType = Packet;
+#endif
+
+				PacketType ret;
+				if (!cdf.empty())
+				{
+					ret = pset1<PacketType>(cdf.size() - 1);
+					auto rx = pand(ur_base::template packetOp<PacketType>(), pset1<PacketType>(0x7FFFFFFF));
+					for (size_t i = 0; i < cdf.size() - 1; ++i)
+					{
+						ret = padd(ret, pcmplt(rx, pset1<PacketType>(cdf[i])));
+					}
+				}
+				else
+				{
+					auto rx = ur_base::template packetOp<PacketType>();
+					auto albit = pand(rx, pset1<PacketType>(alias_table.get_bitmask()));
+					auto c = pcmplt(psrl(rx, 1), pgather(alias_table.get_prob(), albit));
+					ret = pblendv(c, albit, pgather(alias_table.get_alias(), albit));
+				}
+
+#ifdef EIGEN_VECTORIZE_AVX2
+				cache = _mm256_extractf128_si256(ret, 1);
+				cache_ptr = this;
+				return _mm256_extractf128_si256(ret, 0);
+#else
 				return ret;
+#endif
 			}
 		};
 
@@ -238,48 +303,75 @@ namespace Eigen
 			using ur_base = scalar_uniform_real_op<float, Rng>;
 
 			std::vector<float> cdf;
+			AliasMethod<float, Scalar> alias_table;
 
 			template<typename RealIter>
 			scalar_discrete_dist_op(const Rng& _rng, RealIter first, RealIter last)
 				: ur_base{ _rng }
 			{
-				float acc = 0;
-				for (; first != last; ++first)
+				if (std::distance(first, last) < 16)
 				{
-					cdf.emplace_back(acc += *first);
-				}
+					// use linear or binary search
+					std::vector<double> _cdf;
+					double acc = 0;
+					for (; first != last; ++first)
+					{
+						_cdf.emplace_back(acc += *first);
+					}
 
-				for (auto& p : cdf)
+					for (auto& p : _cdf)
+					{
+						cdf.emplace_back(p / _cdf.back());
+					}
+				}
+				else
 				{
-					p /= cdf.back();
+					// use alias table
+					alias_table = AliasMethod<float, Scalar>{ first, last };
 				}
 			}
 
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
 			{
-				auto rx = ur_base::operator()();
-				return (Scalar)(std::lower_bound(cdf.begin(), cdf.end(), rx) - cdf.begin());
+				if (!cdf.empty())
+				{
+					auto rx = ur_base::operator()();
+					return (Scalar)(std::lower_bound(cdf.begin(), cdf.end() - 1, rx) - cdf.begin());
+				}
+				else
+				{
+					auto albit = pfirst(this->rng()) & alias_table.get_bitmask();
+					auto alx = ur_base::operator()();
+					if (alx < alias_table.get_prob()[albit]) return albit;
+					return alias_table.get_alias()[albit];
+				}
 			}
 
 			template<typename Packet>
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
 			{
-				auto ret = pset1<Packet>(cdf.size());
 #ifdef EIGEN_VECTORIZE_AVX
-				auto rx = _mm256_castps256_ps128(ur_base::template packetOp<Packet8f>());
-				for (auto& p : cdf)
-				{
-					ret = padd(ret, reinterpret_to_int(pcmplt(rx, pset1<decltype(rx)>(p))));
-				}
-				return ret;
+				using PacketType = Packet4f;
 #else
-				auto rx = ur_base::template packetOp<decltype(reinterpret_to_float(std::declval<Packet>()))>();
-				for (auto& p : cdf)
-				{
-					ret = padd(ret, reinterpret_to_int(pcmplt(rx, pset1<decltype(rx)>(p))));
-				}
-				return ret;
+				using PacketType = decltype(reinterpret_to_float(std::declval<Packet>()));
 #endif
+				if (!cdf.empty())
+				{
+					auto ret = pset1<Packet>(cdf.size());
+					auto rx = ur_base::template packetOp<PacketType>();
+					for (auto& p : cdf)
+					{
+						ret = padd(ret, reinterpret_to_int(pcmplt(rx, pset1<PacketType>(p))));
+					}
+					return ret;
+				}
+				else
+				{
+					using RUtils = RawbitsMaker<Packet, Rng>;
+					auto albit = pand(RUtils{}.rawbits(this->rng), pset1<Packet>(alias_table.get_bitmask()));
+					auto c = reinterpret_to_int(pcmplt(ur_base::template packetOp<PacketType>(), pgather(alias_table.get_prob(), albit)));
+					return pblendv(c, albit, pgather(alias_table.get_alias(), albit));
+				}
 			}
 		};
 
@@ -290,57 +382,91 @@ namespace Eigen
 			using ur_base = scalar_uniform_real_op<double, Rng>;
 
 			std::vector<double> cdf;
+			AliasMethod<double, Scalar> alias_table;
 
 			template<typename RealIter>
 			scalar_discrete_dist_op(const Rng& _rng, RealIter first, RealIter last)
 				: ur_base{ _rng }
 			{
-				double acc = 0;
-				for (; first != last; ++first)
+				if (std::distance(first, last) < 16)
 				{
-					cdf.emplace_back(acc += *first);
-				}
+					// use linear or binary search
+					std::vector<double> _cdf;
+					double acc = 0;
+					for (; first != last; ++first)
+					{
+						_cdf.emplace_back(acc += *first);
+					}
 
-				for (auto& p : cdf)
+					for (auto& p : _cdf)
+					{
+						cdf.emplace_back(p / _cdf.back());
+					}
+				}
+				else
 				{
-					p /= cdf.back();
+					// use alias table
+					alias_table = AliasMethod<double, Scalar>{ first, last };
 				}
 			}
 
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
 			{
-				auto rx = ur_base::operator()();
-				return (Scalar)(std::lower_bound(cdf.begin(), cdf.end(), rx) - cdf.begin());
+				if (!cdf.empty())
+				{
+					auto rx = ur_base::operator()();
+					return (Scalar)(std::lower_bound(cdf.begin(), cdf.end() - 1, rx) - cdf.begin());
+				}
+				else
+				{
+					auto albit = pfirst(this->rng()) & alias_table.get_bitmask();
+					auto alx = ur_base::operator()();
+					if (alx < alias_table.get_prob()[albit]) return albit;
+					return alias_table.get_alias()[albit];
+				}
 			}
 
 			template<typename Packet>
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
 			{
-				auto ret = pset1<Packet>(cdf.size());
+				using DPacket = decltype(reinterpret_to_double(std::declval<Packet>()));
+				if (!cdf.empty())
+				{
+					auto ret = pset1<Packet>(cdf.size());
 #ifdef EIGEN_VECTORIZE_AVX
-				auto rx = ur_base::template packetOp<Packet4d>();
-				for (auto& p : cdf)
-				{
-					auto c = _mm256_castpd_si256(pcmplt(rx, pset1<decltype(rx)>(p)));
-#ifdef EIGEN_VECTORIZE_AVX2
-					auto r = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(c, _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7)));
+					auto rx = ur_base::template packetOp<Packet4d>();
+					for (auto& p : cdf)
+					{
+						auto c = reinterpret_to_int(pcmplt(rx, pset1<decltype(rx)>(p)));
+						auto r = combine_low32(c);
+						ret = padd(ret, r);
+					}
 #else
-					auto sc = _mm256_permutevar_ps(_mm256_castsi256_ps(c), _mm256_setr_epi32(0, 2, 1, 3, 1, 3, 0, 2));
-					auto r = _mm_castps_si128(_mm_blend_ps(_mm256_extractf128_ps(sc, 0), _mm256_extractf128_ps(sc, 1), 0b1100));
+					auto rx1 = ur_base::template packetOp<DPacket>(),
+						rx2 = ur_base::template packetOp<DPacket>();
+					for (auto& p : cdf)
+					{
+						auto pp = pset1<decltype(rx1)>(p);
+						ret = padd(ret, combine_low32(reinterpret_to_int(pcmplt(rx1, pp)), reinterpret_to_int(pcmplt(rx2, pp))));
+					}
 #endif
-					ret = padd(ret, r);
+					return ret;
 				}
-				return ret;
-#else
-				auto rx1 = ur_base::template packetOp<decltype(reinterpret_to_double(std::declval<Packet>()))>(),
-					rx2 = ur_base::template packetOp<decltype(reinterpret_to_double(std::declval<Packet>()))>();
-				for (auto& p : cdf)
+				else
 				{
-					auto pp = pset1<decltype(rx1)>(p);
-					ret = padd(ret, combine_low32(reinterpret_to_int(pcmplt(rx1, pp)), reinterpret_to_int(pcmplt(rx2, pp))));
-				}
-				return ret;
+#ifdef EIGEN_VECTORIZE_AVX
+					using RUtils = RawbitsMaker<Packet, Rng>;
+					auto albit = pand(RUtils{}.rawbits(this->rng), pset1<Packet>(alias_table.get_bitmask()));
+					auto c = reinterpret_to_int(pcmplt(ur_base::template packetOp<Packet4d>(), pgather(alias_table.get_prob(), _mm256_castsi128_si256(albit))));
+					return pblendv(combine_low32(c), albit, pgather(alias_table.get_alias(), albit));
+#else
+					using RUtils = RawbitsMaker<Packet, Rng>;
+					auto albit = pand(RUtils{}.rawbits(this->rng), pset1<Packet>(alias_table.get_bitmask()));
+					auto c1 = reinterpret_to_int(pcmplt(ur_base::template packetOp<DPacket>(), pgather(alias_table.get_prob(), albit)));
+					auto c2 = reinterpret_to_int(pcmplt(ur_base::template packetOp<DPacket>(), pgather(alias_table.get_prob(), albit, true)));
+					return pblendv(combine_low32(c1, c2), albit, pgather(alias_table.get_alias(), albit));
 #endif
+				}
 			}
 		};
 
