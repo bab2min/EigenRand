@@ -1,8 +1,13 @@
 /**
-* EigenRand
-* Author: bab2min@gmail.com
-* Date: 2020-06-22
-*/
+ * @file MorePacketMath.h
+ * @author bab2min (bab2min@gmail.com)
+ * @brief 
+ * @version 0.1.0
+ * @date 2020-06-22
+ * 
+ * @copyright Copyright (c) 2020
+ * 
+ */
 
 #ifndef EIGENRAND_MORE_PACKET_MATH_H
 #define EIGENRAND_MORE_PACKET_MATH_H

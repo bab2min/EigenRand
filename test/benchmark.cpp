@@ -76,81 +76,101 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	}
 
 	{
-		auto scope = bh.measure("discreteDist/int(s=5)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistLike(xi, urng, { 1, 2, 3, 4, 5 });
+		auto scope = bh.measure("uniformInt/int(0~6)" + suffix, xi);
+		xi = Eigen::Rand::uniformIntLike(xi, urng, 0, 6);
 	}
 
 	{
-		auto scope = bh.measure("discreteDist/int(s=8)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistLike(xi, urng, { 8, 7, 6, 5, 4, 3, 2, 1 });
+		auto scope = bh.measure("uniformInt/int(0~63)" + suffix, xi);
+		xi = Eigen::Rand::uniformIntLike(xi, urng, 0, 63);
 	}
 
 	{
-		std::vector<double> ws(50);
-		std::iota(ws.begin(), ws.end(), 1);
-		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
-		auto scope = bh.measure("discreteDist/int(s=50)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistLike(xi, urng, ws.begin(), ws.end());
+		auto scope = bh.measure("uniformInt/int(5~79)" + suffix, xi);
+		xi = Eigen::Rand::uniformIntLike(xi, urng, 5, 79);
 	}
 
 	{
-		std::vector<double> ws(250);
-		std::iota(ws.begin(), ws.end(), 1);
-		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
-		auto scope = bh.measure("discreteDist/int(s=250)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistLike(xi, urng, ws.begin(), ws.end());
+		auto scope = bh.measure("uniformInt/int(0~100k)" + suffix, xi);
+		xi = Eigen::Rand::uniformIntLike(xi, urng, 0, 100000);
 	}
 
 	{
-		auto scope = bh.measure("discreteDistDP/int(s=5)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistDPLike(xi, urng, { 1, 2, 3, 4, 5 });
+		auto scope = bh.measure("discreteF/int(s=5)" + suffix, xi);
+		xi = Eigen::Rand::discreteFLike(xi, urng, { 1, 2, 3, 4, 5 });
 	}
 
 	{
-		auto scope = bh.measure("discreteDistDP/int(s=8)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistDPLike(xi, urng, { 8, 7, 6, 5, 4, 3, 2, 1 });
+		auto scope = bh.measure("discreteF/int(s=8)" + suffix, xi);
+		xi = Eigen::Rand::discreteFLike(xi, urng, { 8, 7, 6, 5, 4, 3, 2, 1 });
 	}
 
 	{
 		std::vector<double> ws(50);
 		std::iota(ws.begin(), ws.end(), 1);
 		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
-		auto scope = bh.measure("discreteDistDP/int(s=50)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistDPLike(xi, urng, ws.begin(), ws.end());
+		auto scope = bh.measure("discreteF/int(s=50)" + suffix, xi);
+		xi = Eigen::Rand::discreteFLike(xi, urng, ws.begin(), ws.end());
 	}
 
 	{
 		std::vector<double> ws(250);
 		std::iota(ws.begin(), ws.end(), 1);
 		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
-		auto scope = bh.measure("discreteDistDP/int(s=250)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistDPLike(xi, urng, ws.begin(), ws.end());
+		auto scope = bh.measure("discreteF/int(s=250)" + suffix, xi);
+		xi = Eigen::Rand::discreteFLike(xi, urng, ws.begin(), ws.end());
 	}
 
 	{
-		auto scope = bh.measure("discreteDistI32/int(s=5)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistI32Like(xi, urng, { 1, 2, 3, 4, 5 });
+		auto scope = bh.measure("discreteD/int(s=5)" + suffix, xi);
+		xi = Eigen::Rand::discreteDLike(xi, urng, { 1, 2, 3, 4, 5 });
 	}
 
 	{
-		auto scope = bh.measure("discreteDistI32/int(s=8)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistI32Like(xi, urng, { 8, 7, 6, 5, 4, 3, 2, 1 });
+		auto scope = bh.measure("discreteD/int(s=8)" + suffix, xi);
+		xi = Eigen::Rand::discreteDLike(xi, urng, { 8, 7, 6, 5, 4, 3, 2, 1 });
 	}
 
 	{
 		std::vector<double> ws(50);
 		std::iota(ws.begin(), ws.end(), 1);
 		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
-		auto scope = bh.measure("discreteDistI32/int(s=50)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistI32Like(xi, urng, ws.begin(), ws.end());
+		auto scope = bh.measure("discreteD/int(s=50)" + suffix, xi);
+		xi = Eigen::Rand::discreteDLike(xi, urng, ws.begin(), ws.end());
 	}
 
 	{
 		std::vector<double> ws(250);
 		std::iota(ws.begin(), ws.end(), 1);
 		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
-		auto scope = bh.measure("discreteDistI32/int(s=250)" + suffix, xi);
-		xi = Eigen::Rand::discreteDistI32Like(xi, urng, ws.begin(), ws.end());
+		auto scope = bh.measure("discreteD/int(s=250)" + suffix, xi);
+		xi = Eigen::Rand::discreteDLike(xi, urng, ws.begin(), ws.end());
+	}
+
+	{
+		auto scope = bh.measure("discrete/int(s=5)" + suffix, xi);
+		xi = Eigen::Rand::discreteLike(xi, urng, { 1, 2, 3, 4, 5 });
+	}
+
+	{
+		auto scope = bh.measure("discrete/int(s=8)" + suffix, xi);
+		xi = Eigen::Rand::discreteLike(xi, urng, { 8, 7, 6, 5, 4, 3, 2, 1 });
+	}
+
+	{
+		std::vector<double> ws(50);
+		std::iota(ws.begin(), ws.end(), 1);
+		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
+		auto scope = bh.measure("discrete/int(s=50)" + suffix, xi);
+		xi = Eigen::Rand::discreteLike(xi, urng, ws.begin(), ws.end());
+	}
+
+	{
+		std::vector<double> ws(250);
+		std::iota(ws.begin(), ws.end(), 1);
+		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
+		auto scope = bh.measure("discrete/int(s=250)" + suffix, xi);
+		xi = Eigen::Rand::discreteLike(xi, urng, ws.begin(), ws.end());
 	}
 	
 	{
@@ -184,63 +204,68 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	}
 
 	{
-		auto scope = bh.measure("normalDist(0,1)" + suffix, x);
-		x = Eigen::Rand::normalDistLike(x, urng);
+		auto scope = bh.measure("normal(0,1)" + suffix, x);
+		x = Eigen::Rand::normalLike(x, urng);
 	}
 
 	{
-		auto scope = bh.measure("normalDist(0,1) square" + suffix, x);
-		x = Eigen::Rand::normalDistLike(x, urng).square();
+		auto scope = bh.measure("normal(0,1) square" + suffix, x);
+		x = Eigen::Rand::normalLike(x, urng).square();
 	}
 
 	{
-		auto scope = bh.measure("normalDist(2,3)" + suffix, x);
-		x = Eigen::Rand::normalDistLike(x, urng, 2, 3);
+		auto scope = bh.measure("normal(2,3)" + suffix, x);
+		x = Eigen::Rand::normalLike(x, urng, 2, 3);
 	}
 
 	{
-		auto scope = bh.measure("lognormalDist(0,1)" + suffix, x);
-		x = Eigen::Rand::lognormalDistLike(x, urng);
+		auto scope = bh.measure("lognormal(0,1)" + suffix, x);
+		x = Eigen::Rand::lognormalLike(x, urng);
 	}
 
 	{
-		auto scope = bh.measure("expDist(1)" + suffix, x);
-		x = Eigen::Rand::expDistLike(x, urng);
+		auto scope = bh.measure("exponential(1)" + suffix, x);
+		x = Eigen::Rand::exponentialLike(x, urng);
 	}
 
 	{
-		auto scope = bh.measure("gammaDist(1,2)" + suffix, x);
-		x = Eigen::Rand::gammaDistLike(x, urng, 1, 2);
+		auto scope = bh.measure("gamma(1,2)" + suffix, x);
+		x = Eigen::Rand::gammaLike(x, urng, 1, 2);
 	}
 
 	{
-		auto scope = bh.measure("gammaDist(5,3)" + suffix, x);
-		x = Eigen::Rand::gammaDistLike(x, urng, 5, 3);
+		auto scope = bh.measure("gamma(5,3)" + suffix, x);
+		x = Eigen::Rand::gammaLike(x, urng, 5, 3);
+	}
+
+	/*{
+		auto scope = bh.measure("gamma(5,3)/double" + suffix, xd);
+		xd = Eigen::Rand::gammaLike(xd, urng, 5, 3);
+	}*/
+
+	{
+		auto scope = bh.measure("gamma(0.2,1)" + suffix, x);
+		x = Eigen::Rand::gammaLike(x, urng, 0.2, 1);
 	}
 
 	{
-		auto scope = bh.measure("gammaDist(0.2,1)" + suffix, x);
-		x = Eigen::Rand::gammaDistLike(x, urng, 0.2, 1);
+		auto scope = bh.measure("gamma(10.5,1)" + suffix, x);
+		x = Eigen::Rand::gammaLike(x, urng, 10.5, 1);
 	}
 
 	{
-		auto scope = bh.measure("gammaDist(10.5,1)" + suffix, x);
-		x = Eigen::Rand::gammaDistLike(x, urng, 10.5, 1);
+		auto scope = bh.measure("weibull(2,3)" + suffix, x);
+		x = Eigen::Rand::weibullLike(x, urng, 2, 3);
 	}
 
 	{
-		auto scope = bh.measure("weibullDist(2,3)" + suffix, x);
-		x = Eigen::Rand::weibullDistLike(x, urng, 2, 3);
+		auto scope = bh.measure("extremeValue(0,1)" + suffix, x);
+		x = Eigen::Rand::extremeValueLike(x, urng, 0, 1);
 	}
 
 	{
-		auto scope = bh.measure("extremeValueDist(0,1)" + suffix, x);
-		x = Eigen::Rand::extremeValueDistLike(x, urng, 0, 1);
-	}
-
-	{
-		auto scope = bh.measure("chiSquaredDist(15)" + suffix, x);
-		x = Eigen::Rand::chiSquaredDistLike(x, urng, 15);
+		auto scope = bh.measure("chiSquared(15)" + suffix, x);
+		x = Eigen::Rand::chiSquaredLike(x, urng, 15);
 	}
 
 	return ret;
@@ -264,13 +289,37 @@ std::map<std::string, double> test_nullary(size_t size, const std::string& suffi
 	}
 
 	{
-		auto scope = bh.measure("discreteDist/int(s=5)" + suffix, xi);
+		auto scope = bh.measure("uniformInt/int(0~6)" + suffix, xi);
+		std::uniform_int_distribution<> dist{ 0, 6 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("uniformInt/int(0~63)" + suffix, xi);
+		std::uniform_int_distribution<> dist{ 0, 63 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+	
+	{
+		auto scope = bh.measure("uniformInt/int(5~79)" + suffix, xi);
+		std::uniform_int_distribution<> dist{ 5, 79 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("uniformInt/int(0~100k)" + suffix, xi);
+		std::uniform_int_distribution<> dist{ 0, 100000 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("discreteD/int(s=5)" + suffix, xi);
 		std::discrete_distribution<> dist{ {1, 2, 3, 4, 5} };
 		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
 	{
-		auto scope = bh.measure("discreteDist/int(s=8)" + suffix, xi);
+		auto scope = bh.measure("discreteD/int(s=8)" + suffix, xi);
 		std::discrete_distribution<> dist{ {8, 7, 6, 5, 4, 3, 2, 1} };
 		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
@@ -279,7 +328,7 @@ std::map<std::string, double> test_nullary(size_t size, const std::string& suffi
 		std::vector<double> ws(50);
 		std::iota(ws.begin(), ws.end(), 1);
 		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
-		auto scope = bh.measure("discreteDist/int(s=50)" + suffix, xi);
+		auto scope = bh.measure("discreteD/int(s=50)" + suffix, xi);
 		std::discrete_distribution<> dist{ ws.begin(), ws.end() };
 		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
@@ -288,7 +337,7 @@ std::map<std::string, double> test_nullary(size_t size, const std::string& suffi
 		std::vector<double> ws(250);
 		std::iota(ws.begin(), ws.end(), 1);
 		std::shuffle(ws.begin(), ws.end(), std::mt19937_64{});
-		auto scope = bh.measure("discreteDist/int(s=250)" + suffix, xi);
+		auto scope = bh.measure("discreteD/int(s=250)" + suffix, xi);
 		std::discrete_distribution<> dist{ ws.begin(), ws.end() };
 		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
@@ -304,73 +353,79 @@ std::map<std::string, double> test_nullary(size_t size, const std::string& suffi
 	}
 
 	{
-		auto scope = bh.measure("normalDist(0,1)" + suffix, x);
+		auto scope = bh.measure("normal(0,1)" + suffix, x);
 		std::normal_distribution<float> dist;
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
 	{
-		auto scope = bh.measure("normalDist(0,1) square" + suffix, x);
+		auto scope = bh.measure("normal(0,1) square" + suffix, x);
 		std::normal_distribution<float> dist;
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); }).square();
 	}
 
 	{
-		auto scope = bh.measure("normalDist(2,3)" + suffix, x);
+		auto scope = bh.measure("normal(2,3)" + suffix, x);
 		std::normal_distribution<float> dist{ 2, 3 };
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
 	{
-		auto scope = bh.measure("lognormalDist(0,1)" + suffix, x);
+		auto scope = bh.measure("lognormal(0,1)" + suffix, x);
 		std::lognormal_distribution<float> dist;
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
 	{
-		auto scope = bh.measure("expDist(1)" + suffix, x);
+		auto scope = bh.measure("exponential(1)" + suffix, x);
 		std::exponential_distribution<float> dist;
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
 	{
-		auto scope = bh.measure("gammaDist(1,2)" + suffix, x);
+		auto scope = bh.measure("gamma(1,2)" + suffix, x);
 		std::gamma_distribution<float> dist{ 1, 2 };
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
 	{
-		auto scope = bh.measure("gammaDist(0.2,1)" + suffix, x);
+		auto scope = bh.measure("gamma(0.2,1)" + suffix, x);
 		std::gamma_distribution<float> dist{ 0.2, 1 };
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
 	{
-		auto scope = bh.measure("gammaDist(5,3)" + suffix, x);
+		auto scope = bh.measure("gamma(5,3)" + suffix, x);
 		std::gamma_distribution<float> dist{ 5, 3 };
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
 	{
-		auto scope = bh.measure("gammaDist(10.5,1)" + suffix, x);
+		auto scope = bh.measure("gamma(5,3)/double" + suffix, xd);
+		std::gamma_distribution<double> dist{ 5, 3 };
+		xd = Eigen::ArrayXXd::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("gamma(10.5,1)" + suffix, x);
 		std::gamma_distribution<float> dist{ 10.5, 1 };
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
 	{
-		auto scope = bh.measure("weibullDist(2,3)" + suffix, x);
+		auto scope = bh.measure("weibull(2,3)" + suffix, x);
 		std::weibull_distribution<float> dist{ 2, 3 };
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
 	{
-		auto scope = bh.measure("extremeValueDist(0,1)" + suffix, x);
+		auto scope = bh.measure("extremeValue(0,1)" + suffix, x);
 		std::extreme_value_distribution<float> dist{ 0, 1 };
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
 	{
-		auto scope = bh.measure("chiSquaredDist(15)" + suffix, x);
+		auto scope = bh.measure("chiSquared(15)" + suffix, x);
 		std::chi_squared_distribution<float> dist{ 15 };
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
@@ -443,7 +498,7 @@ int main(int argc, char** argv)
 			timeSq[p.first] += p.second * p.second;
 		}
 
-		for (auto& p : test_rng(Eigen::Rand::makeScalarRng<uint32_t>(Eigen::Rand::vmt19937_64{}), size, "rng\tvmt19937_64_32", results))
+		for (auto& p : test_rng(Eigen::Rand::makeScalarRng<uint32_t>(Eigen::Rand::Vmt19937_64{}), size, "rng\tvmt19937_64_32", results))
 		{
 			time[p.first] += p.second;
 			timeSq[p.first] += p.second * p.second;
@@ -455,7 +510,7 @@ int main(int argc, char** argv)
 			timeSq[p.first] += p.second * p.second;
 		}
 
-		for (auto& p : test_rng(Eigen::Rand::makeScalarRng<uint64_t>(Eigen::Rand::vmt19937_64{}), size, "rng\tvmt19937_64", results))
+		for (auto& p : test_rng(Eigen::Rand::makeScalarRng<uint64_t>(Eigen::Rand::Vmt19937_64{}), size, "rng\tvmt19937_64", results))
 		{
 			time[p.first] += p.second;
 			timeSq[p.first] += p.second * p.second;
@@ -480,7 +535,7 @@ int main(int argc, char** argv)
 		}
 
 
-		for (auto& p : test_eigenrand<Eigen::Rand::vmt19937_64>(size, "\t:ERand+vRNG", results))
+		for (auto& p : test_eigenrand<Eigen::Rand::Vmt19937_64>(size, "\t:ERand+vRNG", results))
 		{
 			time[p.first] += p.second;
 			timeSq[p.first] += p.second * p.second;

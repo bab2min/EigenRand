@@ -1,8 +1,13 @@
 /**
-* EigenRand
-* Author: bab2min@gmail.com
-* Date: 2020-06-22
-*/
+ * @file RandUtils.h
+ * @author bab2min (bab2min@gmail.com)
+ * @brief 
+ * @version 0.1.0
+ * @date 2020-06-22
+ * 
+ * @copyright Copyright (c) 2020
+ * 
+ */
 
 #ifndef EIGENRAND_RAND_UTILS_H
 #define EIGENRAND_RAND_UTILS_H

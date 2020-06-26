@@ -1,8 +1,13 @@
 /**
-* EigenRand
-* Author: bab2min@gmail.com
-* Date: 2020-06-22
-*/
+ * @file PacketRandomEngine.h
+ * @author bab2min (bab2min@gmail.com)
+ * @brief 
+ * @version 0.1.0
+ * @date 2020-06-22
+ * 
+ * @copyright Copyright (c) 2020
+ * 
+ */
 
 #ifndef EIGENRAND_PACKET_RANDOM_ENGINE_H
 #define EIGENRAND_PACKET_RANDOM_ENGINE_H
@@ -142,6 +147,26 @@ namespace Eigen
 		};
 
 #ifndef EIGEN_DONT_VECTORIZE
+		/**
+		 * @brief A vectorized version of Mersenne Twister Engine
+		 * 
+		 * @tparam Packet a type of integer packet being generated from this engine
+		 * @tparam _Nx 
+		 * @tparam _Mx 
+		 * @tparam _Rx 
+		 * @tparam _Px 
+		 * @tparam _Ux 
+		 * @tparam _Dx 
+		 * @tparam _Sx 
+		 * @tparam _Bx 
+		 * @tparam _Tx 
+		 * @tparam _Cx 
+		 * @tparam _Lx 
+		 * @tparam _Fx 
+		 * 
+		 * @note It is recommended to use the alias, Eigen::Rand::Vmt19937_64 rather than using raw MersenneTwister template class
+		 * because the definition of Eigen::Rand::Vmt19937_64 is changed to use the appropriate PacketType depending on compile options and the architecture of machines.
+		 */
 		template<typename Packet,
 			int _Nx, int _Mx,
 			int _Rx, uint64_t _Px,
@@ -168,6 +193,14 @@ namespace Eigen
 
 			static constexpr uint64_t default_seed = 5489U;
 
+			/**
+			 * @brief Construct a new Mersenne Twister engine with a scalar seed
+			 * 
+			 * @param x0 scalar seed for the engine
+			 * 
+			 * @note The seed for the first element of packet is initialized to `x0`, 
+			 * for the second element to `x0 + 1`, and the n-th element to is `x0 + n - 1`.
+			 */
 			MersenneTwister(uint64_t x0 = default_seed)
 			{
 				using namespace Eigen::internal;
@@ -179,11 +212,21 @@ namespace Eigen
 				seed(ploadu<Packet>((int*)seeds.data()));
 			}
 
+			/**
+			 * @brief Construct a new Mersenne Twister engine with a packet seed
+			 * 
+			 * @param x0 packet seed for the engine
+			 */
 			MersenneTwister(Packet x0)
 			{
 				seed(x0);
 			}
 
+			/**
+			 * @brief initialize the engine with a given seed
+			 * 
+			 * @param x0 packet seed for the engine
+			 */
 			void seed(Packet x0)
 			{
 				using namespace Eigen::internal;
@@ -195,16 +238,34 @@ namespace Eigen
 				stateIdx = _Nx;
 			}
 
+			/**
+			 * @brief minimum value of the result
+			 * 
+			 * @return uint64_t 
+			 */
 			uint64_t min() const
 			{
 				return 0;
 			}
 
+			/**
+			 * @brief maximum value of the result
+			 * 
+			 * @return uint64_t 
+			 */
 			uint64_t max() const
 			{
 				return _wMask;
 			}
 
+			/**
+			 * @brief Generates one random packet and advance the internal state.
+			 * 
+			 * @return result_type 
+			 * 
+			 * @note A value generated from this engine is not scalar, but packet type.
+			 * If you need to extract scalar values, use Eigen::Rand::makeScalarRng or Eigen::Rand::PacketRandomEngineAdaptor.
+			 */
 			result_type operator()()
 			{
 				if (stateIdx == _Nx)
@@ -222,9 +283,14 @@ namespace Eigen
 				return res;
 			}
 
-			void discard(unsigned long long _Nskip)
+			/**
+			 * @brief Discards `num` items being generated
+			 * 
+			 * @param num the number of items being discarded 
+			 */
+			void discard(unsigned long long num)
 			{
-				for (; 0 < _Nskip; --_Nskip)
+				for (; 0 < num; --num)
 				{
 					operator()();
 				}
@@ -321,14 +387,25 @@ namespace Eigen
 			static constexpr uint64_t _lMask = ~_hMask & _wMask;
 		};
 
+		/**
+		 * @brief Alias of Eigen::Rand::MersenneTwister, equivalent to std::mt19937_64
+		 * 
+		 * @tparam Packet 
+		 */
 		template<typename Packet>
-		using pmt19937_64 = MersenneTwister<Packet, 312, 156, 31,
+		using Pmt19937_64 = MersenneTwister<Packet, 312, 156, 31,
 			0xb5026f5aa96619e9, 29,
 			0x5555555555555555, 17,
 			0x71d67fffeda60000, 37,
 			0xfff7eee000000000, 43, 6364136223846793005>;
 #endif
 
+		/**
+		 * @brief Scalar adaptor for random engines which generates packet
+		 * 
+		 * @tparam UIntType scalar integer type for `result_type` of an adapted random number engine
+		 * @tparam BaseRng 
+		 */
 		template<typename UIntType, typename BaseRng>
 		class PacketRandomEngineAdaptor
 		{
@@ -387,30 +464,44 @@ namespace Eigen
 
 		};
 
+		/**
+		 * @brief Helper function for making a PacketRandomEngineAdaptor
+		 * 
+		 * @tparam UIntType 
+		 * @tparam Rng 
+		 * @param rng any random number engine for either packet or scalar type
+		 * @return an instance of PacketRandomEngineAdaptor for UIntType
+		 */
 		template<typename UIntType, typename Rng> 
-		typename std::enable_if<
+		auto makeScalarRng(Rng&& rng) -> typename std::enable_if<
 			IsPacketRandomEngine<typename std::remove_reference<Rng>::type>::value, 
 			PacketRandomEngineAdaptor<UIntType, typename std::remove_reference<Rng>::type>
-		>::type makeScalarRng(Rng&& rng)
+		>::type
 		{
 			return { std::forward<Rng>(rng) };
 		}
 
 		template<typename UIntType, typename Rng>
-		typename std::enable_if<
+		auto makeScalarRng(Rng&& rng) -> typename std::enable_if<
 			IsScalarRandomEngine<typename std::remove_reference<Rng>::type>::value,
 			typename std::remove_reference<Rng>::type
-		>::type makeScalarRng(Rng&& rng)
+		>::type
 		{
 			return std::forward<Rng>(rng);
 		}
 
 #ifdef EIGEN_VECTORIZE_AVX2
-		using vmt19937_64 = pmt19937_64<internal::Packet8i>;
+		using Vmt19937_64 = Pmt19937_64<internal::Packet8i>;
 #elif defined(EIGEN_VECTORIZE_AVX) || defined(EIGEN_VECTORIZE_SSE2)
-		using vmt19937_64 = pmt19937_64<internal::Packet4i>;
+		using Vmt19937_64 = Pmt19937_64<internal::Packet4i>;
 #else
-		using vmt19937_64 = std::mt19937_64;
+		/**
+		 * @brief same as std::mt19937_64 when EIGEN_DONT_VECTORIZE,
+		 * Pmt19937_64<internal::Packet4i> when SSE2 enabled
+		 * and Pmt19937_64<internal::Packet8i> when AVX2 enabled
+		 * 
+		 */
+		using Vmt19937_64 = std::mt19937_64;
 #endif
 
 	}

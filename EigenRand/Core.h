@@ -1,8 +1,14 @@
 /**
-* EigenRand
-* Author: bab2min@gmail.com
-* Date: 2020-06-22
-*/
+ * @file Core.h
+ * @author bab2min (bab2min@gmail.com)
+ * @brief 
+ * @version 0.1.0
+ * @date 2020-06-22
+ * 
+ * @copyright Copyright (c) 2020
+ * 
+ */
+
 
 #ifndef EIGENRAND_CORE_H
 #define EIGENRAND_CORE_H
@@ -14,314 +20,773 @@
 
 namespace Eigen
 {
+	/**
+	 * @brief namespace for EigenRand
+	 * 
+	 */
 	namespace Rand
 	{
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_randbits_op<typename Derived::Scalar, Urng>, const Derived>
-			randBits(Index rows, Index cols, Urng&& urng)
+		using RandBitsType = CwiseNullaryOp<internal::scalar_randbits_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates integers with random bits
+		 * 
+		 * @tparam Derived
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const RandBitsType<Derived, Urng> 
+			randBits(Index rows, Index cols, Urng&& urng) 
 		{
-			return CwiseNullaryOp<internal::scalar_randbits_op<typename Derived::Scalar, Urng>, const Derived>(
-				rows, cols, internal::scalar_randbits_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng))
-				);
+			return { 
+				rows, cols, internal::scalar_randbits_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng)) 
+			};
 		}
 
+		/**
+		 * @brief generates integers with random bits
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_randbits_op<typename Derived::Scalar, Urng>, const Derived>
+		inline const RandBitsType<Derived, Urng> 
 			randBitsLike(Derived& o, Urng&& urng)
 		{
-			return CwiseNullaryOp<internal::scalar_randbits_op<typename Derived::Scalar, Urng>, const Derived>(
-				o.rows(), o.cols(), internal::scalar_randbits_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng))
-				);
+			return { 
+				o.rows(), o.cols(), internal::scalar_randbits_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng)) 
+			};
 		}
 
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_balanced_op<typename Derived::Scalar, Urng>, const Derived>
+		using UniformIntType = CwiseNullaryOp<internal::scalar_uniform_int_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates integers with a given range `[min, max]`
+		 *
+		 * @tparam Derived a type of Eigen::DenseBase
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param min, max the range of integers being generated
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const UniformIntType<Derived, Urng> 
+			uniformInt(Index rows, Index cols, Urng&& urng, typename Derived::Scalar min, typename Derived::Scalar max) 
+		{
+			return {
+				rows, cols, internal::scalar_uniform_int_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), min, max)
+			};
+		}
+
+		/**
+		 * @brief generates integers with a given range `[min, max]`
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param min, max the range of integers being generated
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const UniformIntType<Derived, Urng> 
+			uniformIntLike(Derived& o, Urng&& urng, typename Derived::Scalar min, typename Derived::Scalar max)
+		{
+			return {
+				o.rows(), o.cols(), internal::scalar_uniform_int_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), min, max)
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using BalancedType = CwiseNullaryOp<internal::scalar_balanced_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals in a range `[-1, 1]`
+		 * 
+		 * @tparam Derived a type of Eigen::DenseBase
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const BalancedType<Derived, Urng>
 			balanced(Index rows, Index cols, Urng&& urng)
 		{
-			return CwiseNullaryOp<internal::scalar_balanced_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_balanced_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng))
-				);
+			};
 		}
 
+		/**
+		 * @brief generates reals in a range `[-1, 1]`
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_balanced_op<typename Derived::Scalar, Urng>, const Derived>
+		inline const BalancedType<Derived, Urng> 
 			balancedLike(const Derived& o, Urng&& urng)
 		{
-			return CwiseNullaryOp<internal::scalar_balanced_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_balanced_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng))
-				);
+			};
 		}
 
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_uniform_real_op<typename Derived::Scalar, Urng>, const Derived>
+		using UniformRealType = CwiseNullaryOp<internal::scalar_uniform_real_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals in a range `[0, 1)`
+		 * 
+		 * @tparam Derived a type of Eigen::DenseBase
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const UniformRealType<Derived, Urng> 
 			uniformReal(Index rows, Index cols, Urng&& urng)
 		{
-			return CwiseNullaryOp<internal::scalar_uniform_real_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_uniform_real_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng))
-				);
+			};
 		}
 
+		/**
+		 * @brief generates reals in a range `[0, 1)`
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_uniform_real_op<typename Derived::Scalar, Urng>, const Derived>
+		inline const UniformRealType<Derived, Urng> 
 			uniformRealLike(Derived& o, Urng&& urng)
 		{
-			return CwiseNullaryOp<internal::scalar_uniform_real_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_uniform_real_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng))
-				);
+			};
 		}
-
+		
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_norm_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			normalDist(Index rows, Index cols, Urng&& urng)
+		using NormalType = CwiseNullaryOp<internal::scalar_norm_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on a standard normal distribution (`mean` = 0, `stdev`=1)
+		 * 
+		 * @tparam Derived a type of Eigen::DenseBase
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const NormalType<Derived, Urng>
+			normal(Index rows, Index cols, Urng&& urng)
 		{
-			return CwiseNullaryOp<internal::scalar_norm_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_norm_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng))
-				);
+			};
 		}
 
+		/**
+		 * @brief generates reals on a standard normal distribution (`mean` = 0, `stdev`=1)
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_norm_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			normalDistLike(Derived& o, Urng&& urng)
+		inline const NormalType<Derived, Urng>
+			normalLike(Derived& o, Urng&& urng)
 		{
-			return CwiseNullaryOp<internal::scalar_norm_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_norm_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng))
-				);
+			};
 		}
 
-
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_norm_dist2_op<typename Derived::Scalar, Urng>, const Derived>
-			normalDist(Index rows, Index cols, Urng&& urng, typename Derived::Scalar mean, typename Derived::Scalar stdev = 1)
+		using Normal2Type = CwiseNullaryOp<internal::scalar_norm_dist2_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on a normal distribution with arbitrary `mean` and `stdev`.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param mean a mean value of the distribution
+		 * @param stdev a standard deviation value of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const Normal2Type<Derived, Urng>
+			normal(Index rows, Index cols, Urng&& urng, typename Derived::Scalar mean, typename Derived::Scalar stdev = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_norm_dist2_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_norm_dist2_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), mean, stdev)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates reals on a normal distribution with arbitrary `mean` and `stdev`.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param mean a mean value of the distribution
+		 * @param stdev a standard deviation value of the distribution
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_norm_dist2_op<typename Derived::Scalar, Urng>, const Derived>
-			normalDistLike(Derived& o, Urng&& urng, typename Derived::Scalar mean, typename Derived::Scalar stdev = 1)
+		inline const Normal2Type<Derived, Urng>
+			normalLike(Derived& o, Urng&& urng, typename Derived::Scalar mean, typename Derived::Scalar stdev = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_norm_dist2_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_norm_dist2_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), mean, stdev)
-				);
+			};
 		}
 
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_lognorm_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			lognormalDist(Index rows, Index cols, Urng&& urng, typename Derived::Scalar mean = 0, typename Derived::Scalar stdev = 1)
+		using LognormalType = CwiseNullaryOp<internal::scalar_lognorm_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on a lognormal distribution with arbitrary `mean` and `stdev`.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param mean a mean value of the distribution
+		 * @param stdev a standard deviation value of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const LognormalType<Derived, Urng>
+			lognormal(Index rows, Index cols, Urng&& urng, typename Derived::Scalar mean = 0, typename Derived::Scalar stdev = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_lognorm_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_lognorm_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), mean, stdev)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates reals on a lognormal distribution with arbitrary `mean` and `stdev`.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param mean a mean value of the distribution
+		 * @param stdev a standard deviation value of the distribution
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_lognorm_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			lognormalDistLike(Derived& o, Urng&& urng, typename Derived::Scalar mean = 0, typename Derived::Scalar stdev = 1)
+		inline const LognormalType<Derived, Urng>
+			lognormalLike(Derived& o, Urng&& urng, typename Derived::Scalar mean = 0, typename Derived::Scalar stdev = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_lognorm_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_lognorm_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), mean, stdev)
-				);
+			};
 		}
 
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_exp_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			expDist(Index rows, Index cols, Urng&& urng, typename Derived::Scalar lambda = 1)
+		using ExponentialType = CwiseNullaryOp<internal::scalar_exp_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on an exponential distribution with arbitrary scale parameter.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param lambda a scale parameter of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const ExponentialType<Derived, Urng>
+			exponential(Index rows, Index cols, Urng&& urng, typename Derived::Scalar lambda = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_exp_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_exp_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), lambda)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates reals on an exponential distribution with arbitrary scale parameter.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param lambda a scale parameter of the distribution
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_exp_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			expDistLike(Derived& o, Urng&& urng, typename Derived::Scalar lambda = 1)
+		inline const ExponentialType<Derived, Urng>
+			exponentialLike(Derived& o, Urng&& urng, typename Derived::Scalar lambda = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_exp_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_exp_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), lambda)
-				);
+			};
 		}
 
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_gamma_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			gammaDist(Index rows, Index cols, Urng&& urng, typename Derived::Scalar alpha = 1, typename Derived::Scalar beta = 1)
+		using GammaType = CwiseNullaryOp<internal::scalar_gamma_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on a gamma distribution with arbitrary shape and scale parameter.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param alpha a shape parameter of the distribution
+		 * @param beta a scale parameter of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const GammaType<Derived, Urng>
+			gamma(Index rows, Index cols, Urng&& urng, typename Derived::Scalar alpha = 1, typename Derived::Scalar beta = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_gamma_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_gamma_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), alpha, beta)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates reals on a gamma distribution with arbitrary shape and scale parameter.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param alpha a shape parameter of the distribution
+		 * @param beta a scale parameter of the distribution
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_gamma_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			gammaDistLike(Derived& o, Urng&& urng, typename Derived::Scalar alpha = 1, typename Derived::Scalar beta = 1)
+		inline const GammaType<Derived, Urng>
+			gammaLike(Derived& o, Urng&& urng, typename Derived::Scalar alpha = 1, typename Derived::Scalar beta = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_gamma_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_gamma_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), alpha, beta)
-				);
+			};
 		}
 
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_weibull_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			weibullDist(Index rows, Index cols, Urng&& urng, typename Derived::Scalar a = 1, typename Derived::Scalar b = 1)
+		using WeibullType = CwiseNullaryOp<internal::scalar_weibull_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on a Weibull distribution with arbitrary shape and scale parameter.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param a a shape parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const WeibullType<Derived, Urng>
+			weibull(Index rows, Index cols, Urng&& urng, typename Derived::Scalar a = 1, typename Derived::Scalar b = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_weibull_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_weibull_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), a, b)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates reals on a Weibull distribution with arbitrary shape and scale parameter.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param a a shape parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_weibull_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			weibullDistLike(Derived& o, Urng&& urng, typename Derived::Scalar a = 1, typename Derived::Scalar b = 1)
+		inline const WeibullType<Derived, Urng>
+			weibullLike(Derived& o, Urng&& urng, typename Derived::Scalar a = 1, typename Derived::Scalar b = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_weibull_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_weibull_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), a, b)
-				);
+			};
 		}
 
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_extreme_value_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			extremeValueDist(Index rows, Index cols, Urng&& urng, typename Derived::Scalar a = 0, typename Derived::Scalar b = 1)
+		using ExtremeValueType = CwiseNullaryOp<internal::scalar_extreme_value_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on an extreme value distribution 
+		 * (a.k.a Gumbel Type I, log-Weibull, Fisher-Tippett Type I) with arbitrary shape and scale parameter.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param a a location parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const ExtremeValueType<Derived, Urng>
+			extremeValue(Index rows, Index cols, Urng&& urng, typename Derived::Scalar a = 0, typename Derived::Scalar b = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_extreme_value_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_extreme_value_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), a, b)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates reals on an extreme value distribution 
+		 * (a.k.a Gumbel Type I, log-Weibull, Fisher-Tippett Type I) with arbitrary shape and scale parameter.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param a a location parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_extreme_value_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			extremeValueDistLike(Derived& o, Urng&& urng, typename Derived::Scalar a = 0, typename Derived::Scalar b = 1)
+		inline const ExtremeValueType<Derived, Urng>
+			extremeValueLike(Derived& o, Urng&& urng, typename Derived::Scalar a = 0, typename Derived::Scalar b = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_extreme_value_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_extreme_value_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), a, b)
-				);
+			};
 		}
 
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_chi_squared_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			chiSquaredDist(Index rows, Index cols, Urng&& urng, typename Derived::Scalar n = 0)
+		using ChiSquaredType = CwiseNullaryOp<internal::scalar_chi_squared_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on the Chi-squared distribution with arbitrary degrees of freedom.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param n the degrees of freedom of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const ChiSquaredType<Derived, Urng>
+			chiSquared(Index rows, Index cols, Urng&& urng, typename Derived::Scalar n = 1)
 		{
-			return CwiseNullaryOp<internal::scalar_chi_squared_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_chi_squared_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), n)
-				);
+			};
+		}
+
+		/**
+		 * @brief generates reals on the Chi-squared distribution with arbitrary degrees of freedom.
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param n the degrees of freedom of the distribution
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
+		template<typename Derived, typename Urng>
+		inline const ChiSquaredType<Derived, Urng>
+			chiSquaredLike(Derived& o, Urng&& urng, typename Derived::Scalar n = 1)
+		{
+			return {
+				o.rows(), o.cols(), internal::scalar_chi_squared_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), n)
+			};
 		}
 
 		template<typename Derived, typename Urng>
-		inline const CwiseNullaryOp<internal::scalar_chi_squared_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			chiSquaredDistLike(Derived& o, Urng&& urng, typename Derived::Scalar n = 0)
-		{
-			return CwiseNullaryOp<internal::scalar_chi_squared_dist_op<typename Derived::Scalar, Urng>, const Derived>(
-				o.rows(), o.cols(), internal::scalar_chi_squared_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), n)
-				);
-		}
+		using DiscreteFType = CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, float>, const Derived>;
 
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is float(23bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
 		template<typename Derived, typename Urng, typename RealIter>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			discreteDist(Index rows, Index cols, Urng&& urng, RealIter first, RealIter last)
+		inline const DiscreteFType<Derived, Urng>
+			discreteF(Index rows, Index cols, Urng&& urng, RealIter first, RealIter last)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), first, last)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is float(23bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng, typename RealIter>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			discreteDistLike(Derived& o, Urng&& urng, RealIter first, RealIter last)
+		inline const DiscreteFType<Derived, Urng>
+			discreteFLike(Derived& o, Urng&& urng, RealIter first, RealIter last)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), first, last)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is float(23bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
 		template<typename Derived, typename Urng, typename Real>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			discreteDist(Index rows, Index cols, Urng&& urng, const std::initializer_list<Real>& il)
+		inline const DiscreteFType<Derived, Urng>
+			discreteF(Index rows, Index cols, Urng&& urng, const std::initializer_list<Real>& il)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				rows, cols, internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), il.begin(), il.end())
-				);
+			};
 		}
 
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is float(23bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng, typename Real>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>, const Derived>
-			discreteDistLike(Derived& o, Urng&& urng, const std::initializer_list<Real>& il)
+		inline const DiscreteFType<Derived, Urng>
+			discreteFLike(Derived& o, Urng&& urng, const std::initializer_list<Real>& il)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), il.begin(), il.end())
-				);
+			};
 		}
 
+		template<typename Derived, typename Urng>
+		using DiscreteDType = CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>, const Derived>;
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is double(52bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
 		template<typename Derived, typename Urng, typename RealIter>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>, const Derived>
-			discreteDistDP(Index rows, Index cols, Urng&& urng, RealIter first, RealIter last)
+		inline const DiscreteDType<Derived, Urng>
+			discreteD(Index rows, Index cols, Urng&& urng, RealIter first, RealIter last)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>, const Derived>(
+			return {
 				rows, cols, internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>(std::forward<Urng>(urng), first, last)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is double(52bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng, typename RealIter>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>, const Derived>
-			discreteDistDPLike(Derived& o, Urng&& urng, RealIter first, RealIter last)
+		inline const DiscreteDType<Derived, Urng>
+			discreteDLike(Derived& o, Urng&& urng, RealIter first, RealIter last)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>(std::forward<Urng>(urng), first, last)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is double(52bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
 		template<typename Derived, typename Urng, typename Real>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>, const Derived>
-			discreteDistDP(Index rows, Index cols, Urng&& urng, const std::initializer_list<Real>& il)
+		inline const DiscreteDType<Derived, Urng>
+			discreteD(Index rows, Index cols, Urng&& urng, const std::initializer_list<Real>& il)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>, const Derived>(
+			return {
 				rows, cols, internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>(std::forward<Urng>(urng), il.begin(), il.end())
-				);
+			};
 		}
 
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is double(52bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng, typename Real>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>, const Derived>
-			discreteDistDPLike(Derived& o, Urng&& urng, const std::initializer_list<Real>& il)
+		inline const DiscreteDType<Derived, Urng>
+			discreteDLike(Derived& o, Urng&& urng, const std::initializer_list<Real>& il)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, double>(std::forward<Urng>(urng), il.begin(), il.end())
-				);
+			};
 		}
 
+		template<typename Derived, typename Urng>
+		using DiscreteType = CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>, const Derived>;
 
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is int32(32bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
 		template<typename Derived, typename Urng, typename RealIter>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>, const Derived>
-			discreteDistI32(Index rows, Index cols, Urng&& urng, RealIter first, RealIter last)
+		inline const DiscreteType<Derived, Urng>
+			discrete(Index rows, Index cols, Urng&& urng, RealIter first, RealIter last)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>, const Derived>(
+			return {
 				rows, cols, internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>(std::forward<Urng>(urng), first, last)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is int32(32bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng, typename RealIter>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>, const Derived>
-			discreteDistI32Like(Derived& o, Urng&& urng, RealIter first, RealIter last)
+		inline const DiscreteType<Derived, Urng>
+			discreteLike(Derived& o, Urng&& urng, RealIter first, RealIter last)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>(std::forward<Urng>(urng), first, last)
-				);
+			};
 		}
 
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is int32(32bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
 		template<typename Derived, typename Urng, typename Real>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>, const Derived>
-			discreteDistI32(Index rows, Index cols, Urng&& urng, const std::initializer_list<Real>& il)
+		inline const DiscreteType<Derived, Urng>
+			discrete(Index rows, Index cols, Urng&& urng, const std::initializer_list<Real>& il)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>, const Derived>(
+			return {
 				rows, cols, internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>(std::forward<Urng>(urng), il.begin(), il.end())
-				);
+			};
 		}
 
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is int32(32bit precision).
+		 * 
+		 * @tparam Derived 
+		 * @tparam Urng 
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o` 
+		 */
 		template<typename Derived, typename Urng, typename Real>
-		inline const CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>, const Derived>
-			discreteDistI32Like(Derived& o, Urng&& urng, const std::initializer_list<Real>& il)
+		inline const DiscreteType<Derived, Urng>
+			discreteLike(Derived& o, Urng&& urng, const std::initializer_list<Real>& il)
 		{
-			return CwiseNullaryOp<internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>, const Derived>(
+			return {
 				o.rows(), o.cols(), internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>(std::forward<Urng>(urng), il.begin(), il.end())
-				);
+			};
 		}
 	}
 }
