@@ -1,0 +1,36 @@
+name: Generate the documentation
+
+on:
+  push:
+    tags: 
+      - 'v*.*.*'
+      - '!v*.*.*d'
+
+jobs:
+  generate_docs:
+    name: Generate Docs
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - uses: mattnotmitt/doxygen-action@v1
+      with:
+        working-directory: './doxygen'
+    - name: gen doc
+      run: |
+        export EIGENRAND_VER=${GITHUB_REF##*/}
+        mkdir -p ../g
+        pushd ../g
+        git clone https://${{ secrets.ACCESS_TOKEN }}@github.com/bab2min/bab2min.github.io
+        rm -rf bab2min.github.io/eigenrand/${EIGENRAND_VER}/en
+        mkdir -p bab2min.github.io/eigenrand/${EIGENRAND_VER}/en
+        popd
+        cp -r doxygen/docs/html/* ../g/bab2min.github.io/eigenrand/${EIGENRAND_VER}/en
+        pushd ../g/bab2min.github.io
+        git config user.email "bab2min@gmail.com"
+        git config user.name "bab2min"
+        git add .
+        git commit -m "EigenRand ${EIGENRAND_VER} en"
+        git push
+        popd
+        

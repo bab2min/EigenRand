@@ -1,8 +1,14 @@
 /**
-* EigenRand
-* Author: bab2min@gmail.com
-* Date: 2020-06-22
-*/
+ * @file NormalExp.h
+ * @author bab2min (bab2min@gmail.com)
+ * @brief 
+ * @version 0.1.0
+ * @date 2020-06-22
+ * 
+ * @copyright Copyright (c) 2020
+ * 
+ */
+
 
 #ifndef EIGENRAND_DISTS_NORMAL_EXP_H
 #define EIGENRAND_DISTS_NORMAL_EXP_H
@@ -252,7 +258,7 @@ namespace Eigen
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
 			{
 				using RUtils = RandUtils<Packet, Rng>;
-				auto& cm = Rand::detail::CompressMask<Packet>::get_inst();
+				auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
 
 				RUtils ru;
 				thread_local Packet cache_rest;

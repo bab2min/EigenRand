@@ -1,8 +1,13 @@
 /**
-* EigenRand
-* Author: bab2min@gmail.com
-* Date: 2020-06-22
-*/
+ * @file Discrete.h
+ * @author bab2min (bab2min@gmail.com)
+ * @brief 
+ * @version 0.1.0
+ * @date 2020-06-22
+ * 
+ * @copyright Copyright (c) 2020
+ * 
+ */
 
 #ifndef EIGENRAND_DISTS_DISCRETE_H
 #define EIGENRAND_DISTS_DISCRETE_H
@@ -15,6 +20,111 @@ namespace Eigen
 {
 	namespace internal
 	{
+		template<typename Scalar, typename Rng>
+		struct scalar_uniform_int_op : public scalar_randbits_op<Scalar, Rng>
+		{
+			static_assert(std::is_same<Scalar, int32_t>::value, "uniformInt needs integral types.");
+			using ur_base = scalar_randbits_op<Scalar, Rng>;
+
+			Scalar pmin;
+			size_t pdiff, bitsize, bitmask;
+			
+			scalar_uniform_int_op(const Rng& _rng, Scalar _min, Scalar _max)
+				: ur_base{ _rng }, pmin{ _min }, pdiff{ (size_t)(_max - _min) }
+			{
+				if ((pdiff + 1) > pdiff)
+				{
+					bitsize = (size_t)std::ceil(std::log2(pdiff + 1));
+				}
+				else
+				{
+					bitsize = (size_t)std::ceil(std::log2(pdiff));
+				}
+				bitmask = (Scalar)(((size_t)-1) >> (sizeof(size_t) * 8 - bitsize));
+			}
+
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			{
+				auto rx = ur_base::operator()();
+				if (pdiff == bitmask)
+				{
+					return (Scalar)(rx & bitmask) + pmin;
+				}
+				else
+				{
+					size_t bitcnt = bitsize;
+					while (1)
+					{
+						Scalar cands = (Scalar)(rx & bitmask);
+						if (cands <= pdiff) return cands;
+						if (bitcnt + bitsize < 32)
+						{
+							rx >>= bitsize;
+							bitcnt += bitsize;
+						}
+						else
+						{
+							rx = ur_base::operator()();
+							bitcnt = bitsize;
+						}
+					}
+				}
+			}
+
+			template<typename Packet>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			{
+				auto rx = ur_base::template packetOp<Packet>();
+				auto pbitmask = pset1<Packet>(bitmask);
+				if (pdiff == bitmask)
+				{
+					return padd(pand(rx, pbitmask), pset1<Packet>(pmin));
+				}
+				else
+				{
+					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
+					thread_local Packet cache_rest;
+					thread_local int cache_rest_cnt;
+					thread_local const scalar_uniform_int_op* cache_ptr = nullptr;
+					if (cache_ptr != this)
+					{
+						cache_ptr = this;
+						cache_rest = pset1<Packet>(0);
+						cache_rest_cnt = 0;
+					}
+
+					auto plen = pset1<Packet>(pdiff + 1);
+					size_t bitcnt = bitsize;
+					while (1)
+					{
+						// accept cands that only < plen
+						auto cands = pand(rx, pbitmask);
+						bool full = false;
+						cache_rest_cnt = cm.compress_append(cands, pcmplt(cands, plen),
+							cache_rest, cache_rest_cnt, full);
+						if (full) return padd(cands, pset1<Packet>(pmin));
+
+						if (bitcnt + bitsize < 32)
+						{
+							rx = psrl(rx, bitsize);
+							bitcnt += bitsize;
+						}
+						else
+						{
+							rx = ur_base::template packetOp<Packet>();
+							bitcnt = bitsize;
+						}
+					}
+				}
+			}
+		};
+
+		template<typename Scalar, typename Urng>
+		struct functor_traits<scalar_uniform_int_op<Scalar, Urng> >
+		{
+			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
+		};
+
 		template<typename _Precision = uint32_t, typename _Size = uint32_t>
 		class AliasMethod
 		{
@@ -92,7 +202,7 @@ namespace Eigen
 					std::fill(arr.get(), arr.get() + psize, 0);
 					alias = std::unique_ptr<_Size[]>(new _Size[psize]);
 					bitsize = nbsize;
-					bitmask = ((1 << bitsize) - 1);
+					bitmask = ((size_t)(-1)) >> (sizeof(size_t) * 8 - bitsize);
 				}
 
 				sum /= psize;
@@ -200,7 +310,6 @@ namespace Eigen
 				return alias.get();
 			}
 		};
-
 
 		template<typename Scalar, typename Rng, typename Precision = float>
 		struct scalar_discrete_dist_op;

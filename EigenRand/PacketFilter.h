@@ -1,8 +1,13 @@
 /**
-* EigenRand
-* Author: bab2min@gmail.com
-* Date: 2020-06-22
-*/
+ * @file PacketFilter.h
+ * @author bab2min (bab2min@gmail.com)
+ * @brief 
+ * @version 0.1.0
+ * @date 2020-06-22
+ * 
+ * @copyright Copyright (c) 2020
+ * 
+ */
 
 #ifndef EIGENRAND_PACKET_FILTER_H
 #define EIGENRAND_PACKET_FILTER_H
@@ -16,7 +21,7 @@ namespace Eigen
 	{
 		namespace detail
 		{
-			template<typename Packet>
+			template<size_t PacketSize>
 			class CompressMask;
 		}
 	}
@@ -29,8 +34,8 @@ namespace Eigen
 	{
 		namespace detail
 		{
-			template<typename Packet>
-			class CompressMask
+			template<>
+			class CompressMask<32>
 			{
 				std::array<std::array<internal::Packet8i, 256>, 15> idx;
 				std::array<internal::Packet8f, 8> selector;
@@ -115,9 +120,14 @@ namespace Eigen
 					return cm;
 				}
 
-				EIGEN_STRONG_INLINE int compress_append(internal::Packet8f& value, const internal::Packet8f& mask,
-					internal::Packet8f& rest, int rest_cnt, bool& full) const
+				template<typename Packet>
+				EIGEN_STRONG_INLINE int compress_append(Packet& _value, const Packet& _mask,
+					Packet& _rest, int rest_cnt, bool& full) const
 				{
+					auto& value = reinterpret_cast<internal::Packet8f&>(_value);
+					auto& mask = reinterpret_cast<const internal::Packet8f&>(_mask);
+					auto& rest = reinterpret_cast<internal::Packet8f&>(_rest);
+
 					int m = _mm256_movemask_ps(mask);
 					if (cnt[m] == full_size)
 					{
@@ -147,11 +157,12 @@ namespace Eigen
 					}
 				}
 			};
-
 		}
 	}
 }
-#elif defined(EIGEN_VECTORIZE_SSE2)
+#endif
+
+#ifdef EIGEN_VECTORIZE_SSE2
 #include <xmmintrin.h>
 
 namespace Eigen
@@ -161,7 +172,7 @@ namespace Eigen
 		namespace detail
 		{
 			template<>
-			class CompressMask<internal::Packet4f>
+			class CompressMask<16>
 			{
 				std::array<std::array<uint8_t, 16>, 7> idx;
 				std::array<internal::Packet4f, 4> selector;
@@ -230,9 +241,14 @@ namespace Eigen
 					return cm;
 				}
 
-				EIGEN_STRONG_INLINE int compress_append(internal::Packet4f& value, const internal::Packet4f& mask,
-					internal::Packet4f& rest, int rest_cnt, bool& full) const
+				template<typename Packet>
+				EIGEN_STRONG_INLINE int compress_append(Packet& _value, const Packet& _mask,
+					Packet& _rest, int rest_cnt, bool& full) const
 				{
+					auto& value = reinterpret_cast<internal::Packet4f&>(_value);
+					auto& mask = reinterpret_cast<const internal::Packet4f&>(_mask);
+					auto& rest = reinterpret_cast<internal::Packet4f&>(_rest);
+
 					int m = _mm_movemask_ps(mask);
 					if (cnt[m] == full_size)
 					{
@@ -262,7 +278,6 @@ namespace Eigen
 					}
 				}
 			};
-
 		}
 	}
 }
