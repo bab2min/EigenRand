@@ -23,6 +23,10 @@ You can get 5~10 times speed by just replacing old Eigen's Random or unvectoriza
 * Eigen 3.3.7
 * C++11-compatible compilers
 
+## Documentation
+
+https://bab2min.github.io/eigenrand/
+
 ## Functions
 
 ### Random distributions for real types
