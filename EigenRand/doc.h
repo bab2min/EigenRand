@@ -1,25 +1,94 @@
 /**
- * @mainpage EigenRand : The Fastest C++11-compatible random distribution generator for Eigen
+ @mainpage EigenRand : The Fastest C++11-compatible random distribution generator for Eigen
+ 
+ EigenRand is a header-only library for [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page), providing vectorized random number engines and vectorized random distribution generators. 
+ Since the classic Random functions of Eigen relies on an old C function `rand()`, 
+ there is no way to control random numbers and no guarantee for quality of generated numbers. 
+ In addition, Eigen's Random is slow because rand() is hard to vectorize.
+ 
+ EigenRand provides a variety of random distribution functions similar to C++11 standard's random functions, 
+ which can be vectorized and easily integrated into Eigen's expressions of Matrix and Array.
+ 
+ You can get 5~10 times speed by just replacing old Eigen's Random 
+ or unvectorizable c++11 random number generators with EigenRand.
+ 
+ EigenRand currently supports only x86-64 architecture (SSE, AVX, AVX2).
+
+ EigenRand is distributed under the MIT License.
+
+ If you want to contribute or report bugs, please visit Github repository https://github.com/bab2min/EigenRand.
+ 
+
+ - @link getting_started Getting Started @endlink
+ - @link list_of_supported_distribution List of Supported Random Distribution @endlink
+ - @link performance Performance @endlink
+
+ @page getting_started Getting Started
+
+ @section getting_started_1 Installation
+
+ You can install EigenRand by just downloading the source codes from [the repository](https://github.com/bab2min/EigenRand/releases). 
+ Since EigenRand is a header-only library like Eigen, none of binaries needs to be installed. 
+ All you need is [Eigen 3.3.7](http://eigen.tuxfamily.org/index.php?title=Main_Page) and C++11 compiler.
+
+ @section getting_started_2 Simple Random Matrix Generators
+ @code
+ #include <iostream>
+ #include <Eigen/Dense>
+ #include <EigenRand/EigenRand>
+
+ using namespace Eigen;
+
+ int main()
+ {
+   // Initialize random number generator with seed=42 for following codes.
+   // Or you can use C++11 RNG such as std::mt19937 or std::ranlux48.
+   Rand::Vmt19937_64 urng{ 42 };
+
+   // this will generate 4x4 real matrix with range [-1, 1]
+   MatrixXf mat = Rand::balanced<MatrixXf>(4, 4, urng);
+   std::cout << mat << std::endl;
+
+   // this will generate 10x10 real 2d array on the normal distribution
+   ArrayXXf arr = Rand::normal<ArrayXXf>(10, 10, urng);
+   std::cout << arr << std::endl;
+
+   return 0;
+ }
+ @endcode
+
+ @section getting_started_3 Random Matrix Functions with suffix '-Like'
+ Basically, in order to call each random distribution function of EigenRand, template parameters must be passed following the dense matrix or array type to be created.
+ But, if you have an instance of Eigen::Matrix or Eigen::Array already, you can use -Like function to generate a random matrix or array with the same type and shape.
+ @code
+ #include <iostream>
+ #include <Eigen/Dense>
+ #include <EigenRand/EigenRand>
+
+ using namespace Eigen;
+
+ int main()
+ {
+   Rand::Vmt19937_64 urng{ 42 };
+
+   MatrixXf mat{ 10, 10 };
+   // this will generate a random matrix in MatrixXf type with the shape (10, 10)
+   // note: it doesn't change mat at all.
+   Rand::balancedLike(mat, urng);
+
+   // if you want to assign a random matrix into itself, use assignment operator.
+   mat = Rand::balancedLike(mat, urng);
+   std::cout << mat << std::endl;
+   return 0;
+ }
+ @endcode
+
+ Every random distribution function has its corresponding -Like function.
+
+ * @page list_of_supported_distribution List of Supported Random Distribution
  * 
- * https://github.com/bab2min/EigenRand
  * 
- * EigenRand is a header-only library for [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page), providing vectorized random number engines and vectorized random distribution generators. 
- * Since the classic Random functions of Eigen relies on an old C function `rand()`, 
- * there is no way to control random numbers and no guarantee for quality of generated numbers. 
- * In addition, Eigen's Random is slow because rand() is hard to vectorize.
- * 
- * EigenRand provides a variety of random distribution functions similar to C++11 standard's random functions, 
- * which can be vectorized and easily integrated into Eigen's expressions of Matrix and Array.
- * 
- * You can get 5~10 times speed by just replacing old Eigen's Random 
- * or unvectorizable c++11 random number generators with EigenRand.
- * 
- * @page getting_started Getting Started
- * 
- * @page list_of_distribution List of Random Distribution
- * 
- * 
- @section list_of_distribution_1 Random Distributions for Real types
+ @section list_of_supported_distribution_1 Random Distributions for Real types
 
 | Function | Scalar Type | Description | Equivalent to |
 |:---:|:---:|:---:|:---:|
@@ -33,7 +102,7 @@
 | `Eigen::Rand::uniformReal` | float, double | generates real values in the [-1, 0) range. | `std::generate_canonical` |
 | `Eigen::Rand::weibull` | float, double | generates real values on a [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution). | `std::weibull_distribution` |
 
- @section list_of_distribution_2 Random Distributions for Integer Types
+ @section list_of_supported_distribution_2 Random Distributions for Integer Types
 
 | Function | Scalar Type | Description | Equivalent to |
 |:---:|:---:|:---:|:---:|
@@ -41,7 +110,7 @@
 | `Eigen::Rand::discrete` | int | generates random integers on a discrete distribution. | `std::discrete_distribution` |
 | `Eigen::Rand::uniformInt` | int | generates integers in the [min, max] range. | `std::uniform_int_distribution` |
 
- @section list_of_distribution_3 Random Number Engines
+ @section list_of_supported_distribution_3 Random Number Engines
 
 |  | Description | Equivalent to |
 |:---:|:---:|:---:|
