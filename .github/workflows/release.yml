@@ -30,6 +30,7 @@ jobs:
     - name: Test
       run: |
         cat /proc/cpuinfo
+        g++ -v
         ./bench.out
 
   build_macos:
@@ -53,6 +54,7 @@ jobs:
       continue-on-error: true
       run: |
         sysctl -a | grep machdep.cpu
+        g++ -v
         ./bench.out
 
   build_windows:
