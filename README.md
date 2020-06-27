@@ -177,7 +177,7 @@ Following table shows the average distance (and stdev.) of results performed 50 
 
 |  | C++ std | EigenRand |
 |---|---:|---:|
-| `balanced`* | .0034 (.0015) | .0034 (.0015) |
+| `balanced`* | .0034(.0015) | .0034(.0015) |
 | `chiSquared(7)` | .0260(.0091) | .0242(.0079) |
 | `exponential(1)` | .0065(.0025) | .0072(.0022) |
 | `extremeValue(1, 1)` | .0097(.0029) | .0088(.0025) |
