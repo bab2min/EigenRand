@@ -189,7 +189,7 @@ Following table shows the average distance (and stdev.) of results performed 50 
 | `uniformReal` | .0018(.0008) | .0017(.0007) |
 | `weibull(2, 1)` | .0032(.0013) | .0031(.0010) |
 
-(* Result of balanced were from Eigen::Random, not C++ std)
+(* Result of `balanced` were from Eigen::Random, not C++ std)
 
 The smaller value means that the sample result fits its distribution better.
 The results of EigenRand and C++ std appear to be equivalent within the margin of error.
