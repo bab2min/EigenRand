@@ -170,5 +170,30 @@ It shows the average of 20 times.
 | Mersenne Twister(int32) | 5.0 | 3.4 | 3.4 | 3.3 |
 | Mersenne Twister(int64) | 5.1 | 3.9 | 3.9 | 3.3 |
 
+## Accuracy
+Since vectorized mathematical functions may have a loss of precision, I measured how well the generated random number fits its actual distribution.
+32768 samples were generated and Earth Mover's Distance between samples and its actual distribution was calculated for each distribution.
+Following table shows the average distance (and stdev.) of results performed 50 times for different seeds.
+
+|  | C++ std | EigenRand |
+|---|---:|---:|
+| `balanced`* | .0034 (.0015) | .0034 (.0015) |
+| `chiSquared(7)` | .0260(.0091) | .0242(.0079) |
+| `exponential(1)` | .0065(.0025) | .0072(.0022) |
+| `extremeValue(1, 1)` | .0097(.0029) | .0088(.0025) |
+| `gamma(0.2, 1)` | .0380(.0021) | .0377(.0025) |
+| `gamma(1, 1)` | .0070(.0020) | .0065(.0023) |
+| `gamma(5, 1)` | .0169(.0065) | .0170(.0051) |
+| `lognormal(0, 1)` | .0072(.0029) | .0067(.0022) |
+| `normal(0, 1)` | .0070(.0024) | .0073(.0020) |
+| `uniformReal` | .0018(.0008) | .0017(.0007) |
+| `weibull(2, 1)` | .0032(.0013) | .0031(.0010) |
+
+(* Result of balanced were from Eigen::Random, not C++ std)
+
+The smaller value means that the sample result fits its distribution better.
+The results of EigenRand and C++ std appear to be equivalent within the margin of error.
+
+
 ## License
 MIT License
