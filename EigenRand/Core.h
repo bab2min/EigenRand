@@ -317,6 +317,48 @@ namespace Eigen
 		}
 
 		template<typename Derived, typename Urng>
+		using StudentTType = CwiseNullaryOp<internal::scalar_student_t_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on the Student's t distribution with arbirtrary degress of freedom.
+		 *
+		 * @tparam Derived a type of Eigen::DenseBase
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param n degrees of freedom
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const StudentTType<Derived, Urng>
+			studentT(Index rows, Index cols, Urng&& urng, typename Derived::Scalar n = 1)
+		{
+			return {
+				rows, cols, internal::scalar_student_t_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), n)
+			};
+		}
+
+		/**
+		 * @brief generates reals on the Student's t distribution with arbirtrary degress of freedom.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param n degrees of freedom
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const StudentTType<Derived, Urng>
+			studentTLike(Derived& o, Urng&& urng, typename Derived::Scalar n = 1)
+		{
+			return {
+				o.rows(), o.cols(), internal::scalar_student_t_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), n)
+			};
+		}
+
+		template<typename Derived, typename Urng>
 		using ExponentialType = CwiseNullaryOp<internal::scalar_exp_dist_op<typename Derived::Scalar, Urng>, const Derived>;
 
 		/**
@@ -531,6 +573,51 @@ namespace Eigen
 		{
 			return {
 				o.rows(), o.cols(), internal::scalar_chi_squared_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), n)
+			};
+		}
+
+
+		template<typename Derived, typename Urng>
+		using CauchyType = CwiseNullaryOp<internal::scalar_cauchy_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on the Cauchy distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param a a location parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const CauchyType<Derived, Urng>
+			cauchy(Index rows, Index cols, Urng&& urng, typename Derived::Scalar a = 0, typename Derived::Scalar b = 1)
+		{
+			return {
+				rows, cols, internal::scalar_cauchy_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), a, b)
+			};
+		}
+
+		/**
+		 * @brief generates reals on the Cauchy distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param a a location parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const CauchyType<Derived, Urng>
+			cauchyLike(Derived& o, Urng&& urng, typename Derived::Scalar a = 0, typename Derived::Scalar b = 1)
+		{
+			return {
+				o.rows(), o.cols(), internal::scalar_cauchy_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), a, b)
 			};
 		}
 

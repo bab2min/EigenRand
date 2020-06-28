@@ -268,6 +268,25 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 		x = Eigen::Rand::chiSquaredLike(x, urng, 15);
 	}
 
+	{
+		auto scope = bh.measure("cauchy" + suffix, x);
+		x = Eigen::Rand::cauchyLike(x, urng);
+	}
+
+	{
+		auto scope = bh.measure("studentT(1)" + suffix, x);
+		x = Eigen::Rand::studentTLike(x, urng, 1);
+	}
+
+	{
+		auto scope = bh.measure("studentT(5)" + suffix, x);
+		x = Eigen::Rand::studentTLike(x, urng, 5);
+	}
+
+	{
+		auto scope = bh.measure("studentT(20)" + suffix, x);
+		x = Eigen::Rand::studentTLike(x, urng, 20);
+	}
 	return ret;
 }
 
@@ -430,6 +449,29 @@ std::map<std::string, double> test_nullary(size_t size, const std::string& suffi
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 
+	{
+		auto scope = bh.measure("cauchy" + suffix, x);
+		std::cauchy_distribution<float> dist;
+		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("studentT(1)" + suffix, x);
+		std::student_t_distribution<float> dist{ 1 };
+		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("studentT(5)" + suffix, x);
+		std::student_t_distribution<float> dist{ 5 };
+		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("studentT(20)" + suffix, x);
+		std::student_t_distribution<float> dist{ 20 };
+		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
 	return ret;
 }
 
@@ -534,12 +576,13 @@ int main(int argc, char** argv)
 			timeSq[p.first] += p.second * p.second;
 		}
 
-
+#if defined(EIGEN_VECTORIZE_SSE2) || defined(EIGEN_VECTORIZE_AVX)
 		for (auto& p : test_eigenrand<Eigen::Rand::Vmt19937_64>(size, "\t:ERand+vRNG", results))
 		{
 			time[p.first] += p.second;
 			timeSq[p.first] += p.second * p.second;
 		}
+#endif
 
 	}
 

@@ -400,6 +400,9 @@ namespace Eigen
 			0xfff7eee000000000, 43, 6364136223846793005>;
 #endif
 
+		template<typename IntPacket>
+		EIGEN_STRONG_INLINE auto bit_to_ur_float(const IntPacket& x) -> decltype(reinterpret_to_float(x));
+
 		/**
 		 * @brief Scalar adaptor for random engines which generates packet
 		 * 
@@ -409,7 +412,7 @@ namespace Eigen
 		template<typename UIntType, typename BaseRng>
 		class PacketRandomEngineAdaptor
 		{
-			static_assert(IsPacketRandomEngine<BaseRng>::value, "BaseRNG must be a kind of PacketRandomEngine.");
+			static_assert(IsPacketRandomEngine<BaseRng>::value, "BaseRng must be a kind of PacketRandomEngine.");
 		public:
 			using result_type = UIntType;
 
@@ -445,8 +448,16 @@ namespace Eigen
 				return buf[cnt++];
 			}
 
+			float uniform_real()
+			{
+				if (fcnt >= fbuf_size)
+				{
+					refill_fbuffer();
+				}
+				return fbuf[fcnt++];
+			}
+
 		private:
-			static constexpr size_t buf_size = 64 / sizeof(result_type);
 
 			void refill_buffer()
 			{
@@ -454,14 +465,29 @@ namespace Eigen
 				const size_t stride = sizeof(typename BaseRng::result_type) / sizeof(result_type);
 				for (size_t i = 0; i < buf_size; i += stride)
 				{
-					*(typename BaseRng::result_type*)&buf[i] = rng();
+					reinterpret_cast<typename BaseRng::result_type&>(buf[i]) = rng();
 				}
 			}
+
+			void refill_fbuffer()
+			{
+				fcnt = 0;
+				const size_t stride = sizeof(typename BaseRng::result_type) / sizeof(float);
+				for (size_t i = 0; i < buf_size; i += stride)
+				{
+					auto urf = bit_to_ur_float(rng());
+					reinterpret_cast<decltype(urf)&>(fbuf[i]) = urf;
+				}
+			}
+
+			static constexpr size_t buf_size = 64 / sizeof(result_type);
+			static constexpr size_t fbuf_size = 64 / sizeof(float);
 
 			BaseRng rng;
 			std::array<result_type, buf_size> buf;
 			size_t cnt = buf_size;
-
+			std::array<float, fbuf_size> fbuf;
+			size_t fcnt = fbuf_size;
 		};
 
 		/**

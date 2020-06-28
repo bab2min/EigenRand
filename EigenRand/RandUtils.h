@@ -92,7 +92,7 @@ namespace Eigen
 			Rand::RandomEngineType reType = Rand::GetRandomEngineType<
 			typename std::remove_reference<Rng>::type
 		>::value>
-			struct RawbitsMaker;
+		struct RawbitsMaker;
 
 		template<typename PacketType, typename Rng>
 		struct UniformRealUtils;

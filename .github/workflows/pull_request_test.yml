@@ -23,13 +23,19 @@ jobs:
         git checkout tags/3.3.7
         cd ..
         mv eigen-git-mirror include
-    - name: Build
+    - name: Build Bench
       run: |
         g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
-    - name: Test
+    - name: Run Bench
       run: |
         cat /proc/cpuinfo
         ./bench.out
+	- name: Build Accuracy
+      run: |
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/accuracy.cpp -o accuracy.out
+    - name: Run Accuracy
+      run: |
+        ./accuracy.out
 
   build_macos:
     name: Build for macOS
@@ -45,14 +51,20 @@ jobs:
         wget https://github.com/eigenteam/eigen-git-mirror/archive/3.3.7.tar.gz
         tar -zxvf 3.3.7.tar.gz
         mv eigen-git-mirror-3.3.7 include
-    - name: Build
+    - name: Build Bench
       run: |
         g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
-    - name: Test
+    - name: Run Bench
       continue-on-error: true
       run: |
         sysctl -a | grep machdep.cpu
         ./bench.out
+	- name: Build Accuracy
+      run: |
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/accuracy.cpp -o accuracy.out
+    - name: Run Accuracy
+      run: |
+        ./accuracy.out
 
   build_windows:
     name: Build for Windows
@@ -69,10 +81,16 @@ jobs:
         tar -zxvf 3.3.7.tar.gz
         mv eigen-git-mirror-3.3.7 include
     - uses: ilammy/msvc-dev-cmd@v1
-    - name: Build
+    - name: Build Bench
       run: |
         cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:bench.exe .\test\benchmark.cpp
-    - name: Test
+    - name: Run Bench
       run: |
         bash -c "cat /proc/cpuinfo"
         .\bench.exe
+	- name: Build Accuracy
+      run: |
+        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:accuracy.exe .\test\accuracy.cpp
+    - name: Run Accuracy
+      run: |
+        .\accuracy.exe
