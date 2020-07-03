@@ -777,7 +777,7 @@ namespace Eigen
 		template<> 
 		EIGEN_STRONG_INLINE Packet4f pblendv(const Packet4f& ifPacket, const Packet4f& thenPacket, const Packet4f& elsePacket) 
 		{
-#ifdef XXX_EIGEN_VECTORIZE_SSE4_1
+#ifdef EIGEN_VECTORIZE_SSE4_1
 			return _mm_blendv_ps(elsePacket, thenPacket, ifPacket);
 #else
 			return _mm_or_ps(_mm_and_ps(ifPacket, thenPacket), _mm_andnot_ps(ifPacket, elsePacket));
@@ -787,7 +787,7 @@ namespace Eigen
 		template<>
 		EIGEN_STRONG_INLINE Packet4i pblendv(const Packet4i& ifPacket, const Packet4i& thenPacket, const Packet4i& elsePacket)
 		{
-#ifdef XXX_EIGEN_VECTORIZE_SSE4_1
+#ifdef EIGEN_VECTORIZE_SSE4_1
 			return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(elsePacket), _mm_castsi128_ps(thenPacket), _mm_castsi128_ps(ifPacket)));
 #else
 			return _mm_or_si128(_mm_and_si128(ifPacket, thenPacket), _mm_andnot_si128(ifPacket, elsePacket));
@@ -797,7 +797,7 @@ namespace Eigen
 		template<> 
 		EIGEN_STRONG_INLINE Packet2d pblendv(const Packet2d& ifPacket, const Packet2d& thenPacket, const Packet2d& elsePacket) 
 		{
-#ifdef XXX_EIGEN_VECTORIZE_SSE4_1
+#ifdef EIGEN_VECTORIZE_SSE4_1
 			return _mm_blendv_pd(elsePacket, thenPacket, ifPacket);
 #else
 			return _mm_or_pd(_mm_and_pd(ifPacket, thenPacket), _mm_andnot_pd(ifPacket, elsePacket));
@@ -868,13 +868,29 @@ namespace Eigen
 		template<>
 		EIGEN_STRONG_INLINE Packet4f ptruncate<Packet4f>(const Packet4f& a)
 		{
+#ifdef EIGEN_VECTORIZE_SSE4_1
 			return _mm_round_ps(a, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+#else
+			auto round = _MM_GET_ROUNDING_MODE();
+			_MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
+			auto ret = _mm_cvtepi32_ps(_mm_cvtps_epi32(a));
+			_MM_SET_ROUNDING_MODE(round);
+			return ret;
+#endif
 		}
 
 		template<>
 		EIGEN_STRONG_INLINE Packet2d ptruncate<Packet2d>(const Packet2d& a)
 		{
+#ifdef EIGEN_VECTORIZE_SSE4_1
 			return _mm_round_pd(a, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+#else
+			auto round = _MM_GET_ROUNDING_MODE();
+			_MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
+			auto ret = _mm_cvtepi32_pd(_mm_cvtpd_epi32(a));
+			_MM_SET_ROUNDING_MODE(round);
+			return ret;
+#endif
 		}
 	}
 }
