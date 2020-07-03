@@ -496,6 +496,10 @@ namespace Eigen
 		public:
 			using BaseRng::BaseRng;
 
+			RandomEngineWrapper(const BaseRng& o) : BaseRng{ o }
+			{
+			}
+
 			float uniform_real()
 			{
 				internal::bit_scalar<float> bs;
