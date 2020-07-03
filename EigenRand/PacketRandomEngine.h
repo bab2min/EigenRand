@@ -2,7 +2,7 @@
  * @file PacketRandomEngine.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.1.0
+ * @version 0.2.0
  * @date 2020-06-22
  * 
  * @copyright Copyright (c) 2020
@@ -490,6 +490,19 @@ namespace Eigen
 			size_t fcnt = fbuf_size;
 		};
 
+		template<typename BaseRng>
+		class RandomEngineWrapper : public BaseRng
+		{
+		public:
+			using BaseRng::BaseRng;
+
+			float uniform_real()
+			{
+				internal::bit_scalar<float> bs;
+				return bs.to_ur(this->operator()());
+			}
+		};
+
 		/**
 		 * @brief Helper function for making a PacketRandomEngineAdaptor
 		 * 
@@ -510,10 +523,10 @@ namespace Eigen
 		template<typename UIntType, typename Rng>
 		auto makeScalarRng(Rng&& rng) -> typename std::enable_if<
 			IsScalarRandomEngine<typename std::remove_reference<Rng>::type>::value,
-			typename std::remove_reference<Rng>::type
+			RandomEngineWrapper<typename std::remove_reference<Rng>::type>
 		>::type
 		{
-			return std::forward<Rng>(rng);
+			return { std::forward<Rng>(rng) };
 		}
 
 #ifdef EIGEN_VECTORIZE_AVX2

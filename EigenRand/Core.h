@@ -2,7 +2,7 @@
  * @file Core.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.1.0
+ * @version 0.2.0
  * @date 2020-06-22
  * 
  * @copyright Copyright (c) 2020
@@ -17,6 +17,7 @@
 #include <EigenRand/Dists/Basic.h>
 #include <EigenRand/Dists/Discrete.h>
 #include <EigenRand/Dists/NormalExp.h>
+#include <EigenRand/Dists/GammaPoisson.h>
 
 namespace Eigen
 {
@@ -576,7 +577,6 @@ namespace Eigen
 			};
 		}
 
-
 		template<typename Derived, typename Urng>
 		using CauchyType = CwiseNullaryOp<internal::scalar_cauchy_dist_op<typename Derived::Scalar, Urng>, const Derived>;
 
@@ -618,6 +618,92 @@ namespace Eigen
 		{
 			return {
 				o.rows(), o.cols(), internal::scalar_cauchy_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), a, b)
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using FisherFType = CwiseNullaryOp<internal::scalar_fisher_f_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on the Fisher's F distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param m degrees of freedom
+		 * @param n degrees of freedom
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const FisherFType<Derived, Urng>
+			fisherF(Index rows, Index cols, Urng&& urng, typename Derived::Scalar m = 1, typename Derived::Scalar n = 1)
+		{
+			return {
+				rows, cols, internal::scalar_fisher_f_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), m, n)
+			};
+		}
+
+		/**
+		 * @brief generates reals on the Fisher's F distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param m degrees of freedom
+		 * @param n degrees of freedom
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const FisherFType<Derived, Urng>
+			fisherFLike(Derived& o, Urng&& urng, typename Derived::Scalar m = 1, typename Derived::Scalar n = 1)
+		{
+			return {
+				o.rows(), o.cols(), internal::scalar_fisher_f_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), m, n)
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using BetaType = CwiseNullaryOp<internal::scalar_beta_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on the beta distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param a,b shape parameter
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const BetaType<Derived, Urng>
+			beta(Index rows, Index cols, Urng&& urng, typename Derived::Scalar a = 1, typename Derived::Scalar b = 1)
+		{
+			return {
+				rows, cols, internal::scalar_beta_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), a, b)
+			};
+		}
+
+		/**
+		 * @brief generates reals on the beta distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param a,b shape parameter
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const BetaType<Derived, Urng>
+			betaLike(Derived& o, Urng&& urng, typename Derived::Scalar a = 1, typename Derived::Scalar b = 1)
+		{
+			return {
+				o.rows(), o.cols(), internal::scalar_beta_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), a, b)
 			};
 		}
 
@@ -873,6 +959,178 @@ namespace Eigen
 		{
 			return {
 				o.rows(), o.cols(), internal::scalar_discrete_dist_op<typename Derived::Scalar, Urng, int32_t>(std::forward<Urng>(urng), il.begin(), il.end())
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using PoissonType = CwiseNullaryOp<internal::scalar_poisson_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on the Poisson distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param mean rate parameter
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const PoissonType<Derived, Urng>
+			poisson(Index rows, Index cols, Urng&& urng, double mean = 1)
+		{
+			return {
+				rows, cols, internal::scalar_poisson_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), mean)
+			};
+		}
+
+		/**
+		 * @brief generates reals on the Poisson distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param mean rate parameter
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const PoissonType<Derived, Urng>
+			poissonLike(Derived& o, Urng&& urng, double mean = 1)
+		{
+			return {
+				o.rows(), o.cols(), internal::scalar_poisson_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), mean)
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using BinomialType = CwiseNullaryOp<internal::scalar_binomial_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on the binomial distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param trials the number of trials
+		 * @param p probability of a trial generating true
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const BinomialType<Derived, Urng>
+			binomial(Index rows, Index cols, Urng&& urng, typename Derived::Scalar trials = 1, double p = 0.5)
+		{
+			return {
+				rows, cols, internal::scalar_binomial_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), trials, p)
+			};
+		}
+
+		/**
+		 * @brief generates reals on the binomial distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param trials the number of trials
+		 * @param p probability of a trial generating true
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const BinomialType<Derived, Urng>
+			binomialLike(Derived& o, Urng&& urng, typename Derived::Scalar trials = 1, double p = 0.5)
+		{
+			return {
+				o.rows(), o.cols(), internal::scalar_binomial_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), trials, p)
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using NegativeBinomialType = CwiseNullaryOp<internal::scalar_negative_binomial_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on the negative binomial distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param trials the number of trial successes
+		 * @param p probability of a trial generating true
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const NegativeBinomialType<Derived, Urng>
+			negativeBinomial(Index rows, Index cols, Urng&& urng, typename Derived::Scalar trials = 1, double p = 0.5)
+		{
+			return {
+				rows, cols, internal::scalar_negative_binomial_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), trials, p)
+			};
+		}
+
+		/**
+		 * @brief generates reals on the negative binomial distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param trials the number of trial successes
+		 * @param p probability of a trial generating true
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const NegativeBinomialType<Derived, Urng>
+			negativeBinomialLike(Derived& o, Urng&& urng, typename Derived::Scalar trials = 1, double p = 0.5)
+		{
+			return {
+				o.rows(), o.cols(), internal::scalar_negative_binomial_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), trials, p)
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using GeometricType = CwiseNullaryOp<internal::scalar_geometric_dist_op<typename Derived::Scalar, Urng>, const Derived>;
+
+		/**
+		 * @brief generates reals on the geometric distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param p probability of a trial generating true
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const GeometricType<Derived, Urng>
+			geometric(Index rows, Index cols, Urng&& urng, double p = 0.5)
+		{
+			return {
+				rows, cols, internal::scalar_geometric_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), p)
+			};
+		}
+
+		/**
+		 * @brief generates reals on the geometric distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param p probability of a trial generating true
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const GeometricType<Derived, Urng>
+			geometricLike(Derived& o, Urng&& urng, double p = 0.5)
+		{
+			return {
+				o.rows(), o.cols(), internal::scalar_geometric_dist_op<typename Derived::Scalar, Urng>(std::forward<Urng>(urng), p)
 			};
 		}
 	}

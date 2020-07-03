@@ -2,7 +2,7 @@
  * @file RandUtils.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.1.0
+ * @version 0.2.0
  * @date 2020-06-22
  * 
  * @copyright Copyright (c) 2020
@@ -20,73 +20,6 @@ namespace Eigen
 {
 	namespace internal
 	{
-		template<typename IntPacket>
-		EIGEN_STRONG_INLINE auto bit_to_ur_float(const IntPacket& x) -> decltype(reinterpret_to_float(x))
-		{
-			using FloatPacket = decltype(reinterpret_to_float(x));
-
-			const IntPacket lower = pset1<IntPacket>(0x7FFFFF),
-				upper = pset1<IntPacket>(127 << 23);
-			const FloatPacket one = pset1<FloatPacket>(1);
-
-			return psub(reinterpret_to_float(por(pand(x, lower), upper)), one);
-		}
-
-		template<typename IntPacket>
-		EIGEN_STRONG_INLINE auto bit_to_ur_double(const IntPacket& x) -> decltype(reinterpret_to_double(x))
-		{
-			using DoublePacket = decltype(reinterpret_to_double(x));
-
-			const IntPacket lower = pseti64<IntPacket>(0xFFFFFFFFFFFFFull),
-				upper = pseti64<IntPacket>(1023ull << 52);
-			const DoublePacket one = pset1<DoublePacket>(1);
-
-			return psub(reinterpret_to_double(por(pand(x, lower), upper)), one);
-		}
-
-		template<typename Scalar>
-		struct bit_scalar;
-
-		template<>
-		struct bit_scalar<float>
-		{
-			float to_ur(uint32_t x)
-			{
-				union
-				{
-					uint32_t u;
-					float f;
-				};
-				u = (x & 0x7FFFFF) | (127 << 23);
-				return f - 1.f;
-			}
-
-			float to_nzur(uint32_t x)
-			{
-				return to_ur(x) + std::numeric_limits<float>::epsilon() / 8;
-			}
-		};
-
-		template<>
-		struct bit_scalar<double>
-		{
-			double to_ur(uint64_t x)
-			{
-				union
-				{
-					uint64_t u;
-					double f;
-				};
-				u = (x & 0xFFFFFFFFFFFFFull) | (1023ull << 52);
-				return f - 1.;
-			}
-
-			double to_nzur(uint64_t x)
-			{
-				return to_ur(x) + std::numeric_limits<double>::epsilon() / 8;
-			}
-		};
-
 		template<typename Packet, typename Rng,
 			typename RngResult = typename std::remove_reference<Rng>::type::result_type,
 			Rand::RandomEngineType reType = Rand::GetRandomEngineType<

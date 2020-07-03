@@ -2,7 +2,7 @@
  * @file NormalExp.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.1.0
+ * @version 0.2.0
  * @date 2020-06-22
  * 
  * @copyright Copyright (c) 2020
@@ -17,12 +17,6 @@ namespace Eigen
 {
 	namespace internal
 	{
-		namespace constant
-		{
-			static constexpr double pi = 3.1415926535897932;
-			static constexpr double e = 2.7182818284590452;
-		}
-
 		template<typename Scalar, typename Rng>
 		struct scalar_norm_dist_op : public scalar_uniform_real_op<Scalar, Rng>
 		{
@@ -517,6 +511,117 @@ namespace Eigen
 
 		template<typename Scalar, typename Urng>
 		struct functor_traits<scalar_cauchy_dist_op<Scalar, Urng> >
+		{
+			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
+		};
+
+		template<typename Scalar, typename Rng>
+		struct scalar_beta_dist_op : public scalar_uniform_real_op<Scalar, Rng>
+		{
+			static_assert(std::is_floating_point<Scalar>::value, "betaDist needs floating point types.");
+			using ur_base = scalar_uniform_real_op<Scalar, Rng>;
+
+			Scalar a, b;
+			scalar_gamma_dist_op<Scalar, Rng> gd1, gd2;
+
+			scalar_beta_dist_op(const Rng& _rng, Scalar _a = 1, Scalar _b = 1)
+				: ur_base{ _rng }, a{ _a }, b{ _b }, 
+				gd1{ _rng, _a }, gd2{ _rng, _b }
+			{
+			}
+
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			{
+				if (a < 1 && b < 1)
+				{
+					Scalar x, p1, p2;
+					while(1)
+					{
+						p1 = std::pow(ur_base::operator()(), 1 / a);
+						p2 = std::pow(ur_base::operator()(), 1 / b);
+						x = p1 + p2;
+						if (x <= 1) break;
+					}
+					return p1 / x;
+				}
+				else
+				{
+					Scalar p1 = gd1(), p2 = gd2();
+					return p1 / (p1 + p2);
+				}
+			}
+
+			template<typename Packet>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			{
+				if (a < 1 && b < 1)
+				{
+					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
+
+					thread_local Packet cache_rest;
+					thread_local int cache_rest_cnt;
+					thread_local const scalar_beta_dist_op* cache_ptr = nullptr;
+					if (cache_ptr != this)
+					{
+						cache_ptr = this;
+						cache_rest = pset1<Packet>(0);
+						cache_rest_cnt = 0;
+					}
+
+					Packet x, p1, p2;
+					while (1)
+					{
+						p1 = pexp(pmul(plog(ur_base::template packetOp<Packet>()), pset1<Packet>(1 / a)));
+						p2 = pexp(pmul(plog(ur_base::template packetOp<Packet>()), pset1<Packet>(1 / b)));
+						x = padd(p1, p2);
+						Packet cands = pdiv(p1, x);
+						bool full = false;
+						cache_rest_cnt = cm.compress_append(cands, pcmple(x, pset1<Packet>(1)),
+							cache_rest, cache_rest_cnt, full);
+						if (full) return cands;
+					}
+				}
+				else
+				{
+					auto p1 = gd1.template packetOp<Packet>(),
+						p2 = gd2.template packetOp<Packet>();
+					return pdiv(p1, padd(p1, p2));
+				}
+			}
+		};
+
+		template<typename Scalar, typename Urng>
+		struct functor_traits<scalar_beta_dist_op<Scalar, Urng> >
+		{
+			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
+		};
+
+		template<typename Scalar, typename Rng>
+		struct scalar_fisher_f_dist_op : public scalar_beta_dist_op<Scalar, Rng>
+		{
+			static_assert(std::is_floating_point<Scalar>::value, "chiSquaredDist needs floating point types.");
+
+			scalar_fisher_f_dist_op(const Rng& _rng, Scalar m = 1, Scalar n = 1)
+				: scalar_beta_dist_op<Scalar, Rng>{ _rng, m * Scalar(0.5), n * Scalar(0.5) }
+			{
+			}
+
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			{
+				auto x = scalar_beta_dist_op<Scalar, Rng>::operator()();
+				return this->b / this->a * x / (1 - x);
+			}
+
+			template<typename Packet>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			{
+				auto x = scalar_beta_dist_op<Scalar, Rng>::template packetOp<Packet>();
+				return pdiv(pmul(pset1<Packet>(this->b / this->a), x), psub(pset1<Packet>(1), x));
+			}
+		};
+
+		template<typename Scalar, typename Urng>
+		struct functor_traits<scalar_fisher_f_dist_op<Scalar, Urng> >
 		{
 			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
 		};

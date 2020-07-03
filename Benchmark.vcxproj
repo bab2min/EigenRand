@@ -50,6 +50,7 @@
     <ClInclude Include="EigenRand\Dists\Basic.h" />
     <ClInclude Include="EigenRand\Dists\Discrete.h" />
     <ClInclude Include="EigenRand\Dists\NormalExp.h" />
+    <ClInclude Include="EigenRand\Dists\GammaPoisson.h" />
     <ClInclude Include="EigenRand\Macro.h" />
     <ClInclude Include="EigenRand\MorePacketMath.h" />
     <ClInclude Include="EigenRand\PacketFilter.h" />

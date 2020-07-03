@@ -2,7 +2,7 @@
  * @file Discrete.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.1.0
+ * @version 0.2.0
  * @date 2020-06-22
  * 
  * @copyright Copyright (c) 2020
@@ -465,11 +465,8 @@ namespace Eigen
 			template<typename Packet>
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
 			{
-#ifdef EIGEN_VECTORIZE_AVX
-				using PacketType = Packet4f;
-#else
 				using PacketType = decltype(reinterpret_to_float(std::declval<Packet>()));
-#endif
+
 				if (!cdf.empty())
 				{
 					auto ret = pset1<Packet>(cdf.size());
@@ -590,6 +587,290 @@ namespace Eigen
 		{
 			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
 		};
+
+		template<typename Scalar, typename Rng>
+		struct scalar_poisson_dist_op : public scalar_uniform_real_op<float, Rng>
+		{
+			static_assert(std::is_same<Scalar, int32_t>::value, "poisson needs integral types.");
+			using ur_base = scalar_uniform_real_op<float, Rng>;
+
+			double mean, ne_mean, sqrt_tmean, log_mean, g1;
+
+			scalar_poisson_dist_op(const Rng& _rng, double _mean)
+				: ur_base{ _rng }, mean{ _mean }, ne_mean{ std::exp(-_mean) }
+			{
+				sqrt_tmean = std::sqrt(2 * mean);
+				log_mean = std::log(mean);
+				g1 = mean * log_mean - std::lgamma(mean + 1);
+			}
+
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			{
+				if (mean < 12)
+				{
+					Scalar res = 0;
+					double val = 1;
+					for (; ; ++res)
+					{
+						val *= ur_base::operator()();
+						if (val <= ne_mean) break;
+					}
+					return res;
+				}
+				else
+				{
+					Scalar res;
+					double yx;
+					while(1)
+					{
+						yx = std::tan(constant::pi * ur_base::operator()());
+						res = (Scalar)(sqrt_tmean * yx + mean);
+						if (res >= 0 && ur_base::operator()() <= 0.9 * (1.0 + yx * yx)
+							* std::exp(res * log_mean - std::lgamma(res + 1.0) - g1))
+						{
+							return res;
+						}
+					}
+				}
+			}
+
+			template<typename Packet>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			{
+				using PacketType = decltype(reinterpret_to_float(std::declval<Packet>()));
+
+				if (mean < 12)
+				{
+					Packet res = pset1<Packet>(0);
+					PacketType val = pset1<PacketType>(1), pne_mean = pset1<PacketType>(ne_mean);
+					while (1)
+					{
+						val = pmul(val, ur_base::template packetOp<PacketType>());
+						auto c = reinterpret_to_int(pcmplt(pne_mean, val));
+						if (pmovemask(c) == 0) break;
+						res = padd(res, pnegate(c));
+					}
+					return res;
+				}
+				else
+				{
+					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
+					thread_local PacketType cache_rest;
+					thread_local int cache_rest_cnt;
+					thread_local const scalar_poisson_dist_op* cache_ptr = nullptr;
+					if (cache_ptr != this)
+					{
+						cache_ptr = this;
+						cache_rest = pset1<PacketType>(0);
+						cache_rest_cnt = 0;
+					}
+
+					const PacketType ppi = pset1<PacketType>(constant::pi),
+						psqrt_tmean = pset1<PacketType>(sqrt_tmean),
+						pmean = pset1<PacketType>(mean),
+						plog_mean = pset1<PacketType>(log_mean),
+						pg1 = pset1<PacketType>(g1);
+					while (1)
+					{
+						PacketType fres, yx, psin, pcos;
+						psincos(pmul(ppi, ur_base::template packetOp<PacketType>()), psin, pcos);
+						yx = pdiv(psin, pcos);
+						fres = ptruncate(padd(pmul(psqrt_tmean, yx), pmean));
+
+						auto p1 = pmul(padd(pmul(yx, yx), pset1<PacketType>(1)), pset1<PacketType>(0.9));
+						auto p2 = pexp(psub(psub(pmul(fres, plog_mean), plgamma(padd(fres, pset1<PacketType>(1)))), pg1));
+
+						auto c1 = pcmple(pset1<PacketType>(0), fres);
+						auto c2 = pcmple(ur_base::template packetOp<PacketType>(), pmul(p1, p2));
+
+						auto cands = fres;
+						bool full = false;
+						cache_rest_cnt = cm.compress_append(cands, pand(c1, c2),
+							cache_rest, cache_rest_cnt, full);
+						if (full) return pcast<PacketType, Packet>(cands);
+					}
+				}
+			}
+		};
+
+		template<typename Scalar, typename Urng>
+		struct functor_traits<scalar_poisson_dist_op<Scalar, Urng> >
+		{
+			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
+		};
+
+		template<typename Scalar, typename Rng>
+		struct scalar_binomial_dist_op : public scalar_poisson_dist_op<Scalar, Rng>
+		{
+			static_assert(std::is_same<Scalar, int32_t>::value, "binomial needs integral types.");
+			using ur_base = scalar_uniform_real_op<float, Rng>;
+
+			Scalar trials;
+			double p, small_p, g1, sqrt_v, log_small_p, log_small_q;
+
+			scalar_binomial_dist_op(const Rng& _rng, Scalar _trials = 1, double _p = 0.5)
+				: scalar_poisson_dist_op<Scalar, Rng>{ _rng, _trials * std::min(_p, 1 - _p) }, 
+				trials{ _trials }, p{ _p }, small_p{ std::min(p, 1 - p) }
+				
+			{
+				g1 = std::lgamma(trials + 1);
+				sqrt_v = std::sqrt(2 * this->mean * (1 - small_p));
+				log_small_p = std::log(small_p);
+				log_small_q = std::log(1 - small_p);
+			}
+
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			{
+				Scalar res;
+				if (trials < 25)
+				{
+					res = 0;
+					for (int i = 0; i < trials; ++i)
+					{
+						if (ur_base::operator()() < p) ++res;
+					}
+					return res;
+				}
+				else if (this->mean < 1.0)
+				{
+					res = scalar_poisson_dist_op<Scalar, Rng>::operator()();
+				}
+				else
+				{
+					while(1)
+					{
+						double ys;
+						ys = std::tan(constant::pi * ur_base::operator()());
+						res = (Scalar)(sqrt_v * ys + this->mean);
+						if (0 <= res && res <= trials && ur_base::operator()() <= 1.2 * sqrt_v
+							* (1.0 + ys * ys)
+							* std::exp(g1 - std::lgamma(res + 1)
+								- std::lgamma(trials - res + 1.0)
+								+ res * log_small_p
+								+ (trials - res) * log_small_q)
+							)
+						{
+							break;
+						}
+					}
+				}
+				return p == small_p ? res : trials - res;
+			}
+
+			template<typename Packet>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			{
+				using PacketType = decltype(reinterpret_to_float(std::declval<Packet>()));
+				Packet res;
+				if (trials < 25)
+				{
+					PacketType pp = pset1<PacketType>(p);
+					res = pset1<Packet>(trials);
+					for (int i = 0; i < trials; ++i)
+					{
+						auto c = reinterpret_to_int(pcmple(pp, ur_base::template packetOp<PacketType>()));
+						res = padd(res, c);
+					}
+					return res;
+				}
+				else if (this->mean < 1.0)
+				{
+					res = scalar_poisson_dist_op<Scalar, Rng>::template packetOp<Packet>();
+				}
+				else
+				{
+					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
+					thread_local PacketType cache_rest;
+					thread_local int cache_rest_cnt;
+					thread_local const scalar_binomial_dist_op* cache_ptr = nullptr;
+					if (cache_ptr != this)
+					{
+						cache_ptr = this;
+						cache_rest = pset1<PacketType>(0);
+						cache_rest_cnt = 0;
+					}
+
+					const PacketType ppi = pset1<PacketType>(constant::pi),
+						ptrials = pset1<PacketType>(trials),
+						psqrt_v = pset1<PacketType>(sqrt_v),
+						pmean = pset1<PacketType>(this->mean),
+						plog_small_p = pset1<PacketType>(log_small_p),
+						plog_small_q = pset1<PacketType>(log_small_q),
+						pg1 = pset1<PacketType>(g1);
+					while (1)
+					{
+						PacketType fres, ys, psin, pcos;
+						psincos(pmul(ppi, ur_base::template packetOp<PacketType>()), psin, pcos);
+						ys = pdiv(psin, pcos);
+						fres = ptruncate(padd(pmul(psqrt_v, ys), pmean));
+						
+						auto p1 = pmul(pmul(pset1<PacketType>(1.2), psqrt_v), padd(pset1<PacketType>(1), pmul(ys, ys)));
+						auto p2 = pexp(
+							padd(padd(psub(
+								psub(pg1, plgamma(padd(fres, pset1<PacketType>(1)))),
+								plgamma(psub(padd(ptrials, pset1<PacketType>(1)), fres))
+							), pmul(fres, plog_small_p)), pmul(psub(ptrials, fres), plog_small_q))
+						);
+
+						auto c1 = pand(pcmple(pset1<PacketType>(0), fres), pcmple(fres, ptrials));
+						auto c2 = pcmple(ur_base::template packetOp<PacketType>(), pmul(p1, p2));
+
+						auto cands = fres;
+						bool full = false;
+						cache_rest_cnt = cm.compress_append(cands, pand(c1, c2),
+							cache_rest, cache_rest_cnt, full);
+						if (full)
+						{
+							res = pcast<PacketType, Packet>(cands);
+							break;
+						}
+					}
+				}
+				return p == small_p ? res : psub(pset1<Packet>(trials), res);
+			}
+		};
+
+		template<typename Scalar, typename Urng>
+		struct functor_traits<scalar_binomial_dist_op<Scalar, Urng> >
+		{
+			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
+		};
+
+		template<typename Scalar, typename Rng>
+		struct scalar_geometric_dist_op : public scalar_uniform_real_op<float, Rng>
+		{
+			static_assert(std::is_same<Scalar, int32_t>::value, "geomtric needs integral types.");
+			using ur_base = scalar_uniform_real_op<float, Rng>;
+
+			double p, rlog_q;
+
+			scalar_geometric_dist_op(const Rng& _rng, double _p)
+				: ur_base{ _rng }, p{ _p }, rlog_q{ 1 / std::log(1 - p) }
+			{
+			}
+
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			{
+				return (Scalar)(std::log(1 - ur_base::operator()()) * rlog_q);
+			}
+
+			template<typename Packet>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			{
+				using PacketType = decltype(reinterpret_to_float(std::declval<Packet>()));
+
+				return pcast<PacketType, Packet>(ptruncate(pmul(plog(
+					psub(pset1<PacketType>(1), ur_base::template packetOp<PacketType>())
+				), pset1<PacketType>(rlog_q))));
+			}
+		};
+
+		template<typename Scalar, typename Urng>
+		struct functor_traits<scalar_geometric_dist_op<Scalar, Urng> >
+		{
+			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
+		};
+
 	}
 }
 

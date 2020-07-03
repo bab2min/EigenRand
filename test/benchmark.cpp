@@ -287,6 +287,76 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 		auto scope = bh.measure("studentT(20)" + suffix, x);
 		x = Eigen::Rand::studentTLike(x, urng, 20);
 	}
+
+	{
+		auto scope = bh.measure("fisherF(1,1)" + suffix, x);
+		x = Eigen::Rand::fisherFLike(x, urng, 1, 1);
+	}
+
+	{
+		auto scope = bh.measure("fisherF(5,1)" + suffix, x);
+		x = Eigen::Rand::fisherFLike(x, urng, 5, 1);
+	}
+
+	{
+		auto scope = bh.measure("fisherF(1,5)" + suffix, x);
+		x = Eigen::Rand::fisherFLike(x, urng, 1, 5);
+	}
+
+	{
+		auto scope = bh.measure("fisherF(5,5)" + suffix, x);
+		x = Eigen::Rand::fisherFLike(x, urng, 5, 5);
+	}
+
+	{
+		auto scope = bh.measure("poisson(1)" + suffix, xi);
+		xi = Eigen::Rand::poissonLike(xi, urng, 1);
+	}
+
+	{
+		auto scope = bh.measure("poisson(8)" + suffix, xi);
+		xi = Eigen::Rand::poissonLike(xi, urng, 8);
+	}
+
+	{
+		auto scope = bh.measure("poisson(16)" + suffix, xi);
+		xi = Eigen::Rand::poissonLike(xi, urng, 16);
+	}
+
+	{
+		auto scope = bh.measure("binomial(20,0.5)" + suffix, xi);
+		xi = Eigen::Rand::binomialLike(xi, urng, 20, 0.5);
+	}
+
+	{
+		auto scope = bh.measure("binomial(50,0.01)" + suffix, xi);
+		xi = Eigen::Rand::binomialLike(xi, urng, 50, 0.01);
+	}
+
+	{
+		auto scope = bh.measure("binomial(100,0.75)" + suffix, xi);
+		xi = Eigen::Rand::binomialLike(xi, urng, 100, 0.75);
+	}
+
+	{
+		auto scope = bh.measure("geometric(0.5)" + suffix, xi);
+		xi = Eigen::Rand::geometricLike(xi, urng, 0.5);
+	}
+
+	{
+		auto scope = bh.measure("negativeBinomial(10,0.5)" + suffix, xi);
+		xi = Eigen::Rand::negativeBinomialLike(xi, urng, 10, 0.5);
+	}
+
+	{
+		auto scope = bh.measure("negativeBinomial(20,0.25)" + suffix, xi);
+		xi = Eigen::Rand::negativeBinomialLike(xi, urng, 20, 0.25);
+	}
+
+	{
+		auto scope = bh.measure("negativeBinomial(30,0.75)" + suffix, xi);
+		xi = Eigen::Rand::negativeBinomialLike(xi, urng, 30, 0.75);
+	}
 	return ret;
 }
 
@@ -471,6 +541,90 @@ std::map<std::string, double> test_nullary(size_t size, const std::string& suffi
 		auto scope = bh.measure("studentT(20)" + suffix, x);
 		std::student_t_distribution<float> dist{ 20 };
 		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("fisherF(1,1)" + suffix, x);
+		std::fisher_f_distribution<float> dist{ 1, 1 };
+		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("fisherF(5,1)" + suffix, x);
+		std::fisher_f_distribution<float> dist{ 5, 1 };
+		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("fisherF(1,5)" + suffix, x);
+		std::fisher_f_distribution<float> dist{ 1, 5 };
+		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("fisherF(5,5)" + suffix, x);
+		std::fisher_f_distribution<float> dist{ 5, 5 };
+		x = Eigen::ArrayXXf::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("poisson(1)" + suffix, xi);
+		std::poisson_distribution<> dist{ 1 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("poisson(8)" + suffix, xi);
+		std::poisson_distribution<> dist{ 8 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("poisson(16)" + suffix, xi);
+		std::poisson_distribution<> dist{ 16 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("binomial(20,0.5)" + suffix, xi);
+		std::binomial_distribution<> dist{ 20, 0.5 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("binomial(50,0.01)" + suffix, xi);
+		std::binomial_distribution<> dist{ 50, 0.01 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("binomial(100,0.75)" + suffix, xi);
+		std::binomial_distribution<> dist{ 100, 0.75 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("geometric(0.5)" + suffix, xi);
+		std::geometric_distribution<> dist{ 0.5 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("negativeBinomial(10,0.5)" + suffix, xi);
+		std::negative_binomial_distribution<> dist{ 10, 0.5 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("negativeBinomial(20,0.25)" + suffix, xi);
+		std::negative_binomial_distribution<> dist{ 20, 0.25 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
+	}
+
+	{
+		auto scope = bh.measure("negativeBinomial(30,0.75)" + suffix, xi);
+		std::negative_binomial_distribution<> dist{ 30, 0.75 };
+		xi = Eigen::ArrayXXi::NullaryExpr(size, size, [&]() { return dist(urng); });
 	}
 	return ret;
 }
