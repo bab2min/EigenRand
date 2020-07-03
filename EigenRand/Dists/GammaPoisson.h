@@ -27,7 +27,7 @@ namespace Eigen
 			static_assert(std::is_same<Scalar, int32_t>::value, "uniformInt needs integral types.");
 
 			scalar_negative_binomial_dist_op(const Rng& _rng, Scalar _trials = 1, double _p = 0.5)
-				: scalar_gamma_dist_op<float, Rng>{ _rng, _trials, (1 - _p) / _p }
+				: scalar_gamma_dist_op<float, Rng>{ _rng, (float)_trials, (float)((1 - _p) / _p) }
 
 			{
 			}

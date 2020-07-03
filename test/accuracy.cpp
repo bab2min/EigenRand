@@ -566,5 +566,6 @@ int main(int argc, char** argv)
 		std::cout << std::setw(14) << p.first.substr(sp + 1);
 		std::cout << ": " << mean << " (" << std::sqrt(var) << ")" << std::endl;
 	}
+	std::cout << std::endl;
 	return 0;
 }
