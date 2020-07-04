@@ -714,32 +714,32 @@ namespace Eigen
 		}
 
 		template<>
-		Packet4i pcmpeq<Packet4i>(const Packet4i& a, const Packet4i& b)
+		EIGEN_STRONG_INLINE Packet4i pcmpeq<Packet4i>(const Packet4i& a, const Packet4i& b)
 		{
 			return _mm_cmpeq_epi32(a, b);
 		}
 
 		template<>
-		Packet4i psll<Packet4i>(const Packet4i& a, int b)
+		EIGEN_STRONG_INLINE Packet4i psll<Packet4i>(const Packet4i& a, int b)
 		{
 			return _mm_slli_epi32(a, b);
 		}
 
 		template<>
-		Packet4i psrl<Packet4i>(const Packet4i& a, int b)
+		EIGEN_STRONG_INLINE Packet4i psrl<Packet4i>(const Packet4i& a, int b)
 		{
 			return _mm_srli_epi32(a, b);
 		}
 
 
 		template<>
-		Packet4i psll64<Packet4i>(const Packet4i& a, int b)
+		EIGEN_STRONG_INLINE Packet4i psll64<Packet4i>(const Packet4i& a, int b)
 		{
 			return _mm_slli_epi64(a, b);
 		}
 
 		template<>
-		Packet4i psrl64<Packet4i>(const Packet4i& a, int b)
+		EIGEN_STRONG_INLINE Packet4i psrl64<Packet4i>(const Packet4i& a, int b)
 		{
 			return _mm_srli_epi64(a, b);
 		}
