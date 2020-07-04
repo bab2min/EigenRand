@@ -69,7 +69,7 @@ https://bab2min.github.io/eigenrand/
 The following result is a measure of the time in seconds it takes to generate 1M random numbers. 
 It shows the average of 20 times.
 
-### Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Ubuntu 16.04, gcc7.5)
+### Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Ubuntu 16.04, gcc5.4)
 
 |  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) | EigenRand (AVX2) |
 |---|---:|---:|---:|---:|---:|---:|
@@ -113,7 +113,7 @@ It shows the average of 20 times.
 | Mersenne Twister(int32) | 4.7 | 5.6 | 4.0 | 3.7 | 3.5 | 3.6 |
 | Mersenne Twister(int64) | 5.4 | 5.3 | 4.0 | 3.9 | 3.4 | 2.6 |
 
-### Intel(R) Xeon(R) CPU E5-1650 v2 @ 3.50GHz (macOS 10.15, gcc8.4)
+### Intel(R) Xeon(R) CPU E5-1650 v2 @ 3.50GHz (macOS 10.15, clang-1103)
 
 |  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) |
 |---|---:|---:|---:|---:|---:|
