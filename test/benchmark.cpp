@@ -694,7 +694,7 @@ int main(int argc, char** argv)
 			timeSq[p.first] += p.second * p.second;
 		}
 
-		for (auto& p : test_rng(Eigen::Rand::makeScalarRng<uint32_t>(Eigen::Rand::Vmt19937_64{}), size, "rng\tvmt19937_64_32", results))
+		for (auto& p : test_rng(Eigen::Rand::makeUniversalRng<uint32_t>(Eigen::Rand::Vmt19937_64{}), size, "rng\tvmt19937_64_32", results))
 		{
 			time[p.first] += p.second;
 			timeSq[p.first] += p.second * p.second;
@@ -706,7 +706,7 @@ int main(int argc, char** argv)
 			timeSq[p.first] += p.second * p.second;
 		}
 
-		for (auto& p : test_rng(Eigen::Rand::makeScalarRng<uint64_t>(Eigen::Rand::Vmt19937_64{}), size, "rng\tvmt19937_64", results))
+		for (auto& p : test_rng(Eigen::Rand::makeUniversalRng<uint64_t>(Eigen::Rand::Vmt19937_64{}), size, "rng\tvmt19937_64", results))
 		{
 			time[p.first] += p.second;
 			timeSq[p.first] += p.second * p.second;

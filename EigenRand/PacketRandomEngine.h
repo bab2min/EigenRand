@@ -400,9 +400,6 @@ namespace Eigen
 			0xfff7eee000000000, 43, 6364136223846793005>;
 #endif
 
-		template<typename IntPacket>
-		EIGEN_STRONG_INLINE auto bit_to_ur_float(const IntPacket& x) -> decltype(reinterpret_to_float(x));
-
 		/**
 		 * @brief Scalar adaptor for random engines which generates packet
 		 * 
@@ -410,22 +407,23 @@ namespace Eigen
 		 * @tparam BaseRng 
 		 */
 		template<typename UIntType, typename BaseRng>
-		class PacketRandomEngineAdaptor
+		class PacketRandomEngineAdaptor : public BaseRng
 		{
 			static_assert(IsPacketRandomEngine<BaseRng>::value, "BaseRng must be a kind of PacketRandomEngine.");
 		public:
 			using result_type = UIntType;
 
-			PacketRandomEngineAdaptor(const BaseRng& _rng)
-				: rng{ _rng }
+			using BaseRng::BaseRng;
+
+			PacketRandomEngineAdaptor(const BaseRng& o) : BaseRng{ o }
 			{
 			}
 			
-			PacketRandomEngineAdaptor(BaseRng&& _rng)
-				: rng{ _rng }
+			PacketRandomEngineAdaptor(BaseRng&& o) : BaseRng{ o }
 			{
 			}
 
+			PacketRandomEngineAdaptor() = default;
 			PacketRandomEngineAdaptor(const PacketRandomEngineAdaptor&) = default;
 			PacketRandomEngineAdaptor(PacketRandomEngineAdaptor&&) = default;
 
@@ -465,7 +463,7 @@ namespace Eigen
 				const size_t stride = sizeof(typename BaseRng::result_type) / sizeof(result_type);
 				for (size_t i = 0; i < buf_size; i += stride)
 				{
-					reinterpret_cast<typename BaseRng::result_type&>(buf[i]) = rng();
+					reinterpret_cast<typename BaseRng::result_type&>(buf[i]) = BaseRng::operator()();
 				}
 			}
 
@@ -475,7 +473,7 @@ namespace Eigen
 				const size_t stride = sizeof(typename BaseRng::result_type) / sizeof(float);
 				for (size_t i = 0; i < buf_size; i += stride)
 				{
-					auto urf = bit_to_ur_float(rng());
+					auto urf = internal::bit_to_ur_float(BaseRng::operator()());
 					reinterpret_cast<decltype(urf)&>(fbuf[i]) = urf;
 				}
 			}
@@ -483,7 +481,6 @@ namespace Eigen
 			static constexpr size_t buf_size = 64 / sizeof(result_type);
 			static constexpr size_t fbuf_size = 64 / sizeof(float);
 
-			BaseRng rng;
 			std::array<result_type, buf_size> buf;
 			size_t cnt = buf_size;
 			std::array<float, fbuf_size> fbuf;
@@ -500,12 +497,31 @@ namespace Eigen
 			{
 			}
 
+			RandomEngineWrapper(BaseRng&& o) : BaseRng{ o }
+			{
+			}
+
+			RandomEngineWrapper() = default;
+			RandomEngineWrapper(const RandomEngineWrapper&) = default;
+			RandomEngineWrapper(RandomEngineWrapper&&) = default;
+
 			float uniform_real()
 			{
 				internal::bit_scalar<float> bs;
 				return bs.to_ur(this->operator()());
 			}
 		};
+
+		template<typename UIntType, typename Rng>
+		using UniversalRandomEngine = typename std::conditional<
+			IsPacketRandomEngine<typename std::remove_reference<Rng>::type>::value,
+			PacketRandomEngineAdaptor<UIntType, typename std::remove_reference<Rng>::type>,
+			typename std::conditional<
+				IsScalarRandomEngine<typename std::remove_reference<Rng>::type>::value,
+				RandomEngineWrapper<typename std::remove_reference<Rng>::type>,
+				void
+			>::type
+		>::type;
 
 		/**
 		 * @brief Helper function for making a PacketRandomEngineAdaptor
@@ -516,19 +532,7 @@ namespace Eigen
 		 * @return an instance of PacketRandomEngineAdaptor for UIntType
 		 */
 		template<typename UIntType, typename Rng> 
-		auto makeScalarRng(Rng&& rng) -> typename std::enable_if<
-			IsPacketRandomEngine<typename std::remove_reference<Rng>::type>::value, 
-			PacketRandomEngineAdaptor<UIntType, typename std::remove_reference<Rng>::type>
-		>::type
-		{
-			return { std::forward<Rng>(rng) };
-		}
-
-		template<typename UIntType, typename Rng>
-		auto makeScalarRng(Rng&& rng) -> typename std::enable_if<
-			IsScalarRandomEngine<typename std::remove_reference<Rng>::type>::value,
-			RandomEngineWrapper<typename std::remove_reference<Rng>::type>
-		>::type
+		UniversalRandomEngine<UIntType, Rng> makeUniversalRng(Rng&& rng)
 		{
 			return { std::forward<Rng>(rng) };
 		}
