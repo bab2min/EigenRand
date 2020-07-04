@@ -2,7 +2,7 @@
  * @file MorePacketMath.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.1.0
+ * @version 0.2.0
  * @date 2020-06-22
  * 
  * @copyright Copyright (c) 2020
@@ -61,6 +61,9 @@ namespace Eigen
 
 		template<typename Packet>
 		EIGEN_STRONG_INLINE Packet psrl64(const Packet& a, int b);
+
+		template<typename Packet>
+		EIGEN_STRONG_INLINE int pmovemask(const Packet& a);
 
 		template<typename Packet>
 		EIGEN_STRONG_INLINE void psincos(Packet x, Packet &s, Packet &c)
@@ -160,6 +163,20 @@ namespace Eigen
 			c = pxor(xmm2, sign_bit_cos);
 		}
 
+		// approximation : lgamma(z) ~= (z+2.5)ln(z+3) - z - 3 + 0.5 ln (2pi) + 1/12/(z + 3) - ln (z(z+1)(z+2))
+		template<typename Packet>
+		EIGEN_STRONG_INLINE Packet plgamma(const Packet& x)
+		{
+			auto x_3 = padd(x, pset1<Packet>(3));
+			auto ret = pmul(padd(x_3, pset1<Packet>(-0.5)), plog(x_3));
+			ret = psub(ret, x_3);
+			ret = padd(ret, pset1<Packet>(0.9189385332046727));
+			ret = padd(ret, pdiv(pset1<Packet>(1 / 12.), x_3));
+			ret = psub(ret, plog(pmul(
+				pmul(psub(x_3, pset1<Packet>(1)), psub(x_3, pset1<Packet>(2))), x)));
+			return ret;
+		}
+
 		template<typename Packet>
 		EIGEN_STRONG_INLINE Packet pcmplt(const Packet& a, const Packet& b);
 
@@ -177,6 +194,76 @@ namespace Eigen
 
 		template<typename Packet>
 		EIGEN_STRONG_INLINE auto pgather(const double* addr, const Packet& index, bool upperhalf = false) -> decltype(reinterpret_to_double(std::declval<Packet>()));
+
+		template<typename Packet>
+		EIGEN_STRONG_INLINE Packet ptruncate(const Packet& a);
+
+		template<typename IntPacket>
+		EIGEN_STRONG_INLINE auto bit_to_ur_float(const IntPacket& x) -> decltype(reinterpret_to_float(x))
+		{
+			using FloatPacket = decltype(reinterpret_to_float(x));
+
+			const IntPacket lower = pset1<IntPacket>(0x7FFFFF),
+				upper = pset1<IntPacket>(127 << 23);
+			const FloatPacket one = pset1<FloatPacket>(1);
+
+			return psub(reinterpret_to_float(por(pand(x, lower), upper)), one);
+		}
+
+		template<typename IntPacket>
+		EIGEN_STRONG_INLINE auto bit_to_ur_double(const IntPacket& x) -> decltype(reinterpret_to_double(x))
+		{
+			using DoublePacket = decltype(reinterpret_to_double(x));
+
+			const IntPacket lower = pseti64<IntPacket>(0xFFFFFFFFFFFFFull),
+				upper = pseti64<IntPacket>(1023ull << 52);
+			const DoublePacket one = pset1<DoublePacket>(1);
+
+			return psub(reinterpret_to_double(por(pand(x, lower), upper)), one);
+		}
+
+		template<typename Scalar>
+		struct bit_scalar;
+
+		template<>
+		struct bit_scalar<float>
+		{
+			float to_ur(uint32_t x)
+			{
+				union
+				{
+					uint32_t u;
+					float f;
+				};
+				u = (x & 0x7FFFFF) | (127 << 23);
+				return f - 1.f;
+			}
+
+			float to_nzur(uint32_t x)
+			{
+				return to_ur(x) + std::numeric_limits<float>::epsilon() / 8;
+			}
+		};
+
+		template<>
+		struct bit_scalar<double>
+		{
+			double to_ur(uint64_t x)
+			{
+				union
+				{
+					uint64_t u;
+					double f;
+				};
+				u = (x & 0xFFFFFFFFFFFFFull) | (1023ull << 52);
+				return f - 1.;
+			}
+
+			double to_nzur(uint64_t x)
+			{
+				return to_ur(x) + std::numeric_limits<double>::epsilon() / 8;
+			}
+		};
 	}
 }
 
@@ -500,6 +587,36 @@ namespace Eigen
 			}
 #endif
 		}
+
+		template<>
+		EIGEN_STRONG_INLINE int pmovemask<Packet8f>(const Packet8f& a)
+		{
+			return _mm256_movemask_ps(a);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE int pmovemask<Packet4d>(const Packet4d& a)
+		{
+			return _mm256_movemask_pd(a);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE int pmovemask<Packet8i>(const Packet8i& a)
+		{
+			return pmovemask(_mm256_castsi256_ps(a));
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet8f ptruncate<Packet8f>(const Packet8f& a)
+		{
+			return _mm256_round_ps(a, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4d ptruncate<Packet4d>(const Packet4d& a)
+		{
+			return _mm256_round_pd(a, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+		}
 	}
 }
 #endif
@@ -660,7 +777,7 @@ namespace Eigen
 		template<> 
 		EIGEN_STRONG_INLINE Packet4f pblendv(const Packet4f& ifPacket, const Packet4f& thenPacket, const Packet4f& elsePacket) 
 		{
-#ifdef XXX_EIGEN_VECTORIZE_SSE4_1
+#ifdef EIGEN_VECTORIZE_SSE4_1
 			return _mm_blendv_ps(elsePacket, thenPacket, ifPacket);
 #else
 			return _mm_or_ps(_mm_and_ps(ifPacket, thenPacket), _mm_andnot_ps(ifPacket, elsePacket));
@@ -670,7 +787,7 @@ namespace Eigen
 		template<>
 		EIGEN_STRONG_INLINE Packet4i pblendv(const Packet4i& ifPacket, const Packet4i& thenPacket, const Packet4i& elsePacket)
 		{
-#ifdef XXX_EIGEN_VECTORIZE_SSE4_1
+#ifdef EIGEN_VECTORIZE_SSE4_1
 			return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(elsePacket), _mm_castsi128_ps(thenPacket), _mm_castsi128_ps(ifPacket)));
 #else
 			return _mm_or_si128(_mm_and_si128(ifPacket, thenPacket), _mm_andnot_si128(ifPacket, elsePacket));
@@ -680,7 +797,7 @@ namespace Eigen
 		template<> 
 		EIGEN_STRONG_INLINE Packet2d pblendv(const Packet2d& ifPacket, const Packet2d& thenPacket, const Packet2d& elsePacket) 
 		{
-#ifdef XXX_EIGEN_VECTORIZE_SSE4_1
+#ifdef EIGEN_VECTORIZE_SSE4_1
 			return _mm_blendv_pd(elsePacket, thenPacket, ifPacket);
 #else
 			return _mm_or_pd(_mm_and_pd(ifPacket, thenPacket), _mm_andnot_pd(ifPacket, elsePacket));
@@ -727,6 +844,52 @@ namespace Eigen
 			{
 				return _mm_setr_pd(addr[u[0]], addr[u[1]]);
 			}
+#endif
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE int pmovemask<Packet4f>(const Packet4f& a)
+		{
+			return _mm_movemask_ps(a);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE int pmovemask<Packet2d>(const Packet2d& a)
+		{
+			return _mm_movemask_pd(a);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE int pmovemask<Packet4i>(const Packet4i& a)
+		{
+			return pmovemask(_mm_castsi128_ps(a));
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4f ptruncate<Packet4f>(const Packet4f& a)
+		{
+#ifdef EIGEN_VECTORIZE_SSE4_1
+			return _mm_round_ps(a, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+#else
+			auto round = _MM_GET_ROUNDING_MODE();
+			_MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
+			auto ret = _mm_cvtepi32_ps(_mm_cvtps_epi32(a));
+			_MM_SET_ROUNDING_MODE(round);
+			return ret;
+#endif
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet2d ptruncate<Packet2d>(const Packet2d& a)
+		{
+#ifdef EIGEN_VECTORIZE_SSE4_1
+			return _mm_round_pd(a, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+#else
+			auto round = _MM_GET_ROUNDING_MODE();
+			_MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
+			auto ret = _mm_cvtepi32_pd(_mm_cvtpd_epi32(a));
+			_MM_SET_ROUNDING_MODE(round);
+			return ret;
 #endif
 		}
 	}

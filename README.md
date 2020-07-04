@@ -15,7 +15,7 @@ You can get 5~10 times speed by just replacing old Eigen's Random or unvectoriza
 * C++11-compatible Random Number Generator
 * 5~10 times faster than non-vectorized functions
 * Header-only (like Eigen)
-* Easily integrate with Eigen's expressions
+* Can be easily integrated with Eigen's expressions
 * Currently supports only x86 and x86-64 architecture
 
 ## Requirement
@@ -34,22 +34,29 @@ https://bab2min.github.io/eigenrand/
 | Function | Scalar Type | Description | Equivalent to |
 |:---:|:---:|:---:|:---:|
 | `Eigen::Rand::balanced` | float, double | generates real values in the [-1, 1] range | `Eigen::DenseBase<Ty>::Random` for floating point types |
+| `Eigen::Rand::cauchy` | float, double | generates real values on the [Cauchy distribution](https://en.wikipedia.org/wiki/Cauchy_distribution). | `std::cauchy_distribution` |
 | `Eigen::Rand::chiSquared` | float, double | generates real values on a [chi-squared distribution](https://en.wikipedia.org/wiki/Chi-squared_distribution). | `std::chi_squared_distribution` |
 | `Eigen::Rand::exponential` | float, double | generates real values on an [exponential distribution](https://en.wikipedia.org/wiki/Exponential_distribution). | `std::exponential_distribution` |
 | `Eigen::Rand::extremeValue` | float, double | generates real values on an [extreme value distribution](https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution). | `std::extreme_value_distribution` |
+| `Eigen::Rand::fisherF` | float, double | generates real values on the [Fisher's F distribution](https://en.wikipedia.org/wiki/F_distribution). | `std::fisher_f_distribution` |
 | `Eigen::Rand::gamma` | float, double | generates real values on a [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution). | `std::gamma_distribution` |
 | `Eigen::Rand::lognormal` | float, double | generates real values on a [lognormal distribution](https://en.wikipedia.org/wiki/Lognormal_distribution). | `std::lognormal_distribution` |
 | `Eigen::Rand::normal` | float, double | generates real values on a [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution). | `std::normal_distribution` |
-| `Eigen::Rand::uniformReal` | float, double | generates real values in the [-1, 0) range. | `std::generate_canonical` |
-| `Eigen::Rand::weibull` | float, double | generates real values on a [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution). | `std::weibull_distribution` |
+| `Eigen::Rand::studentT` | float, double | generates real values on the [Student's t distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution). | `std::student_t_distribution` |
+| `Eigen::Rand::uniformReal` | float, double | generates real values in the `[-1, 0)` range. | `std::generate_canonical` |
+| `Eigen::Rand::weibull` | float, double | generates real values on the [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution). | `std::weibull_distribution` |
 
 ### Random distributions for integer types
 
 | Function | Scalar Type | Description | Equivalent to |
 |:---:|:---:|:---:|:---:|
-| `Eigen::Rand::randBits` | int | generates integers with random bits. | `Eigen::DenseBase<Ty>::Random` for integer types |
+| `Eigen::Rand::binomial` | int | generates integers on a [binomial distribution](https://en.wikipedia.org/wiki/Binomial_distribution). | `std::binomial_distribution` |
 | `Eigen::Rand::discrete` | int | generates random integers on a discrete distribution. | `std::discrete_distribution` |
-| `Eigen::Rand::uniformInt` | int | generates integers in the [min, max] range. | `std::uniform_int_distribution` |
+| `Eigen::Rand::geometric` | int | generates integers on a [geometric distribution](https://en.wikipedia.org/wiki/Geometric_distribution). | `std::geometric_distribution` |
+| `Eigen::Rand::negativeBinomial` | int | generates integers on a [negative binomial distribution](https://en.wikipedia.org/wiki/Negative_binomial_distribution). | `std::negative_binomial_distribution` |
+| `Eigen::Rand::poisson` | int | generates integers on the [Poisson distribution](https://en.wikipedia.org/wiki/Poisson_distribution). | `std::poisson_distribution` |
+| `Eigen::Rand::randBits` | int | generates integers with random bits. | `Eigen::DenseBase<Ty>::Random` for integer types |
+| `Eigen::Rand::uniformInt` | int | generates integers in the `[min, max]` range. | `std::uniform_int_distribution` |
 
 ### Random number engines
 
@@ -64,25 +71,42 @@ It shows the average of 20 times.
 
 ### Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Ubuntu 16.04, gcc7.5)
 
-|  | Eigen | C++ std | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) | EigenRand (AVX2) |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| `balanced` | 9.0 | - | 5.9 | 1.5 | 1.4 | 1.3 | 0.9 |
-| `balanced`(double) | 8.7 | - | 6.4 | 3.3 | 2.9 | 1.7 | 1.7 |
-| `chiSquared` | - | 80.5 | 249.5 | 64.6 | 58.0 | 29.4 | 28.8 |
-| `discrete`(int32) | - | - | 14.0 | 2.9 | 2.6 | 2.4 | 1.7 |
-| `discrete`(fp32) | - | - | 21.9 | 4.3 | 4.0 | 3.6 | 3.0 |
-| `discrete`(fp64) | - | 72.4 | 21.4 | 6.9 | 6.5 | 4.9 | 3.7 |
-| `exponential` | - | 31.0 | 25.3 | 5.5 | 5.3 | 3.3 | 2.9 |
-| `extremeValue` | - | 66.0 | 60.1 | 11.9 | 10.7 | 6.5 | 5.8 |
-| `gamma(0.2, 1)` | - | 207.8 | 211.4 | 54.6 | 51.2 | 26.9 | 27.0 |
-| `gamma(5, 3)` | - | 80.9 | 60.0 | 14.3 | 13.3 | 11.4 | 8.0 |
-| `gamma(10.5, 1)` | - | 81.1 | 248.6 | 63.3 | 58.5 | 29.2 | 28.4 |
-| `lognormal` | - | 66.3 | 55.4 | 12.8 | 11.8 | 6.2 | 6.2 |
-| `normal(0, 1)` | - | 38.1 | 28.5 | 6.8 | 6.2 | 3.8 | 3.7 |
-| `normal(2, 3)` | - | 37.6 | 29.0 | 7.3 | 6.6 | 4.0 | 3.9 |
-| `randBits` | - | 5.2 | 5.4 | 1.4 | 1.3 | 1.1 | 1.0 |
-| `uniformReal` | - | 12.9 | 5.7 | 1.4 | 1.2 | 1.4 | 0.7 |
-| `weibull` | - | 41.0 | 35.8 | 17.7 | 15.5 | 8.5 | 8.5 |
+|  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) | EigenRand (AVX2) |
+|---|---:|---:|---:|---:|---:|---:|
+| `balanced`* | 9.0 | 5.9 | 1.5 | 1.4 | 1.3 | 0.9 |
+| `balanced`(double)* | 8.7 | 6.4 | 3.3 | 2.9 | 1.7 | 1.7 |
+| `binomial(20, 0.5)` | 400.8 | 118.5 | 32.7 | 36.6 | 30.0 | 22.7 |
+| `binomial(50, 0.01)` | 71.7 | 22.5 | 7.7 | 8.3 | 7.9 | 6.6 |
+| `binomial(100, 0.75)` | 340.5 | 454.5 | 91.7 | 111.5 | 106.3 | 86.4 |
+| `cauchy` | 36.1 | 54.4 | 6.1 | 7.1 | 4.7 | 3.9 |
+| `chiSquared` | 80.5 | 249.5 | 64.6 | 58.0 | 29.4 | 28.8 |
+| `discrete`(int32) | - | 14.0 | 2.9 | 2.6 | 2.4 | 1.7 |
+| `discrete`(fp32) | - | 21.9 | 4.3 | 4.0 | 3.6 | 3.0 |
+| `discrete`(fp64) | 72.4 | 21.4 | 6.9 | 6.5 | 4.9 | 3.7 |
+| `exponential` | 31.0 | 25.3 | 5.5 | 5.3 | 3.3 | 2.9 |
+| `extremeValue` | 66.0 | 60.1 | 11.9 | 10.7 | 6.5 | 5.8 |
+| `fisherF(1, 1)` | 178.1 | 35.1 | 33.2 | 39.3 | 22.9 | 18.7 |
+| `fisherF(5, 5)` | 141.8 | 415.2 | 136.47 | 172.4 | 92.4 | 74.9 |
+| `gamma(0.2, 1)` | 207.8 | 211.4 | 54.6 | 51.2 | 26.9 | 27.0 |
+| `gamma(5, 3)` | 80.9 | 60.0 | 14.3 | 13.3 | 11.4 | 8.0 |
+| `gamma(10.5, 1)` | 81.1 | 248.6 | 63.3 | 58.5 | 29.2 | 28.4 |
+| `geometric` | 43.0 | 22.4 | 6.7 | 7.4 | 5.8 |  |
+| `lognormal` | 66.3 | 55.4 | 12.8 | 11.8 | 6.2 | 6.2 |
+| `negativeBinomial(10, 0.5)` | 312.0 | 301.4 | 82.9 | 100.6 | 95.3 | 77.9 |
+| `negativeBinomial(20, 0.25)` | 483.4 | 575.9 | 125.0 | 158.2 | 148.4 | 119.5 |
+| `normal(0, 1)` | 38.1 | 28.5 | 6.8 | 6.2 | 3.8 | 3.7 |
+| `normal(2, 3)` | 37.6 | 29.0 | 7.3 | 6.6 | 4.0 | 3.9 |
+| `poisson(1)` | 31.8 | 25.2 | 9.8 | 10.8 | 9.7 | 8.2 |
+| `poisson(16)` | 231.8 | 274.1 | 66.2 | 80.7 | 74.4 | 64.2 |
+| `randBits` | 5.2 | 5.4 | 1.4 | 1.3 | 1.1 | 1.0 |
+| `studentT(1)` | 122.7 | 120.1 | 15.3 | 19.2 | 12.6 | 9.4 |
+| `studentT(20)` | 102.2 | 111.1 | 15.4 | 19.2 | 12.2 | 9.4 |
+| `uniformInt(0~63)` | 22.4 | 4.7 | 1.7 | 1.6 | 1.4 | 1.1 |
+| `uniformInt(0~100k)` | 21.8 | 10.1 | 6.2 | 6.7 | 6.6 | 5.4 |
+| `uniformReal` | 12.9 | 5.7 | 1.4 | 1.2 | 1.4 | 0.7 |
+| `weibull` | 41.0 | 35.8 | 17.7 | 15.5 | 8.5 | 8.5 |
+
+* Since there is no equivalent class to `balanced` in C++11 std, we used Eigen::DenseBase::Random instead.
 
 |  | C++ std | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) | EigenRand (AVX2) |
 |---|---:|---:|---:|---:|---:|---:|
@@ -91,25 +115,42 @@ It shows the average of 20 times.
 
 ### Intel(R) Xeon(R) CPU E5-1650 v2 @ 3.50GHz (macOS 10.15, gcc8.4)
 
-|  | Eigen | C++ std | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) |
-|---|---:|---:|---:|---:|---:|---:|
-| `balanced` | 6.5 | - | 7.3 | 1.1 | 1.4 | 1.1 |
-| `balanced`(double) | 6.6 | - | 7.5 | 2.6 | 3.3 | 2.4 |
-| `chiSquared` | - | 84.4 | 152.2 | 44.1 | 48.7 | 26.2 |
-| `discrete`(int32) | - | - | 12.4 | 2.1 | 2.6 | 2.2 |
-| `discrete`(fp32) | - | - | 23.2 | 3.4 | 3.7 | 3.4 |
-| `discrete`(fp64) | - | 48.6 | 22.9 | 4.2 | 5.0 | 4.6 |
-| `exponential` | - | 22.0 | 18.0 | 4.1 | 4.9 | 3.2 |
-| `extremeValue` | - | 36.2 | 32.0 | 8.7 | 9.5 | 5.1 |
-| `gamma(0.2, 1)` | - | 69.8 | 80.4 | 28.5 | 33.8 | 19.2 |
-| `gamma(5, 3)` | - | 83.9 | 53.3 | 10.6 | 12.4 | 8.6 |
-| `gamma(10.5, 1)` | - | 83.2 | 150.4 | 43.3 | 48.4 | 26.2 |
-| `lognormal` | - | 43.8 | 40.7 | 9.0 | 10.8 | 5.7 |
-| `normal(0, 1)` | - | 32.6 | 28.6 | 5.5 | 6.5 | 3.8 |
-| `normal(2, 3)` | - | 32.9 | 30.5 | 5.7 | 6.7 | 3.9 |
-| `randBits` | - | 6.5 | 6.5 | 1.1 | 1.3 | 1.1 |
-| `uniformReal` | - | 12.7 | 7.0 | 1.0 | 1.2 | 1.1 |
-| `weibull` | - | 23.1 | 19.2 | 11.6 | 13.6 | 7.6 |
+|  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) |
+|---|---:|---:|---:|---:|---:|
+| `balanced`* | 6.5 | 7.3 | 1.1 | 1.4 | 1.1 |
+| `balanced`(double)* | 6.6 | 7.5 | 2.6 | 3.3 | 2.4 |
+| `binomial(20, 0.5)` | 38.8 | 164.9 | 27.7 | 29.3 | |
+| `binomial(50, 0.01)` | 21.9 | 27.6 | 6.6 | 7.0 | |
+| `binomial(100, 0.75)` | 52.2 | 421.9 | 93.6 | 94.8 | |
+| `cauchy` | 36.0 | 30.4 | 5.6 | 5.8 | |
+| `chiSquared` | 84.4 | 152.2 | 44.1 | 48.7 | 26.2 |
+| `discrete`(int32) | - | 12.4 | 2.1 | 2.6 | 2.2 |
+| `discrete`(fp32) | - | 23.2 | 3.4 | 3.7 | 3.4 |
+| `discrete`(fp64) | 48.6 | 22.9 | 4.2 | 5.0 | 4.6 |
+| `exponential` | 22.0 | 18.0 | 4.1 | 4.9 | 3.2 |
+| `extremeValue` | 36.2 | 32.0 | 8.7 | 9.5 | 5.1 |
+| `fisherF(1, 1)` | 158.2 | 73.1 | 32.3 | 32.1 | |
+| `fisherF(5, 5)` | 177.3 | 310.1 | 127.0 | 121.8 | |
+| `gamma(0.2, 1)` | 69.8 | 80.4 | 28.5 | 33.8 | 19.2 |
+| `gamma(5, 3)` | 83.9 | 53.3 | 10.6 | 12.4 | 8.6 |
+| `gamma(10.5, 1)` | 83.2 | 150.4 | 43.3 | 48.4 | 26.2 |
+| `geometric` | 39.6 | 19.0 | 4.3 | 4.4 | |
+| `lognormal` | 43.8 | 40.7 | 9.0 | 10.8 | 5.7 |
+| `negativeBinomial(10, 0.5)` | 217.4 | 274.8 | 71.6 | 73.7 | |
+| `negativeBinomial(20, 0.25)` | 192.9 | 464.9 | 112.0 | 111.5 | |
+| `normal(0, 1)` | 32.6 | 28.6 | 5.5 | 6.5 | 3.8 |
+| `normal(2, 3)` | 32.9 | 30.5 | 5.7 | 6.7 | 3.9 |
+| `poisson(1)` | 37.9 | 31.0 | 7.5 | 7.8 | |
+| `poisson(16)` | 92.4 | 243.3 | 55.6 | 57.7 | |
+| `randBits` | 6.5 | 6.5 | 1.1 | 1.3 | 1.1 |
+| `studentT(1)` | 115.0 | 54.1 | 15.5 | 15.7 | |
+| `studentT(20)` | 121.2 | 53.8 | 15.8 | 16.0 | |
+| `uniformInt(0~63)` | 20.2 | 9.8 | 1.8 | 1.8 | |
+| `uniformInt(0~100k)` | 25.7 | 16.1 | 8.1 | 8.5 | |
+| `uniformReal` | 12.7 | 7.0 | 1.0 | 1.2 | 1.1 |
+| `weibull` | 23.1 | 19.2 | 11.6 | 13.6 | 7.6 |
+
+* Since there is no equivalent class to `balanced` in C++11 std, we used Eigen::DenseBase::Random instead.
 
 |  | C++ std | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) |
 |---|---:|---:|---:|---:|---:|
@@ -118,25 +159,42 @@ It shows the average of 20 times.
 
 ### Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Windows Server 2019, MSVC2019)
 
-|  | Eigen | C++ std | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
-|---|---:|---:|---:|---:|---:|---:|
-| `balanced` | 20.7 | - | 7.2 | 3.3 | 4.0 | 2.2 |
-| `balanced`(double) | 21.9 | - | 8.8 | 6.7 | 4.3 | 4.3 |
-| `chiSquared` | - | 243.0 | 147.3 | 63.5 | 34.1 | 24.0 |
-| `discrete`(int32) | - | - | 12.4 | 3.5 | 2.7 | 2.2 |
-| `discrete`(fp32) | - | - | 19.2 | 5.1 | 3.6 | 3.7 |
-| `discrete`(fp64) | - | 83.9 | 19.0 | 6.7 | 7.4 | 4.6 |
-| `exponential` | - | 58.7 | 16.0 | 6.8 | 6.4 | 3.0 |
-| `extremeValue` | - | 64.6 | 27.7 | 13.5 | 9.8 | 5.5 |
-| `gamma(0.2, 1)` | - | 211.7 | 69.3 | 43.7 | 24.7 | 18.7 |
-| `gamma(5, 3)` | - | 272.5 | 42.3 | 17.6 | 17.2 | 8.5 |
-| `gamma(10.5, 1)` | - | 237.8 | 146.2 | 63.7 | 33.8 | 23.5 |
-| `lognormal` | - | 169.8 | 37.6 | 12.7 | 7.2 | 5.0 |
-| `normal(0, 1)` | - | 78.4 | 21.1 | 6.9 | 4.6 | 2.9 |
-| `normal(2, 3)` | - | 77.2 | 22.3 | 6.8 | 4.8 | 3.1 |
-| `randBits` | - | 6.0 | 6.2 | 3.1 | 2.7 | 2.7 |
-| `uniformReal` | - | 53.4 | 5.7 | 1.9 | 2.3 | 1.0 |
-| `weibull` | - | 75.1 | 44.3 | 18.5 | 14.3 | 7.9 |
+|  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
+|---|---:|---:|---:|---:|---:|
+| `balanced`* | 20.7 | 7.2 | 3.3 | 4.0 | 2.2 |
+| `balanced`(double)* | 21.9 | 8.8 | 6.7 | 4.3 | 4.3 |
+| `binomial(20, 0.5)` | 718.3 | 141.0 | 38.1 | 30.2 | 32.7 |
+| `binomial(50, 0.01)` | 61.5 | 21.4 | 7.5 | 6.5 | 8.0 |
+| `binomial(100, 0.75)` | 495.9 | 1042.5 | 100.6 | 95.2 | 93.0 |
+| `cauchy` | 71.6 | 30.0 | 6.8 | 6.4 | 3.0 |
+| `chiSquared` | 243.0 | 147.3 | 63.5 | 34.1 | 24.0 |
+| `discrete`(int32) | - | 12.4 | 3.5 | 2.7 | 2.2 |
+| `discrete`(fp32) | - | 19.2 | 5.1 | 3.6 | 3.7 |
+| `discrete`(fp64) | 83.9 | 19.0 | 6.7 | 7.4 | 4.6 |
+| `exponential` | 58.7 | 16.0 | 6.8 | 6.4 | 3.0 |
+| `extremeValue` | 64.6 | 27.7 | 13.5 | 9.8 | 5.5 |
+| `fisherF(1, 1)` | 178.7 | 75.2 | 35.3 | 28.4 | 17.5 |
+| `fisherF(5, 5)` | 491.0 | 298.4 | 125.8 | 87.4 | 60.5 |
+| `gamma(0.2, 1)` | 211.7 | 69.3 | 43.7 | 24.7 | 18.7 |
+| `gamma(5, 3)` | 272.5 | 42.3 | 17.6 | 17.2 | 8.5 |
+| `gamma(10.5, 1)` | 237.8 | 146.2 | 63.7 | 33.8 | 23.5 |
+| `geometric` | 49.3 | 17.0 | 7.0 | 5.8 | 5.4 |
+| `lognormal` | 169.8 | 37.6 | 12.7 | 7.2 | 5.0 |
+| `negativeBinomial(10, 0.5)` | 752.7 | 462.3 | 87.0 | 83.0 | 81.6 |
+| `negativeBinomial(20, 0.25)` | 611.4 | 855.3 | 123.7 | 125.3 | 116.6 |
+| `normal(0, 1)` | 78.4 | 21.1 | 6.9 | 4.6 | 2.9 |
+| `normal(2, 3)` | 77.2 | 22.3 | 6.8 | 4.8 | 3.1 |
+| `poisson(1)` | 77.4 | 28.9 | 10.0 | 8.1 | 10.1 |
+| `poisson(16)` | 312.9 | 485.5 | 63.6 | 61.5 | 60.5 |
+| `randBits` | 6.0 | 6.2 | 3.1 | 2.7 | 2.7 |
+| `studentT(1)` | 175.8 | 53.9 | 17.3 | 12.5 | 7.7 |
+| `studentT(20)` | 173.2 | 55.5 | 17.9 | 12.7 | 7.6 |
+| `uniformInt(0~63)` | 39.1 | 5.2 | 2.0 | 1.4 | 1.6 |
+| `uniformInt(0~100k)` | 38.5 | 12.3 | 7.6 | 6.0 | 7.7 |
+| `uniformReal` | 53.4 | 5.7 | 1.9 | 2.3 | 1.0 |
+| `weibull` | 75.1 | 44.3 | 18.5 | 14.3 | 7.9 |
+
+* Since there is no equivalent class to `balanced` in C++11 std, we used Eigen::DenseBase::Random instead.
 
 |  | C++ std | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
 |---|---:|---:|---:|---:|---:|
@@ -145,25 +203,42 @@ It shows the average of 20 times.
 
 ### AMD Ryzen 7 3700x CPU @ 3.60GHz (Windows 10, MSVC2017)
 
-|  | Eigen | C++ std | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
-|---|---:|---:|---:|---:|---:|
-| `balanced` | 20.8 | - | 1.9 | 2.0 | 1.4 |
-| `balanced`(double) | 21.7 | - | 4.1 | 2.7 | 3.0 |
-| `chiSquared` | - | 153.8 | 33.5 | 21.2 | 17.0 |
-| `discrete`(int32) | - | - | 2.4 | 2.3 | 2.5 |
-| `discrete`(fp32) | - | - | 2.6 | 2.3 | 3.5 |
-| `discrete`(fp64) | - | 55.8 | 5.1 | 4.7 | 4.3 |
-| `exponential` | - | 33.4 | 6.4 | 2.8 | 2.2 |
-| `extremeValue` | - | 39.4 | 7.8 | 4.6 | 4.0 |
-| `gamma(0.2, 1)` | - | 128.8 | 31.9 | 18.3 | 15.8 |
-| `gamma(5, 3)` | - | 156.1 | 9.7 | 8.0 | 5.0 |
-| `gamma(10.5, 1)` | - | 148.5 | 33.1 | 21.1 | 17.2 |
-| `lognormal` | - | 104.0 | 6.6 | 4.7 | 3.5 |
-| `normal(0, 1)` | - | 48.8 | 4.2 | 3.7 | 2.3 |
-| `normal(2, 3)` | - | 48.8 | 4.5 | 3.8 | 2.4 |
-| `randBits` | - | 4.2 | 1.7 | 1.5 | 1.8 |
-| `uniformReal` | - | 30.7 | 1.1 | 1.0 | 0.6 |
-| `weibull` | - | 46.5 | 10.6 | 6.4 | 5.2 |
+|  | C++ std (or Eigen) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
+|---|---:|---:|---:|---:|
+| `balanced`* | 20.8 | 1.9 | 2.0 | 1.4 |
+| `balanced`(double)* | 21.7 | 4.1 | 2.7 | 3.0 |
+| `binomial(20, 0.5)` | 416.0 | 27.7 | 28.9 | 29.1 |
+| `binomial(50, 0.01)` | 37.8 | 6.3 | 6.0 | 6.6 |
+| `binomial(100, 0.75)` | 309.1 | 72.4 | 66.0 | 67.0 |
+| `cauchy` | 42.2 | 4.8 | 5.1 | 2.7 |
+| `chiSquared` | 153.8 | 33.5 | 21.2 | 17.0 |
+| `discrete`(int32) | - | 2.4 | 2.3 | 2.5 |
+| `discrete`(fp32) | - | 2.6 | 2.3 | 3.5 |
+| `discrete`(fp64) | 55.8 | 5.1 | 4.7 | 4.3 |
+| `exponential` | 33.4 | 6.4 | 2.8 | 2.2 |
+| `extremeValue` | 39.4 | 7.8 | 4.6 | 4.0 |
+| `fisherF(1, 1)` | 103.9 | 25.3 | 14.9 | 11.7 |
+| `fisherF(5, 5)` | 295.7 | 85.5 | 58.3 | 44.8 |
+| `gamma(0.2, 1)` | 128.8 | 31.9 | 18.3 | 15.8 |
+| `gamma(5, 3)` | 156.1 | 9.7 | 8.0 | 5.0 |
+| `gamma(10.5, 1)` | 148.5 | 33.1 | 21.1 | 17.2 |
+| `geometric` | 27.1 | 6.6 | 4.3 | 4.1 |
+| `lognormal` | 104.0 | 6.6 | 4.7 | 3.5 |
+| `negativeBinomial(10, 0.5)` | 462.1 | 60.0 | 56.4 | 58.6 |
+| `negativeBinomial(20, 0.25)` | 357.6 | 84.5 | 80.6 | 78.4 |
+| `normal(0, 1)` | 48.8 | 4.2 | 3.7 | 2.3 |
+| `normal(2, 3)` | 48.8 | 4.5 | 3.8 | 2.4 |
+| `poisson(1)` | 46.4 | 7.9 | 7.4 | 8.2 |
+| `poisson(16)` | 192.4 | 43.2 | 40.4 | 40.9 |
+| `randBits` | 4.2 | 1.7 | 1.5 | 1.8 |
+| `studentT(1)` | 107.0 | 12.3 | 6.8 | 5.7 |
+| `studentT(20)` | 107.1 | 12.3 | 6.8 | 5.8 |
+| `uniformInt(0~63)` | 31.2 | 1.1 | 1.0 | 1.2 |
+| `uniformInt(0~100k)` | 27.7 | 5.6 | 5.6 | 5.4 |
+| `uniformReal` | 30.7 | 1.1 | 1.0 | 0.6 |
+| `weibull` | 46.5 | 10.6 | 6.4 | 5.2 |
+
+* Since there is no equivalent class to `balanced` in C++11 std, we used Eigen::DenseBase::Random instead.
 
 |  | C++ std | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
 |---|---:|---:|---:|---:|
@@ -197,3 +272,12 @@ The results of EigenRand and C++ std appear to be equivalent within the margin o
 
 ## License
 MIT License
+
+## History
+
+### 0.2.0 (2020-07-04)
+* New distributions including `cauchy`, `studentT`, `fisherF`, `uniformInt`, `binomial`, `negativeBinomial`, `poisson` and `geometric` were added.
+* A new member function `uniform_real` for `PacketRandomEngine` is added.
+
+### 0.1.0 (2020-06-27)
+* The first version of `EigenRand`

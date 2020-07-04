@@ -2,7 +2,7 @@
  * @file PacketRandomEngine.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.1.0
+ * @version 0.2.0
  * @date 2020-06-22
  * 
  * @copyright Copyright (c) 2020
@@ -400,6 +400,9 @@ namespace Eigen
 			0xfff7eee000000000, 43, 6364136223846793005>;
 #endif
 
+		template<typename IntPacket>
+		EIGEN_STRONG_INLINE auto bit_to_ur_float(const IntPacket& x) -> decltype(reinterpret_to_float(x));
+
 		/**
 		 * @brief Scalar adaptor for random engines which generates packet
 		 * 
@@ -409,7 +412,7 @@ namespace Eigen
 		template<typename UIntType, typename BaseRng>
 		class PacketRandomEngineAdaptor
 		{
-			static_assert(IsPacketRandomEngine<BaseRng>::value, "BaseRNG must be a kind of PacketRandomEngine.");
+			static_assert(IsPacketRandomEngine<BaseRng>::value, "BaseRng must be a kind of PacketRandomEngine.");
 		public:
 			using result_type = UIntType;
 
@@ -445,8 +448,16 @@ namespace Eigen
 				return buf[cnt++];
 			}
 
+			float uniform_real()
+			{
+				if (fcnt >= fbuf_size)
+				{
+					refill_fbuffer();
+				}
+				return fbuf[fcnt++];
+			}
+
 		private:
-			static constexpr size_t buf_size = 64 / sizeof(result_type);
 
 			void refill_buffer()
 			{
@@ -454,14 +465,46 @@ namespace Eigen
 				const size_t stride = sizeof(typename BaseRng::result_type) / sizeof(result_type);
 				for (size_t i = 0; i < buf_size; i += stride)
 				{
-					*(typename BaseRng::result_type*)&buf[i] = rng();
+					reinterpret_cast<typename BaseRng::result_type&>(buf[i]) = rng();
 				}
 			}
+
+			void refill_fbuffer()
+			{
+				fcnt = 0;
+				const size_t stride = sizeof(typename BaseRng::result_type) / sizeof(float);
+				for (size_t i = 0; i < buf_size; i += stride)
+				{
+					auto urf = bit_to_ur_float(rng());
+					reinterpret_cast<decltype(urf)&>(fbuf[i]) = urf;
+				}
+			}
+
+			static constexpr size_t buf_size = 64 / sizeof(result_type);
+			static constexpr size_t fbuf_size = 64 / sizeof(float);
 
 			BaseRng rng;
 			std::array<result_type, buf_size> buf;
 			size_t cnt = buf_size;
+			std::array<float, fbuf_size> fbuf;
+			size_t fcnt = fbuf_size;
+		};
 
+		template<typename BaseRng>
+		class RandomEngineWrapper : public BaseRng
+		{
+		public:
+			using BaseRng::BaseRng;
+
+			RandomEngineWrapper(const BaseRng& o) : BaseRng{ o }
+			{
+			}
+
+			float uniform_real()
+			{
+				internal::bit_scalar<float> bs;
+				return bs.to_ur(this->operator()());
+			}
 		};
 
 		/**
@@ -484,10 +527,10 @@ namespace Eigen
 		template<typename UIntType, typename Rng>
 		auto makeScalarRng(Rng&& rng) -> typename std::enable_if<
 			IsScalarRandomEngine<typename std::remove_reference<Rng>::type>::value,
-			typename std::remove_reference<Rng>::type
+			RandomEngineWrapper<typename std::remove_reference<Rng>::type>
 		>::type
 		{
-			return std::forward<Rng>(rng);
+			return { std::forward<Rng>(rng) };
 		}
 
 #ifdef EIGEN_VECTORIZE_AVX2

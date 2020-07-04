@@ -2,7 +2,7 @@
  * @file NormalExp.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.1.0
+ * @version 0.2.0
  * @date 2020-06-22
  * 
  * @copyright Copyright (c) 2020
@@ -21,21 +21,20 @@ namespace Eigen
 		struct scalar_norm_dist_op : public scalar_uniform_real_op<Scalar, Rng>
 		{
 			static_assert(std::is_floating_point<Scalar>::value, "normalDist needs floating point types.");
+			using ur_base = scalar_uniform_real_op<Scalar, Rng>;
 
-			using scalar_uniform_real_op<Scalar, Rng>::scalar_uniform_real_op;
+			using ur_base::scalar_uniform_real_op;
 
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
 			{
-				using ur_base = scalar_uniform_real_op<Scalar, Rng>;
-
 				thread_local Scalar cache;
-				thread_local bool valid = false;
-				bit_scalar<Scalar> bs;
-				if (valid)
+				thread_local const scalar_norm_dist_op* cache_ptr = nullptr;
+				if (cache_ptr == this)
 				{
-					valid = false;
+					cache_ptr = nullptr;
 					return cache;
 				}
+				cache_ptr = this;
 
 				Scalar v1, v2, sx;
 				while (1)
@@ -47,33 +46,27 @@ namespace Eigen
 				}
 				Scalar fx = std::sqrt((Scalar)-2.0 * std::log(sx) / sx);
 				cache = fx * v2;
-				valid = true;
 				return fx * v1;
 			}
 
 			template<typename Packet>
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
 			{
-				using ur_base = scalar_uniform_real_op<Scalar, Rng>;
-
 				thread_local Packet cache;
-				thread_local bool valid = false;
-				if (valid)
+				thread_local const scalar_norm_dist_op* cache_ptr = nullptr;
+				if (cache_ptr == this)
 				{
-					valid = false;
+					cache_ptr = nullptr;
 					return cache;
 				}
-				valid = true;
+				cache_ptr = this;
 				Packet u1 = ur_base::template packetOp<Packet>(),
 					u2 = ur_base::template packetOp<Packet>();
-				const auto twopi = pset1<Packet>(2 * 3.14159265358979323846);
-				const auto one = pset1<Packet>(1);
-				const auto minustwo = pset1<Packet>(-2);
 
-				u1 = psub(one, u1);
+				u1 = psub(pset1<Packet>(1), u1);
 
-				auto radius = psqrt(pmul(minustwo, plog(u1)));
-				auto theta = pmul(twopi, u2);
+				auto radius = psqrt(pmul(pset1<Packet>(-2), plog(u1)));
+				auto theta = pmul(pset1<Packet>(2 * constant::pi), u2);
 				Packet sintheta, costheta;
 
 				psincos(theta, sintheta, costheta);
@@ -149,6 +142,59 @@ namespace Eigen
 		};
 
 		template<typename Scalar, typename Rng>
+		struct scalar_student_t_dist_op : public scalar_uniform_real_op<Scalar, Rng>
+		{
+			static_assert(std::is_floating_point<Scalar>::value, "normalDist needs floating point types.");
+			using ur_base = scalar_uniform_real_op<Scalar, Rng>;
+
+			Scalar n;
+
+			scalar_student_t_dist_op(const Rng& _rng, Scalar _n = 1)
+				: ur_base{ _rng }, n{ _n }
+			{
+			}
+
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			{
+				Scalar v1, v2, sx;
+				while (1)
+				{
+					v1 = 2 * ur_base::operator()() - 1;
+					v2 = 2 * ur_base::operator()() - 1;
+					sx = v1 * v1 + v2 * v2;
+					if (sx && sx < 1) break;
+				}
+
+				Scalar fx = std::sqrt(n * (std::pow(sx, -2 / n) - 1) / sx);
+				return fx * v1;
+			}
+
+			template<typename Packet>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			{
+				Packet u1 = ur_base::template packetOp<Packet>(),
+					u2 = ur_base::template packetOp<Packet>();
+				
+				u1 = psub(pset1<Packet>(1), u1);
+				auto pn = pset1<Packet>(n);
+				auto radius = psqrt(pmul(pn, 
+					psub(pexp(pmul(plog(u1), pset1<Packet>(-2 / n))), pset1<Packet>(1))
+				));
+				auto theta = pmul(pset1<Packet>(2 * constant::pi), u2);
+				Packet sintheta, costheta;
+
+				//psincos(theta, sintheta, costheta);
+				return pmul(radius, psin(theta));
+			}
+		};
+
+		template<typename Scalar, typename Urng>
+		struct functor_traits<scalar_student_t_dist_op<Scalar, Urng> >
+		{
+			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
+		};
+
+		template<typename Scalar, typename Rng>
 		struct scalar_exp_dist_op : public scalar_uniform_real_op<Scalar, Rng>
 		{
 			static_assert(std::is_floating_point<Scalar>::value, "expDist needs floating point types.");
@@ -192,7 +238,7 @@ namespace Eigen
 			scalar_gamma_dist_op(const Rng& _rng, Scalar _alpha = 1, Scalar _beta = 1)
 				: scalar_exp_dist_op<Scalar, Rng>{ _rng }, alpha{ _alpha }, beta{ _beta }
 			{
-				px = 2.718281828459 / (alpha + 2.718281828459);
+				px = constant::e / (alpha + constant::e);
 				sqrt = std::sqrt(2 * alpha - 1);
 			}
 
@@ -243,7 +289,7 @@ namespace Eigen
 				while (1)
 				{
 					Scalar yx, xx;
-					yx = std::tan(3.141592653589793 * ur_base::operator()());
+					yx = std::tan(constant::pi * ur_base::operator()());
 					xx = sqrt * yx + alpha - 1;
 					if (xx <= 0) continue;
 					if (ur_base::operator()() <= (1 + yx * yx)
@@ -320,7 +366,7 @@ namespace Eigen
 					{
 						Packet alpha_1 = pset1<Packet>(alpha - 1);
 						Packet ys, yc;
-						psincos(pmul(pset1<Packet>(3.141592653589793), ru.uniform_real(this->rng)), ys, yc);
+						psincos(pmul(pset1<Packet>(constant::pi), ru.uniform_real(this->rng)), ys, yc);
 						Packet yx = pdiv(ys, yc);
 						Packet xx = padd(pmul(pset1<Packet>(sqrt), yx), alpha_1);
 						auto c = pcmplt(pset1<Packet>(0), xx);
@@ -446,7 +492,7 @@ namespace Eigen
 
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
 			{
-				return a + b * std::tan(3.141592653589793 * (scalar_uniform_real_op<Scalar, Rng>::operator()() - 0.5));
+				return a + b * std::tan(constant::pi * (scalar_uniform_real_op<Scalar, Rng>::operator()() - 0.5));
 			}
 
 			template<typename Packet>
@@ -454,7 +500,7 @@ namespace Eigen
 			{
 				using RUtils = RandUtils<Packet, Rng>;
 				Packet s, c;
-				psincos(pmul(pset1<Packet>(3.141592653589793),
+				psincos(pmul(pset1<Packet>(constant::pi),
 					psub(scalar_uniform_real_op<Scalar, Rng>::template packetOp<Packet>(), pset1<Packet>(0.5))
 				), s, c);
 				return padd(pset1<Packet>(a),
@@ -465,6 +511,117 @@ namespace Eigen
 
 		template<typename Scalar, typename Urng>
 		struct functor_traits<scalar_cauchy_dist_op<Scalar, Urng> >
+		{
+			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
+		};
+
+		template<typename Scalar, typename Rng>
+		struct scalar_beta_dist_op : public scalar_uniform_real_op<Scalar, Rng>
+		{
+			static_assert(std::is_floating_point<Scalar>::value, "betaDist needs floating point types.");
+			using ur_base = scalar_uniform_real_op<Scalar, Rng>;
+
+			Scalar a, b;
+			scalar_gamma_dist_op<Scalar, Rng> gd1, gd2;
+
+			scalar_beta_dist_op(const Rng& _rng, Scalar _a = 1, Scalar _b = 1)
+				: ur_base{ _rng }, a{ _a }, b{ _b }, 
+				gd1{ _rng, _a }, gd2{ _rng, _b }
+			{
+			}
+
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			{
+				if (a < 1 && b < 1)
+				{
+					Scalar x, p1, p2;
+					while(1)
+					{
+						p1 = std::pow(ur_base::operator()(), 1 / a);
+						p2 = std::pow(ur_base::operator()(), 1 / b);
+						x = p1 + p2;
+						if (x <= 1) break;
+					}
+					return p1 / x;
+				}
+				else
+				{
+					Scalar p1 = gd1(), p2 = gd2();
+					return p1 / (p1 + p2);
+				}
+			}
+
+			template<typename Packet>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			{
+				if (a < 1 && b < 1)
+				{
+					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
+
+					thread_local Packet cache_rest;
+					thread_local int cache_rest_cnt;
+					thread_local const scalar_beta_dist_op* cache_ptr = nullptr;
+					if (cache_ptr != this)
+					{
+						cache_ptr = this;
+						cache_rest = pset1<Packet>(0);
+						cache_rest_cnt = 0;
+					}
+
+					Packet x, p1, p2;
+					while (1)
+					{
+						p1 = pexp(pmul(plog(ur_base::template packetOp<Packet>()), pset1<Packet>(1 / a)));
+						p2 = pexp(pmul(plog(ur_base::template packetOp<Packet>()), pset1<Packet>(1 / b)));
+						x = padd(p1, p2);
+						Packet cands = pdiv(p1, x);
+						bool full = false;
+						cache_rest_cnt = cm.compress_append(cands, pcmple(x, pset1<Packet>(1)),
+							cache_rest, cache_rest_cnt, full);
+						if (full) return cands;
+					}
+				}
+				else
+				{
+					auto p1 = gd1.template packetOp<Packet>(),
+						p2 = gd2.template packetOp<Packet>();
+					return pdiv(p1, padd(p1, p2));
+				}
+			}
+		};
+
+		template<typename Scalar, typename Urng>
+		struct functor_traits<scalar_beta_dist_op<Scalar, Urng> >
+		{
+			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
+		};
+
+		template<typename Scalar, typename Rng>
+		struct scalar_fisher_f_dist_op : public scalar_beta_dist_op<Scalar, Rng>
+		{
+			static_assert(std::is_floating_point<Scalar>::value, "chiSquaredDist needs floating point types.");
+
+			scalar_fisher_f_dist_op(const Rng& _rng, Scalar m = 1, Scalar n = 1)
+				: scalar_beta_dist_op<Scalar, Rng>{ _rng, m * Scalar(0.5), n * Scalar(0.5) }
+			{
+			}
+
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			{
+				auto x = scalar_beta_dist_op<Scalar, Rng>::operator()();
+				return this->b / this->a * x / (1 - x);
+			}
+
+			template<typename Packet>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			{
+				auto x = scalar_beta_dist_op<Scalar, Rng>::template packetOp<Packet>();
+				return pdiv(pmul(pset1<Packet>(this->b / this->a), x), psub(pset1<Packet>(1), x));
+			}
+		};
+
+		template<typename Scalar, typename Urng>
+		struct functor_traits<scalar_fisher_f_dist_op<Scalar, Urng> >
 		{
 			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
 		};
