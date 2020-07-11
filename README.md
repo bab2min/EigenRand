@@ -274,10 +274,12 @@ The results of EigenRand and C++ std appear to be equivalent within the margin o
 MIT License
 
 ## History
+### 0.2.1 (2020-07-11)
+* A new template class `ParallelRandomEngineAdaptor` yielding the same random sequence across different SIMD ISAs was added.
 
 ### 0.2.0 (2020-07-04)
 * New distributions including `cauchy`, `studentT`, `fisherF`, `uniformInt`, `binomial`, `negativeBinomial`, `poisson` and `geometric` were added.
-* A new member function `uniform_real` for `PacketRandomEngine` is added.
+* A new member function `uniform_real` for `PacketRandomEngine` was added.
 
 ### 0.1.0 (2020-06-27)
 * The first version of `EigenRand`
