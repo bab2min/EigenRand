@@ -275,7 +275,7 @@ MIT License
 
 ## History
 ### 0.2.1 (2020-07-11)
-* A new template class `ParallelRandomEngineAdaptor` yielding the same random sequence across different SIMD ISAs was added.
+* A new template class `ParallelRandomEngineAdaptor` yielding the same random sequence regardless of SIMD ISA was added.
 
 ### 0.2.0 (2020-07-04)
 * New distributions including `cauchy`, `studentT`, `fisherF`, `uniformInt`, `binomial`, `negativeBinomial`, `poisson` and `geometric` were added.
