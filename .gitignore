@@ -262,3 +262,5 @@ __pycache__/
 
 doxygen/docs
 .vscode/
+/RelNoVect
+/RelSSE2

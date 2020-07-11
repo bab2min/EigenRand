@@ -65,6 +65,18 @@ namespace Eigen
 		template<typename Packet>
 		EIGEN_STRONG_INLINE int pmovemask(const Packet& a);
 
+		template<>
+		EIGEN_STRONG_INLINE uint64_t psll64<uint64_t>(const uint64_t& a, int b)
+		{
+			return a << b;
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE uint64_t psrl64<uint64_t>(const uint64_t& a, int b)
+		{
+			return a >> b;
+		}
+
 		template<typename Packet>
 		EIGEN_STRONG_INLINE void psincos(Packet x, Packet &s, Packet &c)
 		{
@@ -198,6 +210,12 @@ namespace Eigen
 		template<typename Packet>
 		EIGEN_STRONG_INLINE Packet ptruncate(const Packet& a);
 
+		template<typename Packet>
+		EIGEN_STRONG_INLINE Packet pcmpeq64(const Packet& a, const Packet& b);
+
+		template<typename Packet>
+		EIGEN_STRONG_INLINE Packet pmuluadd64(const Packet& a, uint64_t b, uint64_t c);
+
 		template<typename IntPacket>
 		EIGEN_STRONG_INLINE auto bit_to_ur_float(const IntPacket& x) -> decltype(reinterpret_to_float(x))
 		{
@@ -264,6 +282,21 @@ namespace Eigen
 				return to_ur(x) + std::numeric_limits<double>::epsilon() / 8;
 			}
 		};
+
+
+		struct float2
+		{
+			float f[2];
+		};
+
+		EIGEN_STRONG_INLINE float2 bit_to_ur_float(uint64_t x)
+		{
+			bit_scalar<float> bs;
+			float2 ret;
+			ret.f[0] = bs.to_ur(x & 0xFFFFFFFF);
+			ret.f[1] = bs.to_ur(x >> 32);
+			return ret;
+		}
 	}
 }
 
@@ -617,6 +650,31 @@ namespace Eigen
 		{
 			return _mm256_round_pd(a, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
 		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet8i pcmpeq64<Packet8i>(const Packet8i& a, const Packet8i& b)
+		{
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm256_cmpeq_epi64(a, b);
+#else
+			Packet4i a1, a2, b1, b2;
+			split_two(a, a1, a2);
+			split_two(b, b1, b2);
+			return combine_two(_mm_cmpeq_epi64(a1, b1), _mm_cmpeq_epi64(a2, b2));
+#endif
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet8i pmuluadd64<Packet8i>(const Packet8i& a, uint64_t b, uint64_t c)
+		{
+			uint64_t u[4];
+			_mm256_storeu_si256((__m256i*)u, a);
+			u[0] = u[0] * b + c;
+			u[1] = u[1] * b + c;
+			u[2] = u[2] * b + c;
+			u[3] = u[3] * b + c;
+			return _mm256_loadu_si256((__m256i*)u);
+		}
 	}
 }
 #endif
@@ -891,6 +949,27 @@ namespace Eigen
 			_MM_SET_ROUNDING_MODE(round);
 			return ret;
 #endif
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4i pcmpeq64<Packet4i>(const Packet4i& a, const Packet4i& b)
+		{
+#ifdef EIGEN_VECTORIZE_SSE4_1
+			return _mm_cmpeq_epi64(a, b);
+#else
+			Packet4i c = _mm_cmpeq_epi32(a, b);
+			return pand(c, _mm_shuffle_epi32(c, _MM_SHUFFLE(2, 3, 0, 1)));
+#endif
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4i pmuluadd64<Packet4i>(const Packet4i& a, uint64_t b, uint64_t c)
+		{
+			uint64_t u[2];
+			_mm_storeu_si128((__m128i*)u, a);
+			u[0] = u[0] * b + c;
+			u[1] = u[1] * b + c;
+			return _mm_loadu_si128((__m128i*)u);
 		}
 	}
 }

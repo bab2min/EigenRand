@@ -2,8 +2,8 @@
  * @file PacketRandomEngine.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.2.0
- * @date 2020-06-22
+ * @version 0.2.1
+ * @date 2020-07-11
  * 
  * @copyright Copyright (c) 2020
  * 
@@ -46,62 +46,6 @@ namespace Eigen
 		{
 			using type = uint64_t;
 		};
-#endif
-		template<typename Packet>
-		EIGEN_STRONG_INLINE Packet pcmpeq64(const Packet& a, const Packet& b);
-
-		template<typename Packet>
-		EIGEN_STRONG_INLINE Packet pmuluadd64(const Packet& a, uint64_t b, uint64_t c);
-
-#ifdef EIGEN_VECTORIZE_AVX
-		template<>
-		EIGEN_STRONG_INLINE Packet8i pcmpeq64<Packet8i>(const Packet8i& a, const Packet8i& b)
-		{
-#ifdef EIGEN_VECTORIZE_AVX2
-			return _mm256_cmpeq_epi64(a, b);
-#else
-			Packet4i a1, a2, b1, b2;
-			split_two(a, a1, a2);
-			split_two(b, b1, b2);
-			return combine_two(_mm_cmpeq_epi64(a1, b1), _mm_cmpeq_epi64(a2, b2));
-#endif
-		}
-
-		template<>
-		EIGEN_STRONG_INLINE Packet8i pmuluadd64<Packet8i>(const Packet8i& a, uint64_t b, uint64_t c)
-		{
-			uint64_t u[4];
-			_mm256_storeu_si256((__m256i*)u, a);
-			u[0] = u[0] * b + c;
-			u[1] = u[1] * b + c;
-			u[2] = u[2] * b + c;
-			u[3] = u[3] * b + c;
-			return _mm256_loadu_si256((__m256i*)u);
-		}
-#endif
-
-#ifdef EIGEN_VECTORIZE_SSE2
-		template<>
-		EIGEN_STRONG_INLINE Packet4i pcmpeq64<Packet4i>(const Packet4i& a, const Packet4i& b)
-		{
-#ifdef EIGEN_VECTORIZE_SSE4_1
-			return _mm_cmpeq_epi64(a, b);
-#else
-			Packet4i c = _mm_cmpeq_epi32(a, b);
-			return pand(c, _mm_shuffle_epi32(c, _MM_SHUFFLE(2, 3, 0, 1)));
-#endif
-		}
-
-		template<>
-		EIGEN_STRONG_INLINE Packet4i pmuluadd64<Packet4i>(const Packet4i& a, uint64_t b, uint64_t c)
-		{
-			uint64_t u[2];
-			_mm_storeu_si128((__m128i*)u, a);
-			u[0] = u[0] * b + c;
-			u[1] = u[1] * b + c;
-			return _mm_loadu_si128((__m128i*)u);
-		}
-
 #endif
 	}
 
@@ -400,32 +344,31 @@ namespace Eigen
 			0xfff7eee000000000, 43, 6364136223846793005>;
 #endif
 
-		/**
-		 * @brief Scalar adaptor for random engines which generates packet
-		 * 
-		 * @tparam UIntType scalar integer type for `result_type` of an adapted random number engine
-		 * @tparam BaseRng 
-		 */
-		template<typename UIntType, typename BaseRng>
-		class PacketRandomEngineAdaptor : public BaseRng
+		template<typename UIntType, typename BaseRng, int numU64>
+		class ParallelRandomEngineAdaptor
 		{
-			static_assert(IsPacketRandomEngine<BaseRng>::value, "BaseRng must be a kind of PacketRandomEngine.");
+			static_assert(GetRandomEngineType<BaseRng>::value != RandomEngineType::none, "BaseRng must be a kind of Random Engine.");
 		public:
 			using result_type = UIntType;
 
-			using BaseRng::BaseRng;
-
-			PacketRandomEngineAdaptor(const BaseRng& o) : BaseRng{ o }
+			ParallelRandomEngineAdaptor(size_t seed = BaseRng::default_seed)
 			{
-			}
-			
-			PacketRandomEngineAdaptor(BaseRng&& o) : BaseRng{ o }
-			{
+				for (int i = 0; i < num_parallel; ++i)
+				{
+					new (&rngs[i]) BaseRng{ seed + i * u64_stride };
+				}
 			}
 
-			PacketRandomEngineAdaptor() = default;
-			PacketRandomEngineAdaptor(const PacketRandomEngineAdaptor&) = default;
-			PacketRandomEngineAdaptor(PacketRandomEngineAdaptor&&) = default;
+			ParallelRandomEngineAdaptor(const BaseRng& o)
+			{
+				for (int i = 0; i < num_parallel; ++i)
+				{
+					new (&rngs[i]) BaseRng{ o };
+				}
+			}
+
+			ParallelRandomEngineAdaptor(const ParallelRandomEngineAdaptor&) = default;
+			ParallelRandomEngineAdaptor(ParallelRandomEngineAdaptor&&) = default;
 
 			static constexpr result_type min()
 			{
@@ -454,38 +397,50 @@ namespace Eigen
 				}
 				return fbuf[fcnt++];
 			}
-
 		private:
 
 			void refill_buffer()
 			{
 				cnt = 0;
-				const size_t stride = sizeof(typename BaseRng::result_type) / sizeof(result_type);
-				for (size_t i = 0; i < buf_size; i += stride)
+				for (size_t i = 0; i < num_parallel; ++i)
 				{
-					reinterpret_cast<typename BaseRng::result_type&>(buf[i]) = BaseRng::operator()();
+					reinterpret_cast<typename BaseRng::result_type&>(buf[i * result_type_stride]) = rngs[i]();
 				}
 			}
 
 			void refill_fbuffer()
 			{
 				fcnt = 0;
-				const size_t stride = sizeof(typename BaseRng::result_type) / sizeof(float);
-				for (size_t i = 0; i < buf_size; i += stride)
+				for (size_t i = 0; i < num_parallel; ++i)
 				{
-					auto urf = internal::bit_to_ur_float(BaseRng::operator()());
-					reinterpret_cast<decltype(urf)&>(fbuf[i]) = urf;
+					auto urf = internal::bit_to_ur_float(rngs[i]());
+					reinterpret_cast<decltype(urf)&>(fbuf[i * u64_stride * 2]) = urf;
 				}
 			}
 
-			static constexpr size_t buf_size = 64 / sizeof(result_type);
-			static constexpr size_t fbuf_size = 64 / sizeof(float);
+			static constexpr int u64_stride = sizeof(typename BaseRng::result_type) / sizeof(uint64_t);
+			static constexpr int result_type_stride = sizeof(typename BaseRng::result_type) / sizeof(result_type);
+			static constexpr int num_parallel = numU64 / u64_stride;
+			static constexpr int byte_size = sizeof(uint64_t) * numU64;
+			static constexpr size_t buf_size = byte_size / sizeof(result_type);
+			static constexpr size_t fbuf_size = byte_size / sizeof(float);
 
+			std::array<BaseRng, num_parallel> rngs;
 			std::array<result_type, buf_size> buf;
 			size_t cnt = buf_size;
 			std::array<float, fbuf_size> fbuf;
 			size_t fcnt = fbuf_size;
 		};
+
+		/**
+		 * @brief Scalar adaptor for random engines which generates packet
+		 * 
+		 * @tparam UIntType scalar integer type for `result_type` of an adapted random number engine
+		 * @tparam BaseRng 
+		 */
+		template<typename UIntType, typename BaseRng>
+		using PacketRandomEngineAdaptor = ParallelRandomEngineAdaptor<UIntType, BaseRng,
+			sizeof(typename BaseRng::result_type) / sizeof(uint64_t)>;
 
 		template<typename BaseRng>
 		class RandomEngineWrapper : public BaseRng
@@ -498,6 +453,10 @@ namespace Eigen
 			}
 
 			RandomEngineWrapper(BaseRng&& o) : BaseRng{ o }
+			{
+			}
+
+			RandomEngineWrapper(size_t seed) : BaseRng{ seed }
 			{
 			}
 
@@ -524,7 +483,7 @@ namespace Eigen
 		>::type;
 
 		/**
-		 * @brief Helper function for making a PacketRandomEngineAdaptor
+		 * @brief Helper function for making a UniversalRandomEngine
 		 * 
 		 * @tparam UIntType 
 		 * @tparam Rng 
@@ -547,10 +506,17 @@ namespace Eigen
 		 * Pmt19937_64<internal::Packet4i> when SSE2 enabled
 		 * and Pmt19937_64<internal::Packet8i> when AVX2 enabled
 		 * 
+		 * @note It yields the same random sequence only within the same seed and the same SIMD ISA.
+		 * If you want to keep the same random sequence across different SIMD ISA, use P8_mt19937_64.
 		 */
 		using Vmt19937_64 = std::mt19937_64;
 #endif
-
+		/**
+		 * @brief a vectorized mt19937_64 which generates 8 integers of 64bit simultaneously.
+		 * It always yields the same value regardless of SIMD ISA.
+		 */
+		template<typename UIntType = uint64_t>
+		using P8_mt19937_64 = ParallelRandomEngineAdaptor<UIntType, Vmt19937_64, 8>;
 	}
 }
 

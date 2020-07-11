@@ -51,6 +51,9 @@
     <ClInclude Include="EigenRand\Dists\GammaPoisson.h">
       <Filter>EigenRand\Dists</Filter>
     </ClInclude>
+    <ClInclude Include="EigenRand\doc.h">
+      <Filter>EigenRand</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
