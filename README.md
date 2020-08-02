@@ -274,6 +274,9 @@ The results of EigenRand and C++ std appear to be equivalent within the margin o
 MIT License
 
 ## History
+### 0.2.2 (2020-08-02)
+* Now `ParallelRandomEngineAdaptor` and `MersenneTwister` uses aligned array on heap.
+
 ### 0.2.1 (2020-07-11)
 * A new template class `ParallelRandomEngineAdaptor` yielding the same random sequence regardless of SIMD ISA was added.
 
