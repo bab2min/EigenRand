@@ -214,8 +214,6 @@ namespace Eigen
 			template<typename Packet>
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
 			{
-				using RUtils = RandUtils<Packet, Rng>;
-
 				return pnegate(pdiv(plog(
 					psub(pset1<Packet>(1), scalar_uniform_real_op<Scalar, Rng>::template packetOp<Packet>())
 				), pset1<Packet>(lambda)));
@@ -414,8 +412,6 @@ namespace Eigen
 			template<typename Packet>
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
 			{
-				using RUtils = RandUtils<Packet, Rng>;
-
 				return pmul(pexp(pmul(plog(pnegate(plog(
 					psub(pset1<Packet>(1), scalar_uniform_real_op<Scalar, Rng>::template packetOp<Packet>())
 				))), pset1<Packet>(1 / a))), pset1<Packet>(b));
@@ -498,7 +494,6 @@ namespace Eigen
 			template<typename Packet>
 			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
 			{
-				using RUtils = RandUtils<Packet, Rng>;
 				Packet s, c;
 				psincos(pmul(pset1<Packet>(constant::pi),
 					psub(scalar_uniform_real_op<Scalar, Rng>::template packetOp<Packet>(), pset1<Packet>(0.5))
