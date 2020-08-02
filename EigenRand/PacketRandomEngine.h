@@ -1,12 +1,12 @@
 /**
  * @file PacketRandomEngine.h
  * @author bab2min (bab2min@gmail.com)
- * @brief 
+ * @brief
  * @version 0.2.1
  * @date 2020-07-11
- * 
+ *
  * @copyright Copyright (c) 2020
- * 
+ *
  */
 
 #ifndef EIGENRAND_PACKET_RANDOM_ENGINE_H
@@ -16,6 +16,7 @@
 #include <random>
 #include <type_traits>
 #include <EigenRand/MorePacketMath.h>
+#include <fstream>
 
 namespace Eigen
 {
@@ -54,10 +55,10 @@ namespace Eigen
 		namespace detail
 		{
 			template<typename T>
-			auto test_integral_result_type(int) -> std::integral_constant<bool, std::is_integral<typename T::result_type>::value>;
+			auto test_integral_result_type(int)->std::integral_constant<bool, std::is_integral<typename T::result_type>::value>;
 
 			template<typename T>
-			auto test_integral_result_type(...) -> std::false_type;
+			auto test_integral_result_type(...)->std::false_type;
 
 			template<typename T>
 			auto test_intpacket_result_type(int)->std::integral_constant<bool, internal::IsIntPacket<typename T::result_type>::value>;
@@ -90,24 +91,119 @@ namespace Eigen
 		{
 		};
 
+		template<typename Ty, size_t length, size_t alignment = 64>
+		class AlignedArray
+		{
+		public:
+			AlignedArray()
+			{
+				allocate();
+				for (size_t i = 0; i < length; ++i)
+				{
+					new (&aligned[i]) Ty();
+				}
+			}
+
+			AlignedArray(const AlignedArray& o)
+			{
+				allocate();
+				for (size_t i = 0; i < length; ++i)
+				{
+					aligned[i] = o[i];
+				}
+			}
+
+			AlignedArray(AlignedArray&& o)
+			{
+				std::swap(memory, o.memory);
+				std::swap(aligned, o.aligned);
+			}
+
+			AlignedArray& operator=(const AlignedArray& o)
+			{
+				for (size_t i = 0; i < length; ++i)
+				{
+					aligned[i] = o[i];
+				}
+				return *this;
+			}
+
+			AlignedArray& operator=(AlignedArray&& o)
+			{
+				std::swap(memory, o.memory);
+				std::swap(aligned, o.aligned);
+				return *this;
+			}
+
+			~AlignedArray()
+			{
+				deallocate();
+			}
+
+			Ty& operator[](size_t i)
+			{
+				return aligned[i];
+			}
+
+			const Ty& operator[](size_t i) const
+			{
+				return aligned[i];
+			}
+
+			size_t size() const
+			{
+				return length;
+			}
+
+			Ty* data()
+			{
+				return aligned;
+			}
+
+			const Ty* data() const
+			{
+				return aligned;
+			}
+
+		private:
+			void allocate()
+			{
+				memory = std::malloc(sizeof(Ty) * length + alignment);
+				aligned = (Ty*)(((size_t)memory + alignment) & ~(alignment - 1));
+			}
+
+			void deallocate()
+			{
+				if (memory)
+				{
+					std::free(memory);
+					memory = nullptr;
+					aligned = nullptr;
+				}
+			}
+
+			void* memory = nullptr;
+			Ty* aligned = nullptr;
+		};
+
 #ifndef EIGEN_DONT_VECTORIZE
 		/**
 		 * @brief A vectorized version of Mersenne Twister Engine
-		 * 
+		 *
 		 * @tparam Packet a type of integer packet being generated from this engine
-		 * @tparam _Nx 
-		 * @tparam _Mx 
-		 * @tparam _Rx 
-		 * @tparam _Px 
-		 * @tparam _Ux 
-		 * @tparam _Dx 
-		 * @tparam _Sx 
-		 * @tparam _Bx 
-		 * @tparam _Tx 
-		 * @tparam _Cx 
-		 * @tparam _Lx 
-		 * @tparam _Fx 
-		 * 
+		 * @tparam _Nx
+		 * @tparam _Mx
+		 * @tparam _Rx
+		 * @tparam _Px
+		 * @tparam _Ux
+		 * @tparam _Dx
+		 * @tparam _Sx
+		 * @tparam _Bx
+		 * @tparam _Tx
+		 * @tparam _Cx
+		 * @tparam _Lx
+		 * @tparam _Fx
+		 *
 		 * @note It is recommended to use the alias, Eigen::Rand::Vmt19937_64 rather than using raw MersenneTwister template class
 		 * because the definition of Eigen::Rand::Vmt19937_64 is changed to use the appropriate PacketType depending on compile options and the architecture of machines.
 		 */
@@ -118,7 +214,7 @@ namespace Eigen
 			int _Sx, uint64_t _Bx,
 			int _Tx, uint64_t _Cx,
 			int _Lx, uint64_t _Fx>
-		class MersenneTwister
+			class MersenneTwister
 		{
 		public:
 			using result_type = Packet;
@@ -139,10 +235,10 @@ namespace Eigen
 
 			/**
 			 * @brief Construct a new Mersenne Twister engine with a scalar seed
-			 * 
+			 *
 			 * @param x0 scalar seed for the engine
-			 * 
-			 * @note The seed for the first element of packet is initialized to `x0`, 
+			 *
+			 * @note The seed for the first element of packet is initialized to `x0`,
 			 * for the second element to `x0 + 1`, and the n-th element to is `x0 + n - 1`.
 			 */
 			MersenneTwister(uint64_t x0 = default_seed)
@@ -158,7 +254,7 @@ namespace Eigen
 
 			/**
 			 * @brief Construct a new Mersenne Twister engine with a packet seed
-			 * 
+			 *
 			 * @param x0 packet seed for the engine
 			 */
 			MersenneTwister(Packet x0)
@@ -168,7 +264,7 @@ namespace Eigen
 
 			/**
 			 * @brief initialize the engine with a given seed
-			 * 
+			 *
 			 * @param x0 packet seed for the engine
 			 */
 			void seed(Packet x0)
@@ -184,8 +280,8 @@ namespace Eigen
 
 			/**
 			 * @brief minimum value of the result
-			 * 
-			 * @return uint64_t 
+			 *
+			 * @return uint64_t
 			 */
 			uint64_t min() const
 			{
@@ -194,8 +290,8 @@ namespace Eigen
 
 			/**
 			 * @brief maximum value of the result
-			 * 
-			 * @return uint64_t 
+			 *
+			 * @return uint64_t
 			 */
 			uint64_t max() const
 			{
@@ -204,9 +300,9 @@ namespace Eigen
 
 			/**
 			 * @brief Generates one random packet and advance the internal state.
-			 * 
-			 * @return result_type 
-			 * 
+			 *
+			 * @return result_type
+			 *
 			 * @note A value generated from this engine is not scalar, but packet type.
 			 * If you need to extract scalar values, use Eigen::Rand::makeScalarRng or Eigen::Rand::PacketRandomEngineAdaptor.
 			 */
@@ -229,8 +325,8 @@ namespace Eigen
 
 			/**
 			 * @brief Discards `num` items being generated
-			 * 
-			 * @param num the number of items being discarded 
+			 *
+			 * @param num the number of items being discarded
 			 */
 			void discard(unsigned long long num)
 			{
@@ -269,7 +365,7 @@ namespace Eigen
 				{
 					Packet tmp = por(pand(state[i + _Nx], hmask),
 						pand(state[i + _Nx + 1], lmask));
-					
+
 					state[i] = pxor(pxor(
 						psrl64(tmp, 1),
 						pand(pcmpeq64(pand(tmp, one), one), px)),
@@ -289,7 +385,7 @@ namespace Eigen
 					);
 				}
 
-				Packet tmp = por(pand(state[i + _Nx], hmask), 
+				Packet tmp = por(pand(state[i + _Nx], hmask),
 					pand(state[0], lmask));
 				state[i] = pxor(pxor(
 					psrl64(tmp, 1),
@@ -321,7 +417,7 @@ namespace Eigen
 				}
 			}
 
-			std::array<Packet, _Nx * 2> state;
+			AlignedArray<Packet, _Nx * 2> state;
 			size_t stateIdx = 0;
 			typename internal::HalfPacket<Packet>::type cache;
 			bool valid = false;
@@ -333,8 +429,8 @@ namespace Eigen
 
 		/**
 		 * @brief Alias of Eigen::Rand::MersenneTwister, equivalent to std::mt19937_64
-		 * 
-		 * @tparam Packet 
+		 *
+		 * @tparam Packet
 		 */
 		template<typename Packet>
 		using Pmt19937_64 = MersenneTwister<Packet, 312, 156, 31,
@@ -426,17 +522,16 @@ namespace Eigen
 			static constexpr size_t fbuf_size = byte_size / sizeof(float);
 
 			std::array<BaseRng, num_parallel> rngs;
-			std::array<result_type, buf_size> buf;
-			size_t cnt = buf_size;
-			std::array<float, fbuf_size> fbuf;
-			size_t fcnt = fbuf_size;
+			AlignedArray<result_type, buf_size> buf;
+			AlignedArray<float, fbuf_size> fbuf;
+			size_t cnt = buf_size, fcnt = fbuf_size;
 		};
 
 		/**
 		 * @brief Scalar adaptor for random engines which generates packet
-		 * 
+		 *
 		 * @tparam UIntType scalar integer type for `result_type` of an adapted random number engine
-		 * @tparam BaseRng 
+		 * @tparam BaseRng
 		 */
 		template<typename UIntType, typename BaseRng>
 		using PacketRandomEngineAdaptor = ParallelRandomEngineAdaptor<UIntType, BaseRng,
@@ -476,21 +571,21 @@ namespace Eigen
 			IsPacketRandomEngine<typename std::remove_reference<Rng>::type>::value,
 			PacketRandomEngineAdaptor<UIntType, typename std::remove_reference<Rng>::type>,
 			typename std::conditional<
-				IsScalarRandomEngine<typename std::remove_reference<Rng>::type>::value,
-				RandomEngineWrapper<typename std::remove_reference<Rng>::type>,
-				void
+			IsScalarRandomEngine<typename std::remove_reference<Rng>::type>::value,
+			RandomEngineWrapper<typename std::remove_reference<Rng>::type>,
+			void
 			>::type
 		>::type;
 
 		/**
 		 * @brief Helper function for making a UniversalRandomEngine
-		 * 
-		 * @tparam UIntType 
-		 * @tparam Rng 
+		 *
+		 * @tparam UIntType
+		 * @tparam Rng
 		 * @param rng any random number engine for either packet or scalar type
 		 * @return an instance of PacketRandomEngineAdaptor for UIntType
 		 */
-		template<typename UIntType, typename Rng> 
+		template<typename UIntType, typename Rng>
 		UniversalRandomEngine<UIntType, Rng> makeUniversalRng(Rng&& rng)
 		{
 			return { std::forward<Rng>(rng) };
@@ -505,7 +600,7 @@ namespace Eigen
 		 * @brief same as std::mt19937_64 when EIGEN_DONT_VECTORIZE,
 		 * Pmt19937_64<internal::Packet4i> when SSE2 enabled
 		 * and Pmt19937_64<internal::Packet8i> when AVX2 enabled
-		 * 
+		 *
 		 * @note It yields the same random sequence only within the same seed and the same SIMD ISA.
 		 * If you want to keep the same random sequence across different SIMD ISA, use P8_mt19937_64.
 		 */
