@@ -176,6 +176,10 @@ namespace Eigen
 			{
 				if (memory)
 				{
+					for (size_t i = 0; i < length; ++i)
+					{
+						aligned[i].~Ty();
+					}
 					std::free(memory);
 					memory = nullptr;
 					aligned = nullptr;
@@ -451,6 +455,7 @@ namespace Eigen
 			{
 				for (int i = 0; i < num_parallel; ++i)
 				{
+					rngs[i].~BaseRng();
 					new (&rngs[i]) BaseRng{ seed + i * u64_stride };
 				}
 			}
@@ -459,6 +464,7 @@ namespace Eigen
 			{
 				for (int i = 0; i < num_parallel; ++i)
 				{
+					rngs[i].~BaseRng();
 					new (&rngs[i]) BaseRng{ o };
 				}
 			}
