@@ -240,7 +240,7 @@ namespace Eigen
 			return psub(reinterpret_to_double(por(pand(x, lower), upper)), one);
 		}
 
-		template<typename Scalar>
+		template<typename _Scalar>
 		struct bit_scalar;
 
 		template<>

@@ -15,53 +15,54 @@
 
 namespace Eigen
 {
-	namespace internal
+	namespace Rand
 	{
-		template<typename Scalar, typename Rng>
-		struct scalar_norm_dist_op : public scalar_uniform_real_op<Scalar, Rng>
+		template<typename _Scalar>
+		class StdNormalGen : OptCacheStore, public GenBase<StdNormalGen<_Scalar>, _Scalar>
 		{
-			static_assert(std::is_floating_point<Scalar>::value, "normalDist needs floating point types.");
-			using ur_base = scalar_uniform_real_op<Scalar, Rng>;
+			static_assert(std::is_floating_point<_Scalar>::value, "normalDist needs floating point types.");
+			bool valid = false;
+			UniformRealGen<_Scalar> ur;
+			
+		public:
+			using Scalar = _Scalar;
 
-			using ur_base::scalar_uniform_real_op;
-
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
-				thread_local Scalar cache;
-				thread_local const scalar_norm_dist_op* cache_ptr = nullptr;
-				if (cache_ptr == this)
+				using namespace Eigen::internal;
+				if (valid)
 				{
-					cache_ptr = nullptr;
-					return cache;
+					valid = false;
+					return OptCacheStore::get<_Scalar>();
 				}
-				cache_ptr = this;
+				valid = true;
 
-				Scalar v1, v2, sx;
+				_Scalar v1, v2, sx;
 				while (1)
 				{
-					v1 = 2 * ur_base::operator()() - 1;
-					v2 = 2 * ur_base::operator()() - 1;
+					v1 = 2 * ur(rng) - 1;
+					v2 = 2 * ur(rng) - 1;
 					sx = v1 * v1 + v2 * v2;
 					if (sx && sx < 1) break;
 				}
-				Scalar fx = std::sqrt((Scalar)-2.0 * std::log(sx) / sx);
-				cache = fx * v2;
+				_Scalar fx = std::sqrt((_Scalar)-2.0 * std::log(sx) / sx);
+				OptCacheStore::get<_Scalar>() = fx * v2;
 				return fx * v1;
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
-				thread_local Packet cache;
-				thread_local const scalar_norm_dist_op* cache_ptr = nullptr;
-				if (cache_ptr == this)
+				using namespace Eigen::internal;
+				if (valid)
 				{
-					cache_ptr = nullptr;
-					return cache;
+					valid = false;
+					return OptCacheStore::template get<Packet>();
 				}
-				cache_ptr = this;
-				Packet u1 = ur_base::template packetOp<Packet>(),
-					u2 = ur_base::template packetOp<Packet>();
+				valid = true;
+				Packet u1 = ur.template packetOp<Packet>(rng),
+					u2 = ur.template packetOp<Packet>(rng);
 
 				u1 = psub(pset1<Packet>(1), u1);
 
@@ -70,114 +71,124 @@ namespace Eigen
 				Packet sintheta, costheta;
 
 				psincos(theta, sintheta, costheta);
-				cache = pmul(radius, costheta);
+				OptCacheStore::template get<Packet>() = pmul(radius, costheta);
 				return pmul(radius, sintheta);
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_norm_dist_op<Scalar, Urng> >
+		template<typename _Scalar>
+		class NormalGen : public GenBase<NormalGen<_Scalar>, _Scalar>
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+			static_assert(std::is_floating_point<_Scalar>::value, "normalDist needs floating point types.");
+			StdNormalGen<_Scalar> stdnorm;
+			_Scalar mean = 0, stdev = 1;
+		
+		public:
+			using Scalar = _Scalar;
 
-		template<typename Scalar, typename Rng>
-		struct scalar_norm_dist2_op : public scalar_norm_dist_op<Scalar, Rng>
-		{
-			static_assert(std::is_floating_point<Scalar>::value, "normalDist needs floating point types.");
-
-			Scalar mean = 0, stdev = 1;
-
-			scalar_norm_dist2_op(const Rng& _rng,
-				Scalar _mean = 0, Scalar _stdev = 1)
-				: scalar_norm_dist_op<Scalar, Rng>{ _rng },
-				mean{ _mean }, stdev{ _stdev }
+			NormalGen(_Scalar _mean = 0, _Scalar _stdev = 1)
+				: mean{ _mean }, stdev{ _stdev }
 			{
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			NormalGen(const NormalGen&) = default;
+			NormalGen(NormalGen&&) = default;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
-				return scalar_norm_dist_op<Scalar, Rng>::operator()() * stdev + mean;
+				using namespace Eigen::internal;
+				return stdnorm(std::forward<Rng>(rng)) * stdev + mean;
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				return padd(pmul(
-					scalar_norm_dist_op<Scalar, Rng>::template packetOp<Packet>(),
+					stdnorm.template packetOp<Packet>(std::forward<Rng>(rng)),
 					pset1<Packet>(stdev)
 				), pset1<Packet>(mean));
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_norm_dist2_op<Scalar, Urng> >
+		template<typename _Scalar>
+		class LognormalGen : public GenBase<LognormalGen<_Scalar>, _Scalar>
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+			static_assert(std::is_floating_point<_Scalar>::value, "lognormalDist needs floating point types.");
+			NormalGen<_Scalar> norm;
 
-		template<typename Scalar, typename Rng>
-		struct scalar_lognorm_dist_op : public scalar_norm_dist2_op<Scalar, Rng>
-		{
-			static_assert(std::is_floating_point<Scalar>::value, "lognormalDist needs floating point types.");
+		public:
+			using Scalar = _Scalar;
 
-			using scalar_norm_dist2_op<Scalar, Rng>::scalar_norm_dist2_op;
-
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
-			{
-				return std::exp(scalar_norm_dist2_op<Scalar, Rng>::operator()());
-			}
-
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
-			{
-				return pexp(scalar_norm_dist2_op<Scalar, Rng>::template packetOp<Packet>());
-			}
-		};
-
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_lognorm_dist_op<Scalar, Urng> >
-		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
-
-		template<typename Scalar, typename Rng>
-		struct scalar_student_t_dist_op : public scalar_uniform_real_op<Scalar, Rng>
-		{
-			static_assert(std::is_floating_point<Scalar>::value, "normalDist needs floating point types.");
-			using ur_base = scalar_uniform_real_op<Scalar, Rng>;
-
-			Scalar n;
-
-			scalar_student_t_dist_op(const Rng& _rng, Scalar _n = 1)
-				: ur_base{ _rng }, n{ _n }
+			LognormalGen(_Scalar _mean = 0, _Scalar _stdev = 1)
+				: norm{ _mean, _stdev }
 			{
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			LognormalGen(const LognormalGen&) = default;
+			LognormalGen(LognormalGen&&) = default;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
-				Scalar v1, v2, sx;
+				using namespace Eigen::internal;
+				return std::exp(norm(std::forward<Rng>(rng)));
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				return pexp(norm.template packetOp<Packet>(std::forward<Rng>(rng)));
+			}
+		};
+
+		template<typename _Scalar>
+		class StudentTGen : public GenBase<StudentTGen<_Scalar>, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "studentT needs floating point types.");
+			UniformRealGen<_Scalar> ur;
+			_Scalar n;
+
+		public:
+			using Scalar = _Scalar;
+
+			StudentTGen(_Scalar _n = 1)
+				: n{ _n }
+			{
+			}
+
+			StudentTGen(const StudentTGen&) = default;
+			StudentTGen(StudentTGen&&) = default;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				_Scalar v1, v2, sx;
 				while (1)
 				{
-					v1 = 2 * ur_base::operator()() - 1;
-					v2 = 2 * ur_base::operator()() - 1;
+					v1 = 2 * ur(rng) - 1;
+					v2 = 2 * ur(rng) - 1;
 					sx = v1 * v1 + v2 * v2;
 					if (sx && sx < 1) break;
 				}
 
-				Scalar fx = std::sqrt(n * (std::pow(sx, -2 / n) - 1) / sx);
+				_Scalar fx = std::sqrt(n * (std::pow(sx, -2 / n) - 1) / sx);
 				return fx * v1;
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
-				Packet u1 = ur_base::template packetOp<Packet>(),
-					u2 = ur_base::template packetOp<Packet>();
-				
+				using namespace Eigen::internal;
+				Packet u1 = ur.template packetOp<Packet>(rng),
+					u2 = ur.template packetOp<Packet>(rng);
+
 				u1 = psub(pset1<Packet>(1), u1);
 				auto pn = pset1<Packet>(n);
-				auto radius = psqrt(pmul(pn, 
+				auto radius = psqrt(pmul(pn,
 					psub(pexp(pmul(plog(u1), pset1<Packet>(-2 / n))), pset1<Packet>(1))
 				));
 				auto theta = pmul(pset1<Packet>(2 * constant::pi), u2);
@@ -188,68 +199,80 @@ namespace Eigen
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_student_t_dist_op<Scalar, Urng> >
+		template<typename> class GammaGen;
+
+		template<typename _Scalar>
+		class ExponentialGen : public GenBase<ExponentialGen<_Scalar>, _Scalar>
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+			friend GammaGen<_Scalar>;
+			static_assert(std::is_floating_point<_Scalar>::value, "expDist needs floating point types.");
+			UniformRealGen<_Scalar> ur;
+			_Scalar lambda = 1;
 
-		template<typename Scalar, typename Rng>
-		struct scalar_exp_dist_op : public scalar_uniform_real_op<Scalar, Rng>
-		{
-			static_assert(std::is_floating_point<Scalar>::value, "expDist needs floating point types.");
+		public:
+			using Scalar = _Scalar;
 
-			Scalar lambda = 1;
-
-			scalar_exp_dist_op(const Rng& _rng, Scalar _lambda = 1)
-				: scalar_uniform_real_op<Scalar, Rng>{ _rng }, lambda{ _lambda }
+			ExponentialGen(_Scalar _lambda = 1)
+				: lambda{ _lambda }
 			{
 			}
+			
+			ExponentialGen(const ExponentialGen&) = default;
+			ExponentialGen(ExponentialGen&&) = default;
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
-				return -std::log(1 - scalar_uniform_real_op<Scalar, Rng>::operator()()) / lambda;
+				using namespace Eigen::internal;
+				return -std::log(1 - ur(std::forward<Rng>(rng))) / lambda;
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				return pnegate(pdiv(plog(
-					psub(pset1<Packet>(1), scalar_uniform_real_op<Scalar, Rng>::template packetOp<Packet>())
+					psub(pset1<Packet>(1), ur.template packetOp<Packet>(std::forward<Rng>(rng)))
 				), pset1<Packet>(lambda)));
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_exp_dist_op<Scalar, Urng> >
+		template<typename> class NegativeBinomialGen;
+
+		template<typename _Scalar>
+		class GammaGen : OptCacheStore, public GenBase<GammaGen<_Scalar>, _Scalar>
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+			template<typename _Ty>
+			friend class NegativeBinomialGen;
+			static_assert(std::is_floating_point<_Scalar>::value, "gammaDist needs floating point types.");
+			int cache_rest_cnt = 0;
+			ExponentialGen<_Scalar> expon;
+			_Scalar alpha, beta, px, sqrt;
 
-		template<typename Scalar, typename Rng>
-		struct scalar_gamma_dist_op : public scalar_exp_dist_op<Scalar, Rng>
-		{
-			static_assert(std::is_floating_point<Scalar>::value, "gammaDist needs floating point types.");
+		public:
+			using Scalar = _Scalar;
 
-			Scalar alpha, beta, px, sqrt;
-
-			scalar_gamma_dist_op(const Rng& _rng, Scalar _alpha = 1, Scalar _beta = 1)
-				: scalar_exp_dist_op<Scalar, Rng>{ _rng }, alpha{ _alpha }, beta{ _beta }
+			GammaGen(_Scalar _alpha = 1, _Scalar _beta = 1)
+				: alpha{ _alpha }, beta{ _beta }
 			{
 				px = constant::e / (alpha + constant::e);
 				sqrt = std::sqrt(2 * alpha - 1);
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			GammaGen(const GammaGen&) = default;
+			GammaGen(GammaGen&&) = default;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
-				using ur_base = scalar_uniform_real_op<Scalar, Rng>;
+				using namespace Eigen::internal;
 				if (alpha < 1)
 				{
-					Scalar ux, vx, xx, qx;
+					_Scalar ux, vx, xx, qx;
 					while (1)
 					{
-						ux = ur_base::operator()();
-						vx = this->nzur_scalar();
+						ux = expon.ur(rng);
+						vx = expon.ur.nzur_scalar(rng);
 
 						if (ux < px)
 						{
@@ -262,7 +285,7 @@ namespace Eigen
 							qx = std::pow(xx, alpha - 1);
 						}
 
-						if (ur_base::operator()() < qx)
+						if (expon.ur(rng) < qx)
 						{
 							return beta * xx;
 						}
@@ -270,27 +293,27 @@ namespace Eigen
 				}
 				if (alpha == 1)
 				{
-					return beta * scalar_exp_dist_op<Scalar, Rng>::operator()();
+					return beta * expon(rng);
 				}
 				int count;
 				if ((count = alpha) == alpha && count < 20)
 				{
-					Scalar yx;
-					yx = this->nzur_scalar();
+					_Scalar yx;
+					yx = expon.ur.nzur_scalar(rng);
 					while (--count)
 					{
-						yx *= this->nzur_scalar();
+						yx *= expon.ur.nzur_scalar(rng);
 					}
 					return -beta * std::log(yx);
 				}
 
 				while (1)
 				{
-					Scalar yx, xx;
-					yx = std::tan(constant::pi * ur_base::operator()());
+					_Scalar yx, xx;
+					yx = std::tan(constant::pi * expon.ur(rng));
 					xx = sqrt * yx + alpha - 1;
 					if (xx <= 0) continue;
-					if (ur_base::operator()() <= (1 + yx * yx)
+					if (expon.ur(rng) <= (1 + yx * yx)
 						* std::exp((alpha - 1) * std::log(xx / (alpha - 1)) - sqrt * yx))
 					{
 						return beta * xx;
@@ -298,29 +321,20 @@ namespace Eigen
 				}
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				using RUtils = RandUtils<Packet, Rng>;
 				auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
 
 				RUtils ru;
-				thread_local Packet cache_rest;
-				thread_local int cache_rest_cnt;
-				thread_local const scalar_gamma_dist_op* cache_ptr = nullptr;
-				if (cache_ptr != this)
-				{
-					cache_ptr = this;
-					cache_rest = pset1<Packet>(0);
-					cache_rest_cnt = 0;
-				}
-
 				if (alpha < 1)
 				{
 					while (1)
 					{
-						Packet ux = ru.uniform_real(this->rng);
-						Packet vx = ru.nonzero_uniform_real(this->rng);
+						Packet ux = ru.uniform_real(rng);
+						Packet vx = ru.nonzero_uniform_real(rng);
 
 						Packet xx = pexp(pmul(pset1<Packet>(1 / alpha), plog(vx)));
 						Packet qx = pexp(pnegate(xx));
@@ -332,18 +346,18 @@ namespace Eigen
 						xx = pblendv(c, xx, xx2);
 						qx = pblendv(c, qx, qx2);
 
-						ux = ru.uniform_real(this->rng);
+						ux = ru.uniform_real(rng);
 						Packet cands = pmul(pset1<Packet>(beta), xx);
 						bool full = false;
 						cache_rest_cnt = cm.compress_append(cands, pcmplt(ux, qx),
-							cache_rest, cache_rest_cnt, full);
+							OptCacheStore::template get<Packet>(), cache_rest_cnt, full);
 						if (full) return cands;
 					}
 				}
 				if (alpha == 1)
 				{
 					return pmul(pset1<Packet>(beta),
-						scalar_exp_dist_op<Scalar, Rng>::template packetOp<Packet>()
+						expon.template packetOp<Packet>(rng)
 					);
 				}
 				int count;
@@ -351,10 +365,10 @@ namespace Eigen
 				{
 					RUtils ru;
 					Packet ux, yx;
-					yx = ru.nonzero_uniform_real(this->rng);
+					yx = ru.nonzero_uniform_real(rng);
 					while (--count)
 					{
-						yx = pmul(yx, ru.nonzero_uniform_real(this->rng));
+						yx = pmul(yx, ru.nonzero_uniform_real(rng));
 					}
 					return pnegate(pmul(pset1<Packet>(beta), plog(yx)));
 				}
@@ -364,11 +378,11 @@ namespace Eigen
 					{
 						Packet alpha_1 = pset1<Packet>(alpha - 1);
 						Packet ys, yc;
-						psincos(pmul(pset1<Packet>(constant::pi), ru.uniform_real(this->rng)), ys, yc);
+						psincos(pmul(pset1<Packet>(constant::pi), ru.uniform_real(rng)), ys, yc);
 						Packet yx = pdiv(ys, yc);
 						Packet xx = padd(pmul(pset1<Packet>(sqrt), yx), alpha_1);
 						auto c = pcmplt(pset1<Packet>(0), xx);
-						Packet ux = ru.uniform_real(this->rng);
+						Packet ux = ru.uniform_real(rng);
 						Packet ub = pmul(padd(pmul(yx, yx), pset1<Packet>(1)),
 							pexp(psub(
 								pmul(alpha_1, plog(pdiv(xx, alpha_1))),
@@ -379,124 +393,145 @@ namespace Eigen
 						Packet cands = pmul(pset1<Packet>(beta), xx);
 						bool full = false;
 						cache_rest_cnt = cm.compress_append(cands, c,
-							cache_rest, cache_rest_cnt, full);
+							OptCacheStore::template get<Packet>(), cache_rest_cnt, full);
 						if (full) return cands;
 					}
 				}
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_gamma_dist_op<Scalar, Urng> >
+		template<typename _Scalar>
+		class WeibullGen : public GenBase<WeibullGen<_Scalar>, _Scalar>
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+			static_assert(std::is_floating_point<_Scalar>::value, "weilbullDist needs floating point types.");
+			UniformRealGen<_Scalar> ur;
+			_Scalar a = 1, b = 1;
 
-		template<typename Scalar, typename Rng>
-		struct scalar_weibull_dist_op : public scalar_uniform_real_op<Scalar, Rng>
-		{
-			static_assert(std::is_floating_point<Scalar>::value, "weilbullDist needs floating point types.");
+		public:
+			using Scalar = _Scalar;
 
-			Scalar a = 1, b = 1;
-
-			scalar_weibull_dist_op(const Rng& _rng, Scalar _a = 1, Scalar _b = 1)
-				: scalar_uniform_real_op<Scalar, Rng>{ _rng }, a{ _a }, b{ _b }
+			WeibullGen(_Scalar _a = 1, _Scalar _b = 1)
+				: a{ _a }, b{ _b }
 			{
 			}
+			
+			WeibullGen(const WeibullGen&) = default;
+			WeibullGen(WeibullGen&&) = default;
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
-				return std::pow(-std::log(1 - scalar_uniform_real_op<Scalar, Rng>::operator()()), 1 / a) * b;
+				using namespace Eigen::internal;
+				return std::pow(-std::log(1 - ur(std::forward<Rng>(rng))), 1 / a) * b;
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				return pmul(pexp(pmul(plog(pnegate(plog(
-					psub(pset1<Packet>(1), scalar_uniform_real_op<Scalar, Rng>::template packetOp<Packet>())
+					psub(pset1<Packet>(1), ur.template packetOp<Packet>(std::forward<Rng>(rng)))
 				))), pset1<Packet>(1 / a))), pset1<Packet>(b));
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_weibull_dist_op<Scalar, Urng> >
+		template<typename _Scalar>
+		class ExtremeValueGen : public GenBase<ExtremeValueGen<_Scalar>, _Scalar>
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+			static_assert(std::is_floating_point<_Scalar>::value, "extremeValueDist needs floating point types.");
+			UniformRealGen<_Scalar> ur;
+			_Scalar a = 0, b = 1;
 
-		template<typename Scalar, typename Rng>
-		struct scalar_extreme_value_dist_op : public scalar_uniform_real_op<Scalar, Rng>
-		{
-			static_assert(std::is_floating_point<Scalar>::value, "extremeValueDist needs floating point types.");
+		public:
+			using Scalar = _Scalar;
 
-			Scalar a = 0, b = 1;
-
-			scalar_extreme_value_dist_op(const Rng& _rng, Scalar _a = 0, Scalar _b = 1)
-				: scalar_uniform_real_op<Scalar, Rng>{ _rng }, a{ _a }, b{ _b }
+			ExtremeValueGen(_Scalar _a = 0, _Scalar _b = 1)
+				: a{ _a }, b{ _b }
 			{
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			ExtremeValueGen(const ExtremeValueGen&) = default;
+			ExtremeValueGen(ExtremeValueGen&&) = default;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
-				return (a - b * std::log(-std::log(this->nzur_scalar())));
+				using namespace Eigen::internal;
+				return (a - b * std::log(-std::log(ur.nzur_scalar(std::forward<Rng>(rng)))));
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				using RUtils = RandUtils<Packet, Rng>;
 				return psub(pset1<Packet>(a),
-					pmul(plog(pnegate(plog(RUtils{}.nonzero_uniform_real(this->rng)))), pset1<Packet>(b))
+					pmul(plog(pnegate(plog(RUtils{}.nonzero_uniform_real(std::forward<Rng>(rng))))), pset1<Packet>(b))
 				);
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_extreme_value_dist_op<Scalar, Urng> >
+		template<typename _Scalar>
+		class ChiSquaredGen : public GenBase<ChiSquaredGen<_Scalar>, _Scalar>
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+			static_assert(std::is_floating_point<_Scalar>::value, "chiSquaredDist needs floating point types.");
+			GammaGen<_Scalar> gamma;
+		public:
+			using Scalar = _Scalar;
 
-		template<typename Scalar, typename Rng>
-		struct scalar_chi_squared_dist_op : public scalar_gamma_dist_op<Scalar, Rng>
-		{
-			static_assert(std::is_floating_point<Scalar>::value, "chiSquaredDist needs floating point types.");
-
-			scalar_chi_squared_dist_op(const Rng& _rng, Scalar n = 1)
-				: scalar_gamma_dist_op<Scalar, Rng>{ _rng, n * Scalar(0.5), 2 }
-			{
-			}
-		};
-
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_chi_squared_dist_op<Scalar, Urng> >
-		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
-
-		template<typename Scalar, typename Rng>
-		struct scalar_cauchy_dist_op : public scalar_uniform_real_op<Scalar, Rng>
-		{
-			static_assert(std::is_floating_point<Scalar>::value, "cauchyDist needs floating point types.");
-
-			Scalar a = 0, b = 1;
-
-			scalar_cauchy_dist_op(const Rng& _rng, Scalar _a = 0, Scalar _b = 1)
-				: scalar_uniform_real_op<Scalar, Rng>{ _rng }, a{ _a }, b{ _b }
+			ChiSquaredGen(_Scalar n = 1)
+				: gamma{ n * _Scalar(0.5), 2 }
 			{
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			ChiSquaredGen(const ChiSquaredGen&) = default;
+			ChiSquaredGen(ChiSquaredGen&&) = default;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
-				return a + b * std::tan(constant::pi * (scalar_uniform_real_op<Scalar, Rng>::operator()() - 0.5));
+				return gamma(rng);
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				return gamma.template packetOp<Packet>(rng);
+			}
+		};
+
+		template<typename _Scalar>
+		class CauchyGen : public GenBase<CauchyGen<_Scalar>, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "cauchyDist needs floating point types.");
+			UniformRealGen<_Scalar> ur; 
+			_Scalar a = 0, b = 1;
+
+		public:
+			using Scalar = _Scalar;
+
+			CauchyGen(_Scalar _a = 0, _Scalar _b = 1)
+				: a{ _a }, b{ _b }
+			{
+			}
+
+			CauchyGen(const CauchyGen&) = default;
+			CauchyGen(CauchyGen&&) = default;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				return a + b * std::tan(constant::pi * (ur(std::forward<Rng>(rng)) - 0.5));
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
+			{
+				using namespace Eigen::internal;
 				Packet s, c;
 				psincos(pmul(pset1<Packet>(constant::pi),
-					psub(scalar_uniform_real_op<Scalar, Rng>::template packetOp<Packet>(), pset1<Packet>(0.5))
+					psub(ur.template packetOp<Packet>(std::forward<Rng>(rng)), pset1<Packet>(0.5))
 				), s, c);
 				return padd(pset1<Packet>(a),
 					pmul(pset1<Packet>(b), pdiv(s, c))
@@ -504,36 +539,41 @@ namespace Eigen
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_cauchy_dist_op<Scalar, Urng> >
+		template<typename> class FisherFGen;
+
+		template<typename _Scalar>
+		class BetaGen : OptCacheStore, public GenBase<BetaGen<_Scalar>, _Scalar>
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+			friend FisherFGen<_Scalar>;
+			static_assert(std::is_floating_point<_Scalar>::value, "betaDist needs floating point types.");
+			int cache_rest_cnt = 0;
+			UniformRealGen<_Scalar> ur;
+			_Scalar a, b;
+			GammaGen<_Scalar> gd1, gd2;
 
-		template<typename Scalar, typename Rng>
-		struct scalar_beta_dist_op : public scalar_uniform_real_op<Scalar, Rng>
-		{
-			static_assert(std::is_floating_point<Scalar>::value, "betaDist needs floating point types.");
-			using ur_base = scalar_uniform_real_op<Scalar, Rng>;
+		public:
+			using Scalar = _Scalar;
 
-			Scalar a, b;
-			scalar_gamma_dist_op<Scalar, Rng> gd1, gd2;
-
-			scalar_beta_dist_op(const Rng& _rng, Scalar _a = 1, Scalar _b = 1)
-				: ur_base{ _rng }, a{ _a }, b{ _b }, 
-				gd1{ _rng, _a }, gd2{ _rng, _b }
+			BetaGen(_Scalar _a = 1, _Scalar _b = 1)
+				: a{ _a }, b{ _b },
+				gd1{ _a }, gd2{ _b }
 			{
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			BetaGen(const BetaGen&) = default;
+			BetaGen(BetaGen&&) = default;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				if (a < 1 && b < 1)
 				{
-					Scalar x, p1, p2;
-					while(1)
+					_Scalar x, p1, p2;
+					while (1)
 					{
-						p1 = std::pow(ur_base::operator()(), 1 / a);
-						p2 = std::pow(ur_base::operator()(), 1 / b);
+						p1 = std::pow(ur(rng), 1 / a);
+						p2 = std::pow(ur(rng), 1 / b);
 						x = p1 + p2;
 						if (x <= 1) break;
 					}
@@ -541,85 +581,591 @@ namespace Eigen
 				}
 				else
 				{
-					Scalar p1 = gd1(), p2 = gd2();
+					_Scalar p1 = gd1(rng), p2 = gd2(rng);
 					return p1 / (p1 + p2);
 				}
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				if (a < 1 && b < 1)
 				{
 					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
-
-					thread_local Packet cache_rest;
-					thread_local int cache_rest_cnt;
-					thread_local const scalar_beta_dist_op* cache_ptr = nullptr;
-					if (cache_ptr != this)
-					{
-						cache_ptr = this;
-						cache_rest = pset1<Packet>(0);
-						cache_rest_cnt = 0;
-					}
-
 					Packet x, p1, p2;
 					while (1)
 					{
-						p1 = pexp(pmul(plog(ur_base::template packetOp<Packet>()), pset1<Packet>(1 / a)));
-						p2 = pexp(pmul(plog(ur_base::template packetOp<Packet>()), pset1<Packet>(1 / b)));
+						p1 = pexp(pmul(plog(ur.template packetOp<Packet>(rng)), pset1<Packet>(1 / a)));
+						p2 = pexp(pmul(plog(ur.template packetOp<Packet>(rng)), pset1<Packet>(1 / b)));
 						x = padd(p1, p2);
 						Packet cands = pdiv(p1, x);
 						bool full = false;
 						cache_rest_cnt = cm.compress_append(cands, pcmple(x, pset1<Packet>(1)),
-							cache_rest, cache_rest_cnt, full);
+							OptCacheStore::template get<Packet>(), cache_rest_cnt, full);
 						if (full) return cands;
 					}
 				}
 				else
 				{
-					auto p1 = gd1.template packetOp<Packet>(),
-						p2 = gd2.template packetOp<Packet>();
+					auto p1 = gd1.template packetOp<Packet>(rng),
+						p2 = gd2.template packetOp<Packet>(rng);
 					return pdiv(p1, padd(p1, p2));
 				}
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_beta_dist_op<Scalar, Urng> >
+		template<typename _Scalar>
+		class FisherFGen : public GenBase<FisherFGen<_Scalar>, _Scalar>
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+			static_assert(std::is_floating_point<_Scalar>::value, "fisherF needs floating point types.");
+			BetaGen<_Scalar> beta;
+		public:
+			using Scalar = _Scalar;
 
-		template<typename Scalar, typename Rng>
-		struct scalar_fisher_f_dist_op : public scalar_beta_dist_op<Scalar, Rng>
-		{
-			static_assert(std::is_floating_point<Scalar>::value, "chiSquaredDist needs floating point types.");
-
-			scalar_fisher_f_dist_op(const Rng& _rng, Scalar m = 1, Scalar n = 1)
-				: scalar_beta_dist_op<Scalar, Rng>{ _rng, m * Scalar(0.5), n * Scalar(0.5) }
+			FisherFGen(_Scalar m = 1, _Scalar n = 1)
+				: beta{ m * _Scalar(0.5), n * _Scalar(0.5) }
 			{
 			}
+			
+			FisherFGen(const FisherFGen&) = default;
+			FisherFGen(FisherFGen&&) = default;
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
-				auto x = scalar_beta_dist_op<Scalar, Rng>::operator()();
-				return this->b / this->a * x / (1 - x);
+				using namespace Eigen::internal;
+				auto x = beta(std::forward<Rng>(rng));
+				return beta.b / beta.a * x / (1 - x);
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
-				auto x = scalar_beta_dist_op<Scalar, Rng>::template packetOp<Packet>();
-				return pdiv(pmul(pset1<Packet>(this->b / this->a), x), psub(pset1<Packet>(1), x));
+				using namespace Eigen::internal;
+				auto x = beta.template packetOp<Packet>(std::forward<Rng>(rng));
+				return pdiv(pmul(pset1<Packet>(beta.b / beta.a), x), psub(pset1<Packet>(1), x));
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_fisher_f_dist_op<Scalar, Urng> >
+
+		template<typename Derived, typename Urng>
+		using BetaType = CwiseNullaryOp<internal::scalar_rng_adaptor<BetaGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on the beta distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param a,b shape parameter
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const BetaType<Derived, Urng>
+			beta(Index rows, Index cols, Urng&& urng, typename Derived::Scalar a = 1, typename Derived::Scalar b = 1)
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+			return {
+				rows, cols, { std::forward<Urng>(urng), BetaGen<typename Derived::Scalar>{a, b} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on the beta distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param a,b shape parameter
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const BetaType<Derived, Urng>
+			betaLike(Derived& o, Urng&& urng, typename Derived::Scalar a = 1, typename Derived::Scalar b = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), BetaGen<typename Derived::Scalar>{a, b} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using CauchyType = CwiseNullaryOp<internal::scalar_rng_adaptor<CauchyGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on the Cauchy distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param a a location parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const CauchyType<Derived, Urng>
+			cauchy(Index rows, Index cols, Urng&& urng, typename Derived::Scalar a = 0, typename Derived::Scalar b = 1)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), CauchyGen<typename Derived::Scalar>{a, b} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on the Cauchy distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param a a location parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const CauchyType<Derived, Urng>
+			cauchyLike(Derived& o, Urng&& urng, typename Derived::Scalar a = 0, typename Derived::Scalar b = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), CauchyGen<typename Derived::Scalar>{a, b} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using NormalType = CwiseNullaryOp<internal::scalar_rng_adaptor<StdNormalGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on a standard normal distribution (`mean` = 0, `stdev`=1)
+		 *
+		 * @tparam Derived a type of Eigen::DenseBase
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const NormalType<Derived, Urng>
+			normal(Index rows, Index cols, Urng&& urng)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng) }
+			};
+		}
+
+		/**
+		 * @brief generates reals on a standard normal distribution (`mean` = 0, `stdev`=1)
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const NormalType<Derived, Urng>
+			normalLike(Derived& o, Urng&& urng)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng) }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using Normal2Type = CwiseNullaryOp<internal::scalar_rng_adaptor<NormalGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on a normal distribution with arbitrary `mean` and `stdev`.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param mean a mean value of the distribution
+		 * @param stdev a standard deviation value of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const Normal2Type<Derived, Urng>
+			normal(Index rows, Index cols, Urng&& urng, typename Derived::Scalar mean, typename Derived::Scalar stdev = 1)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), NormalGen<typename Derived::Scalar>{mean, stdev} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on a normal distribution with arbitrary `mean` and `stdev`.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param mean a mean value of the distribution
+		 * @param stdev a standard deviation value of the distribution
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const Normal2Type<Derived, Urng>
+			normalLike(Derived& o, Urng&& urng, typename Derived::Scalar mean, typename Derived::Scalar stdev = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), NormalGen<typename Derived::Scalar>{mean, stdev} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using LognormalType = CwiseNullaryOp<internal::scalar_rng_adaptor<LognormalGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on a lognormal distribution with arbitrary `mean` and `stdev`.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param mean a mean value of the distribution
+		 * @param stdev a standard deviation value of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const LognormalType<Derived, Urng>
+			lognormal(Index rows, Index cols, Urng&& urng, typename Derived::Scalar mean = 0, typename Derived::Scalar stdev = 1)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), LognormalGen<typename Derived::Scalar>{mean, stdev} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on a lognormal distribution with arbitrary `mean` and `stdev`.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param mean a mean value of the distribution
+		 * @param stdev a standard deviation value of the distribution
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const LognormalType<Derived, Urng>
+			lognormalLike(Derived& o, Urng&& urng, typename Derived::Scalar mean = 0, typename Derived::Scalar stdev = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), LognormalGen<typename Derived::Scalar>{mean, stdev} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using StudentTType = CwiseNullaryOp<internal::scalar_rng_adaptor<StudentTGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on the Student's t distribution with arbirtrary degress of freedom.
+		 *
+		 * @tparam Derived a type of Eigen::DenseBase
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param n degrees of freedom
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const StudentTType<Derived, Urng>
+			studentT(Index rows, Index cols, Urng&& urng, typename Derived::Scalar n = 1)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), StudentTGen<typename Derived::Scalar>{n} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on the Student's t distribution with arbirtrary degress of freedom.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param n degrees of freedom
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const StudentTType<Derived, Urng>
+			studentTLike(Derived& o, Urng&& urng, typename Derived::Scalar n = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), StudentTGen<typename Derived::Scalar>{n} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using ExponentialType = CwiseNullaryOp<internal::scalar_rng_adaptor<ExponentialGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on an exponential distribution with arbitrary scale parameter.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param lambda a scale parameter of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const ExponentialType<Derived, Urng>
+			exponential(Index rows, Index cols, Urng&& urng, typename Derived::Scalar lambda = 1)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), ExponentialGen<typename Derived::Scalar>{lambda} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on an exponential distribution with arbitrary scale parameter.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param lambda a scale parameter of the distribution
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const ExponentialType<Derived, Urng>
+			exponentialLike(Derived& o, Urng&& urng, typename Derived::Scalar lambda = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), ExponentialGen<typename Derived::Scalar>{lambda} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using GammaType = CwiseNullaryOp<internal::scalar_rng_adaptor<GammaGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on a gamma distribution with arbitrary shape and scale parameter.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param alpha a shape parameter of the distribution
+		 * @param beta a scale parameter of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const GammaType<Derived, Urng>
+			gamma(Index rows, Index cols, Urng&& urng, typename Derived::Scalar alpha = 1, typename Derived::Scalar beta = 1)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), GammaGen<typename Derived::Scalar>{alpha, beta} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on a gamma distribution with arbitrary shape and scale parameter.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param alpha a shape parameter of the distribution
+		 * @param beta a scale parameter of the distribution
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const GammaType<Derived, Urng>
+			gammaLike(Derived& o, Urng&& urng, typename Derived::Scalar alpha = 1, typename Derived::Scalar beta = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), GammaGen<typename Derived::Scalar>{alpha, beta} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using WeibullType = CwiseNullaryOp<internal::scalar_rng_adaptor<WeibullGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on a Weibull distribution with arbitrary shape and scale parameter.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param a a shape parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const WeibullType<Derived, Urng>
+			weibull(Index rows, Index cols, Urng&& urng, typename Derived::Scalar a = 1, typename Derived::Scalar b = 1)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), WeibullGen<typename Derived::Scalar>{a, b} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on a Weibull distribution with arbitrary shape and scale parameter.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param a a shape parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const WeibullType<Derived, Urng>
+			weibullLike(Derived& o, Urng&& urng, typename Derived::Scalar a = 1, typename Derived::Scalar b = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), WeibullGen<typename Derived::Scalar>{a, b} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using ExtremeValueType = CwiseNullaryOp<internal::scalar_rng_adaptor<ExtremeValueGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on an extreme value distribution
+		 * (a.k.a Gumbel Type I, log-Weibull, Fisher-Tippett Type I) with arbitrary shape and scale parameter.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param a a location parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const ExtremeValueType<Derived, Urng>
+			extremeValue(Index rows, Index cols, Urng&& urng, typename Derived::Scalar a = 0, typename Derived::Scalar b = 1)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), ExtremeValueGen<typename Derived::Scalar>{a, b} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on an extreme value distribution
+		 * (a.k.a Gumbel Type I, log-Weibull, Fisher-Tippett Type I) with arbitrary shape and scale parameter.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param a a location parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const ExtremeValueType<Derived, Urng>
+			extremeValueLike(Derived& o, Urng&& urng, typename Derived::Scalar a = 0, typename Derived::Scalar b = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), ExtremeValueGen<typename Derived::Scalar>{a, b} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using ChiSquaredType = CwiseNullaryOp<internal::scalar_rng_adaptor<ChiSquaredGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on the Chi-squared distribution with arbitrary degrees of freedom.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param n the degrees of freedom of the distribution
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const ChiSquaredType<Derived, Urng>
+			chiSquared(Index rows, Index cols, Urng&& urng, typename Derived::Scalar n = 1)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), ChiSquaredGen<typename Derived::Scalar>{n} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on the Chi-squared distribution with arbitrary degrees of freedom.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param n the degrees of freedom of the distribution
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const ChiSquaredType<Derived, Urng>
+			chiSquaredLike(Derived& o, Urng&& urng, typename Derived::Scalar n = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), ChiSquaredGen<typename Derived::Scalar>{n} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using FisherFType = CwiseNullaryOp<internal::scalar_rng_adaptor<FisherFGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on the Fisher's F distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param m degrees of freedom
+		 * @param n degrees of freedom
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const FisherFType<Derived, Urng>
+			fisherF(Index rows, Index cols, Urng&& urng, typename Derived::Scalar m = 1, typename Derived::Scalar n = 1)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), FisherFGen<typename Derived::Scalar>{m, n} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on the Fisher's F distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param m degrees of freedom
+		 * @param n degrees of freedom
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const FisherFType<Derived, Urng>
+			fisherFLike(Derived& o, Urng&& urng, typename Derived::Scalar m = 1, typename Derived::Scalar n = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), FisherFGen<typename Derived::Scalar>{m, n} }
+			};
+		}
 	}
 }
 

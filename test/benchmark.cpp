@@ -76,8 +76,20 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	}
 
 	{
+		auto scope = bh.measure("randBits/int/gen" + suffix, xi);
+		Eigen::Rand::RandbitsGen<int32_t> gen;
+		xi = gen.generateLike(xi, urng);
+	}
+
+	{
 		auto scope = bh.measure("uniformInt/int(0~6)" + suffix, xi);
 		xi = Eigen::Rand::uniformIntLike(xi, urng, 0, 6);
+	}
+
+	{
+		auto scope = bh.measure("uniformInt/int(0~6)/gen" + suffix, xi);
+		Eigen::Rand::UniformIntGen<int32_t> gen{ 0, 6 };
+		xi = gen.generateLike(xi, urng);
 	}
 
 	{
@@ -98,6 +110,12 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	{
 		auto scope = bh.measure("discreteF/int(s=5)" + suffix, xi);
 		xi = Eigen::Rand::discreteFLike(xi, urng, { 1, 2, 3, 4, 5 });
+	}
+
+	{
+		auto scope = bh.measure("discreteF/int(s=5)/gen" + suffix, xi);
+		Eigen::Rand::DiscreteGen<int32_t> gen{ 1, 2, 3, 4, 5 };
+		xi = gen.generateLike(xi, urng);
 	}
 
 	{
@@ -236,6 +254,13 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	{
 		auto scope = bh.measure("gamma(5,3)" + suffix, x);
 		x = Eigen::Rand::gammaLike(x, urng, 5, 3);
+	}
+
+
+	{
+		auto scope = bh.measure("gamma(5,3)/gen" + suffix, x);
+		Eigen::Rand::GammaGen<float> gen{ 5, 3 };
+		x = gen.generateLike(x, urng);
 	}
 
 	/*{

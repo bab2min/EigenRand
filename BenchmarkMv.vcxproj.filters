@@ -60,15 +60,12 @@
     <ClInclude Include="EigenRand\MvDists\MvNormal.h">
       <Filter>EigenRand\MvDists</Filter>
     </ClInclude>
-    <ClInclude Include="EigenRand\MvDists\Multinomial.h">
-      <Filter>EigenRand\MvDists</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="test\benchmark.cpp">
+    <ClCompile Include="test\benchmark_mv.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
