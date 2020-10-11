@@ -93,7 +93,7 @@ namespace Eigen
 			-> MvNormalGen<typename MatrixBase<MeanTy>::Scalar, MatrixBase<MeanTy>::RowsAtCompileTime>
 		{
 			static_assert(
-				std::is_same<typename MatrixBase<MeanTy>::Scalar, MatrixBase<CovTy>::Scalar>::value,
+				std::is_same<typename MatrixBase<MeanTy>::Scalar, typename MatrixBase<CovTy>::Scalar>::value,
 				"Derived::Scalar must be the same with `mean` and `cov`'s Scalar."
 			);
 			static_assert(
