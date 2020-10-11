@@ -158,10 +158,10 @@ auto gamma11_pdf = std::make_tuple([](double x) { return gamma_dist(x, 1, 1); },
 auto gamma51_pdf = std::make_tuple([](double x) { return gamma_dist(x, 5, 1); }, 0., 16.);
 auto gamma21_pdf = std::make_tuple([](double x) { return gamma_dist(x, 0.2, 1); }, 0., 16.);
 auto chisquared_pdf = std::make_tuple([](double x) { return chisquared_dist(x, 7); }, 0., 64.);
-auto cauchy_cdf = std::make_tuple([](double x) { return std::atan(x) / Eigen::internal::constant::pi + 0.5; }, -16., 16.);
+auto cauchy_cdf = std::make_tuple([](double x) { return std::atan(x) / Eigen::Rand::constant::pi + 0.5; }, -16., 16.);
 auto student5_pdf = std::make_tuple([](double x) { return student_t_dist(x, 5); }, -8., 8.);
 auto student20_pdf = std::make_tuple([](double x) { return student_t_dist(x, 20); }, -8., 8.);
-auto fisher11_cdf = std::make_tuple([](double x) { return 2 * std::atan(std::sqrt(x)) / Eigen::internal::constant::pi; }, 0., 256.);
+auto fisher11_cdf = std::make_tuple([](double x) { return 2 * std::atan(std::sqrt(x)) / Eigen::Rand::constant::pi; }, 0., 256.);
 auto fisher55_pdf = std::make_tuple([](double x) { return fisher_f_dist(x, 5, 5); }, 0., 16.);
 
 auto uniform10_pmf = std::make_tuple([](int x) { return 1; }, 0, 9);
