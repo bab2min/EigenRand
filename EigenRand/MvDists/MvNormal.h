@@ -17,8 +17,11 @@ namespace Eigen
 	namespace Rand
 	{
 		/**
-		* 
-		*/
+		 * @brief Generator of multivariate normal distribution
+		 * 
+		 * @tparam _Scalar Numeric type
+		 * @tparam Dim number of dimensions, or `Eigen::Dynamic`
+		 */
 		template<typename _Scalar, Index Dim = -1>
 		class MvNormalGen
 		{
@@ -150,7 +153,7 @@ namespace Eigen
 			Index dims() const { return chol.rows(); }
 
 			template<typename Urng>
-			inline auto generate(Urng&& urng, Index samples)
+			inline Matrix<_Scalar, Dim, -1> generate(Urng&& urng, Index samples)
 			{
 				const Index dim = chol.rows();
 				const Index normSamples = samples * dim * (dim - 1) / 2;
@@ -193,7 +196,7 @@ namespace Eigen
 			}
 
 			template<typename Urng>
-			inline auto generate(Urng&& urng)
+			inline Matrix<_Scalar, Dim, -1> generate(Urng&& urng)
 			{
 				const Index dim = chol.rows();
 				const Index normSamples = dim * (dim - 1) / 2;
@@ -260,7 +263,7 @@ namespace Eigen
 			Index dims() const { return chol.rows(); }
 
 			template<typename Urng>
-			inline auto generate(Urng&& urng, Index samples)
+			inline Matrix<_Scalar, Dim, -1> generate(Urng&& urng, Index samples)
 			{
 				const Index dim = chol.rows();
 				const Index normSamples = samples * dim * (dim - 1) / 2;
@@ -306,7 +309,7 @@ namespace Eigen
 			}
 
 			template<typename Urng>
-			inline auto generate(Urng&& urng)
+			inline Matrix<_Scalar, Dim, -1> generate(Urng&& urng)
 			{
 				const Index dim = chol.rows();
 				const Index normSamples = dim * (dim - 1) / 2;

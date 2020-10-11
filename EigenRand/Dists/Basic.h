@@ -2,8 +2,8 @@
  * @file Basic.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.2.0
- * @date 2020-06-22
+ * @version 0.3.0
+ * @date 2020-10-07
  * 
  * @copyright Copyright (c) 2020
  * 
@@ -121,6 +121,11 @@ namespace Eigen
 
 		using OptCacheStore = CacheStore<EIGEN_MAX_ALIGN_BYTES>;
 
+		/**
+		 * @brief Generator of random bits for integral scalars
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class RandbitsGen : public GenBase<RandbitsGen<_Scalar>, _Scalar>
 		{
@@ -145,6 +150,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of reals in a range `[-1, 1]`
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class BalancedGen : public GenBase<BalancedGen<_Scalar>, _Scalar>
 		{
@@ -169,6 +179,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of reals in a range `[0, 1)`
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class UniformRealGen : public GenBase<UniformRealGen<_Scalar>, _Scalar>
 		{

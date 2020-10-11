@@ -2,8 +2,8 @@
  * @file NormalExp.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.2.0
- * @date 2020-06-22
+ * @version 0.3.0
+ * @date 2020-10-07
  * 
  * @copyright Copyright (c) 2020
  * 
