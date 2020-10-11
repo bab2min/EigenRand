@@ -35,7 +35,7 @@ public:
 		{
 			if (!name.empty())
 			{
-				bh.timing[name] = std::chrono::duration_cast<std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - start).count();
+				bh.timing[name] = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - start).count();
 
 				double mean = results.template cast<double>().sum() / results.size();
 				double sqmean = results.template cast<double>().array().square().sum() / results.size();
