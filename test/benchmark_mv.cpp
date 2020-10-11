@@ -35,7 +35,7 @@ public:
 		{
 			if (!name.empty())
 			{
-				bh.timing[name] = (std::chrono::high_resolution_clock::now() - start).count() / 1e+6;
+				bh.timing[name] = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start).count();
 
 				if (_matrix)
 				{
@@ -138,28 +138,22 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 
 	{
 		Eigen::VectorXf mean = Eigen::VectorXf::LinSpaced(100, 0, 99);
-		Eigen::MatrixXf cov = Eigen::MatrixXf::Identity(100, 100) * 4;
-		cov += Eigen::Rand::normalLike(cov, urng) * 0.1f;
+		Eigen::MatrixXf cov(100, 100);
+		cov = Eigen::Rand::normalLike(cov, urng) * 0.1f;
+		cov = cov * cov.transpose();
+		cov += Eigen::MatrixXf::Identity(100, 100) * 4;
 		test_single_and_batch<float>(size, bh, "MvNormal/100/float" + suffix, Eigen::Rand::makeMvNormGen(mean, cov), urng);
 	}
 
 	{
 		Eigen::Vector4f w{ 1, 2, 3, 4 };
 		test_single_and_batch<int32_t>(size, bh, "Multinomial/4/float t=20" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(20, w), urng);
-	}
-
-	{
-		Eigen::VectorXf w = Eigen::VectorXf::LinSpaced(100, 0.1, 10.0);
-		test_single_and_batch<int32_t>(size, bh, "Multinomial/100/float t=20" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(20, w), urng);
-	}
-
-	{
-		Eigen::Vector4f w{ 1, 2, 3, 4 };
 		test_single_and_batch<int32_t>(size, bh, "Multinomial/4/float t=1000" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(1000, w), urng);
 	}
 
 	{
 		Eigen::VectorXf w = Eigen::VectorXf::LinSpaced(100, 0.1, 10.0);
+		test_single_and_batch<int32_t>(size, bh, "Multinomial/100/float t=20" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(20, w), urng);
 		test_single_and_batch<int32_t>(size, bh, "Multinomial/100/float t=1000" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(1000, w), urng);
 	}
 
@@ -183,8 +177,10 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	}
 
 	{
-		Eigen::MatrixXf scale = Eigen::MatrixXf::Identity(50, 50);
-		scale += Eigen::Rand::uniformRealLike(scale, urng) * 0.1f;
+		Eigen::MatrixXf scale(50, 50);
+		scale = Eigen::Rand::uniformRealLike(scale, urng) * 0.1f;
+		scale = scale * scale.transpose();
+		scale += Eigen::MatrixXf::Identity(50, 50);
 		test_single_and_batch_matrix<float>(size, bh, "Wishart/50/float" + suffix, Eigen::Rand::makeWishartGen(50, scale), urng);
 	}
 
@@ -198,8 +194,10 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	}
 
 	{
-		Eigen::MatrixXf scale = Eigen::MatrixXf::Identity(50, 50);
-		scale += Eigen::Rand::uniformRealLike(scale, urng) * 0.1f;
+		Eigen::MatrixXf scale(50, 50);
+		scale = Eigen::Rand::uniformRealLike(scale, urng) * 0.1f;
+		scale = scale * scale.transpose();
+		scale += Eigen::MatrixXf::Identity(50, 50);
 		test_single_and_batch_matrix<float>(size, bh, "InvWishart/50/float" + suffix, Eigen::Rand::makeInvWishartGen(54, scale), urng);
 	}
 	return ret;
@@ -244,7 +242,7 @@ int main(int argc, char** argv)
 		size_t sp = p.first.find('\t');
 		std::cout << std::left << std::setw(28) << p.first.substr(0, sp);
 		std::cout << std::setw(14) << p.first.substr(sp + 1);
-		std::cout << ": " << mean << " (" << std::sqrt(var) << ")" << std::endl;
+		std::cout << ": " << mean * 1000 << " (" << std::sqrt(var) * 1000 << ")" << std::endl;
 	}
 
 	std::cout << std::endl << "[Statistics]" << std::endl;

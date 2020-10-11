@@ -24,6 +24,15 @@ jobs:
         git checkout tags/${{ matrix.eigenversion }}
         cd ..
         mv eigen include
+    - name: Set up Python3
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+        architecture: x64
+    - name: Test Reference
+      run: |
+        pip install scipy
+        python test/comp_scipy.py
     - name: Build Bench
       run: |
         g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
@@ -59,6 +68,15 @@ jobs:
         wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
         tar -zxvf eigen-${{ matrix.eigenversion }}.tar.gz
         mv eigen-${{ matrix.eigenversion }} include
+    - name: Set up Python3
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+        architecture: x64
+    - name: Test Reference
+      run: |
+        pip install scipy
+        python test/comp_scipy.py
     - name: Build Bench
       run: |
         g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
@@ -96,6 +114,15 @@ jobs:
         Invoke-WebRequest -OutFile eigen.tar.gz https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
         tar -zxvf eigen.tar.gz
         mv eigen-${{ matrix.eigenversion }} include
+    - name: Set up Python3
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+        architecture: x64
+    - name: Test Reference
+      run: |
+        pip install scipy
+        python test/comp_scipy.py
     - uses: ilammy/msvc-dev-cmd@v1
     - name: Build Bench
       run: |

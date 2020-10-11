@@ -35,7 +35,7 @@ public:
 		{
 			if (!name.empty())
 			{
-				bh.timing[name] = (std::chrono::high_resolution_clock::now() - start).count() / 1e+6;
+				bh.timing[name] = std::chrono::duration_cast<std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - start).count();
 
 				double mean = results.template cast<double>().sum() / results.size();
 				double sqmean = results.template cast<double>().array().square().sum() / results.size();
@@ -785,7 +785,7 @@ int main(int argc, char** argv)
 		size_t sp = p.first.find('\t');
 		std::cout << std::left << std::setw(28) << p.first.substr(0, sp);
 		std::cout << std::setw(14) << p.first.substr(sp + 1);
-		std::cout << ": " << mean << " (" << std::sqrt(var) << ")" << std::endl;
+		std::cout << ": " << mean * 1000 << " (" << std::sqrt(var) * 1000 << ")" << std::endl;
 	}
 
 	std::cout << std::endl << "[Statistics] Mean (Stdev)" << std::endl;
