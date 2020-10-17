@@ -57,10 +57,10 @@
     <ClInclude Include="EigenRand\doc.h">
       <Filter>EigenRand</Filter>
     </ClInclude>
-    <ClInclude Include="EigenRand\MvDists\MvNormal.h">
+    <ClInclude Include="EigenRand\MvDists\Multinomial.h">
       <Filter>EigenRand\MvDists</Filter>
     </ClInclude>
-    <ClInclude Include="EigenRand\MvDists\Multinomial.h">
+    <ClInclude Include="EigenRand\MvDists\MvNormal.h">
       <Filter>EigenRand\MvDists</Filter>
     </ClInclude>
   </ItemGroup>

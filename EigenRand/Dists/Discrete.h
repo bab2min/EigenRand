@@ -205,7 +205,12 @@ namespace Eigen
 				return alias.get();
 			}
 		};
-
+		
+		/**
+		 * @brief Generator of integers with a given range `[min, max]`
+		 * 
+		 * @tparam _Scalar any integral type
+		 */
 		template<typename _Scalar>
 		class UniformIntGen : OptCacheStore, public GenBase<UniformIntGen<_Scalar>, _Scalar>
 		{
@@ -218,6 +223,11 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new UniformInt Generator
+			 * 
+			 * @param _min, _max the range of integers being generated
+			 */
 			UniformIntGen(_Scalar _min, _Scalar _max)
 				: pmin{ _min }, pdiff{ (size_t)(_max - _min) }
 			{
@@ -304,9 +314,20 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`
+		 * 
+		 * @tparam _Scalar any integral type
+		 * @tparam Precision internal precision type
+		 */
 		template<typename _Scalar, typename Precision = float>
 		class DiscreteGen;
 
+		/**
+		 * @brief `DiscreteGen` with `int32_t` precision
+		 * 
+		 * @tparam _Scalar any intergral type
+		 */
 		template<typename _Scalar>
 		class DiscreteGen<_Scalar, int32_t> : public GenBase<DiscreteGen<_Scalar, int32_t>, _Scalar>
 		{
@@ -322,6 +343,13 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new Discrete Generator
+			 * 
+			 * @tparam RealIter 
+			 * @param first, last the range of elements defining the numbers to use as weights. 
+			 * The type of the elements referred by it must be convertible to `double`.
+			 */
 			template<typename RealIter>
 			DiscreteGen(RealIter first, RealIter last)
 			{
@@ -347,6 +375,13 @@ namespace Eigen
 				}
 			}
 
+			/**
+			 * @brief Construct a new Discrete Generator
+			 * 
+			 * @tparam Real 
+			 * @param il an instance of initializer_list containing the numbers to use as weights. 
+			 * The type of the elements referred by it must be convertible to `double`.
+			 */
 			template<typename Real,
 				typename std::enable_if<std::is_arithmetic<Real>::value, int>::type = 0>
 			DiscreteGen(const std::initializer_list<Real>& il)
@@ -416,6 +451,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief `DiscreteGen` with `float` precision
+		 * 
+		 * @tparam _Scalar any intergral type
+		 */
 		template<typename _Scalar>
 		class DiscreteGen<_Scalar, float> : public GenBase<DiscreteGen<_Scalar, float>, _Scalar>
 		{
@@ -427,6 +467,13 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new Discrete Generator
+			 * 
+			 * @tparam RealIter 
+			 * @param first, last the range of elements defining the numbers to use as weights. 
+			 * The type of the elements referred by it must be convertible to `double`.
+			 */
 			template<typename RealIter>
 			DiscreteGen(RealIter first, RealIter last)
 			{
@@ -452,6 +499,13 @@ namespace Eigen
 				}
 			}
 
+			/**
+			 * @brief Construct a new Discrete Generator
+			 * 
+			 * @tparam Real 
+			 * @param il an instance of initializer_list containing the numbers to use as weights. 
+			 * The type of the elements referred by it must be convertible to `double`.
+			 */
 			template<typename Real, 
 				typename std::enable_if<std::is_arithmetic<Real>::value, int>::type = 0>
 			DiscreteGen(const std::initializer_list<Real>& il)
@@ -503,6 +557,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief `DiscreteGen` with `double` precision
+		 * 
+		 * @tparam _Scalar any intergral type
+		 */
 		template<typename _Scalar>
 		class DiscreteGen<_Scalar, double> : public GenBase<DiscreteGen<_Scalar, double>, _Scalar>
 		{
@@ -514,6 +573,13 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new Discrete Generator
+			 * 
+			 * @tparam RealIter 
+			 * @param first, last the range of elements defining the numbers to use as weights. 
+			 * The type of the elements referred by it must be convertible to `double`.
+			 */
 			template<typename RealIter>
 			DiscreteGen(RealIter first, RealIter last)
 			{
@@ -539,6 +605,13 @@ namespace Eigen
 				}
 			}
 
+			/**
+			 * @brief Construct a new Discrete Generator
+			 * 
+			 * @tparam Real 
+			 * @param il an instance of initializer_list containing the numbers to use as weights. 
+			 * The type of the elements referred by it must be convertible to `double`.
+			 */
 			template<typename Real,
 				typename std::enable_if<std::is_arithmetic<Real>::value, int>::type = 0>
 			DiscreteGen(const std::initializer_list<Real>& il)
@@ -611,6 +684,11 @@ namespace Eigen
 
 		template<typename> class BinomialGen;
 
+		/**
+		 * @brief Generator of integers on a Poisson distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class PoissonGen : OptCacheStore, public GenBase<PoissonGen<_Scalar>, _Scalar>
 		{
@@ -625,6 +703,11 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new Poisson Generator
+			 * 
+			 * @param _mean mean of the distribution
+			 */
 			PoissonGen(double _mean)
 				: mean{ _mean }, ne_mean{ std::exp(-_mean) }
 			{
@@ -715,6 +798,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of integers on a binomial distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class BinomialGen : public GenBase<BinomialGen<_Scalar>, _Scalar>
 		{
@@ -727,6 +815,12 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new Binomial Generator
+			 * 
+			 * @param _trials the number of trials
+			 * @param _p probability of a trial generating true
+			 */
 			BinomialGen(_Scalar _trials = 1, double _p = 0.5)
 				: poisson{ _trials * std::min(_p, 1 - _p) },
 				trials{ _trials }, p{ _p }, small_p{ std::min(p, 1 - p) }
@@ -845,6 +939,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of integers on a geometric distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class GeometricGen : public GenBase<GeometricGen<_Scalar>, _Scalar>
 		{
@@ -855,6 +954,11 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new Geometric Generator
+			 * 
+			 * @param _p probability of a trial generating true
+			 */
 			GeometricGen(double _p)
 				: p{ _p }, rlog_q{ 1 / std::log(1 - p) }
 			{
@@ -893,6 +997,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param min, max the range of integers being generated
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::UniformIntGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const UniformIntType<Derived, Urng>
@@ -912,6 +1018,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param min, max the range of integers being generated
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::UniformIntGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const UniformIntType<Derived, Urng>
@@ -936,6 +1044,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename RealIter>
 		inline const DiscreteFType<Derived, Urng>
@@ -956,6 +1066,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename RealIter>
 		inline const DiscreteFType<Derived, Urng>
@@ -975,8 +1087,10 @@ namespace Eigen
 		 * @param rows the number of rows being generated
 		 * @param cols the number of columns being generated
 		 * @param urng c++11-style random number generator
-		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by it must be convertible to `double`.
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename Real>
 		inline const DiscreteFType<Derived, Urng>
@@ -995,8 +1109,10 @@ namespace Eigen
 		 * @tparam Urng
 		 * @param o an instance of any type of Eigen::DenseBase
 		 * @param urng c++11-style random number generator
-		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by it must be convertible to `double`.
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename Real>
 		inline const DiscreteFType<Derived, Urng>
@@ -1021,6 +1137,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename RealIter>
 		inline const DiscreteDType<Derived, Urng>
@@ -1041,6 +1159,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename RealIter>
 		inline const DiscreteDType<Derived, Urng>
@@ -1060,8 +1180,10 @@ namespace Eigen
 		 * @param rows the number of rows being generated
 		 * @param cols the number of columns being generated
 		 * @param urng c++11-style random number generator
-		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by it must be convertible to `double`.
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename Real>
 		inline const DiscreteDType<Derived, Urng>
@@ -1080,8 +1202,10 @@ namespace Eigen
 		 * @tparam Urng
 		 * @param o an instance of any type of Eigen::DenseBase
 		 * @param urng c++11-style random number generator
-		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by it must be convertible to `double`.
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename Real>
 		inline const DiscreteDType<Derived, Urng>
@@ -1106,6 +1230,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename RealIter>
 		inline const DiscreteType<Derived, Urng>
@@ -1126,6 +1252,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename RealIter>
 		inline const DiscreteType<Derived, Urng>
@@ -1145,8 +1273,10 @@ namespace Eigen
 		 * @param rows the number of rows being generated
 		 * @param cols the number of columns being generated
 		 * @param urng c++11-style random number generator
-		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by it must be convertible to `double`.
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename Real>
 		inline const DiscreteType<Derived, Urng>
@@ -1165,8 +1295,10 @@ namespace Eigen
 		 * @tparam Urng
 		 * @param o an instance of any type of Eigen::DenseBase
 		 * @param urng c++11-style random number generator
-		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by it must be convertible to `double`.
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::DiscreteGen
 		 */
 		template<typename Derived, typename Urng, typename Real>
 		inline const DiscreteType<Derived, Urng>
@@ -1190,6 +1322,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param mean rate parameter
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::PoissonGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const PoissonType<Derived, Urng>
@@ -1209,6 +1343,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param mean rate parameter
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::PoissonGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const PoissonType<Derived, Urng>
@@ -1233,6 +1369,8 @@ namespace Eigen
 		 * @param trials the number of trials
 		 * @param p probability of a trial generating true
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::BinomialGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const BinomialType<Derived, Urng>
@@ -1253,6 +1391,8 @@ namespace Eigen
 		 * @param trials the number of trials
 		 * @param p probability of a trial generating true
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::BinomialGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const BinomialType<Derived, Urng>
@@ -1276,6 +1416,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param p probability of a trial generating true
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::GeometricGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const GeometricType<Derived, Urng>
@@ -1295,6 +1437,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param p probability of a trial generating true
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::GeometricGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const GeometricType<Derived, Urng>

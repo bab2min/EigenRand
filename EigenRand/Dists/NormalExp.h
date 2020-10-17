@@ -17,6 +17,11 @@ namespace Eigen
 {
 	namespace Rand
 	{
+		/**
+		 * @brief Generator of reals on the standard normal distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class StdNormalGen : OptCacheStore, public GenBase<StdNormalGen<_Scalar>, _Scalar>
 		{
@@ -76,6 +81,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of reals on a normal distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class NormalGen : public GenBase<NormalGen<_Scalar>, _Scalar>
 		{
@@ -86,6 +96,12 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new normal generator
+			 * 
+			 * @param _mean mean of the distribution
+			 * @param _stdev standard deviation of the distribution
+			 */
 			NormalGen(_Scalar _mean = 0, _Scalar _stdev = 1)
 				: mean{ _mean }, stdev{ _stdev }
 			{
@@ -112,6 +128,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of reals on a lognormal distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class LognormalGen : public GenBase<LognormalGen<_Scalar>, _Scalar>
 		{
@@ -121,6 +142,12 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new lognormal generator
+			 * 
+			 * @param _mean mean of the log distribution
+			 * @param _stdev standard deviation of the log distribution
+			 */
 			LognormalGen(_Scalar _mean = 0, _Scalar _stdev = 1)
 				: norm{ _mean, _stdev }
 			{
@@ -144,6 +171,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of reals on a Student's t distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class StudentTGen : public GenBase<StudentTGen<_Scalar>, _Scalar>
 		{
@@ -154,6 +186,11 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new Student's t generator
+			 * 
+			 * @param _n degrees of freedom
+			 */
 			StudentTGen(_Scalar _n = 1)
 				: n{ _n }
 			{
@@ -201,6 +238,11 @@ namespace Eigen
 
 		template<typename> class GammaGen;
 
+		/**
+		 * @brief Generator of reals on an exponential distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class ExponentialGen : public GenBase<ExponentialGen<_Scalar>, _Scalar>
 		{
@@ -212,6 +254,11 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new exponential generator
+			 * 
+			 * @param _lambda scale parameter of the distribution
+			 */
 			ExponentialGen(_Scalar _lambda = 1)
 				: lambda{ _lambda }
 			{
@@ -239,6 +286,11 @@ namespace Eigen
 
 		template<typename> class NegativeBinomialGen;
 
+		/**
+		 * @brief Generator of reals on a gamma distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class GammaGen : OptCacheStore, public GenBase<GammaGen<_Scalar>, _Scalar>
 		{
@@ -252,6 +304,12 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new gamma generator
+			 * 
+			 * @param _alpha shape parameter of the distribution
+			 * @param _beta scale parameter of the distribution
+			 */
 			GammaGen(_Scalar _alpha = 1, _Scalar _beta = 1)
 				: alpha{ _alpha }, beta{ _beta }
 			{
@@ -400,6 +458,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of reals on a Weibull distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class WeibullGen : public GenBase<WeibullGen<_Scalar>, _Scalar>
 		{
@@ -410,6 +473,12 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new Weibull generator
+			 * 
+			 * @param _a shape parameter of the distribution
+			 * @param _b scale parameter of the distribution
+			 */
 			WeibullGen(_Scalar _a = 1, _Scalar _b = 1)
 				: a{ _a }, b{ _b }
 			{
@@ -435,6 +504,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of reals on an extreme value distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class ExtremeValueGen : public GenBase<ExtremeValueGen<_Scalar>, _Scalar>
 		{
@@ -445,6 +519,12 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new extreme value generator
+			 * 
+			 * @param _a location parameter of the distribution
+			 * @param _b scale parameter of the distribution
+			 */
 			ExtremeValueGen(_Scalar _a = 0, _Scalar _b = 1)
 				: a{ _a }, b{ _b }
 			{
@@ -471,6 +551,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of reals on a chi-squared distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class ChiSquaredGen : public GenBase<ChiSquaredGen<_Scalar>, _Scalar>
 		{
@@ -478,7 +563,12 @@ namespace Eigen
 			GammaGen<_Scalar> gamma;
 		public:
 			using Scalar = _Scalar;
-
+			
+			/**
+			 * @brief Construct a new chi-squared generator
+			 * 
+			 * @param n degrees of freedom
+			 */
 			ChiSquaredGen(_Scalar n = 1)
 				: gamma{ n * _Scalar(0.5), 2 }
 			{
@@ -499,7 +589,12 @@ namespace Eigen
 				return gamma.template packetOp<Packet>(rng);
 			}
 		};
-
+		
+		/**
+		 * @brief Generator of reals on a Cauchy distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class CauchyGen : public GenBase<CauchyGen<_Scalar>, _Scalar>
 		{
@@ -510,6 +605,12 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new Cauchy generator
+			 * 
+			 * @param _a location parameter of the distribution
+			 * @param _b scale parameter of the distribution
+			 */
 			CauchyGen(_Scalar _a = 0, _Scalar _b = 1)
 				: a{ _a }, b{ _b }
 			{
@@ -541,6 +642,11 @@ namespace Eigen
 
 		template<typename> class FisherFGen;
 
+		/**
+		 * @brief Generator of reals on a beta distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class BetaGen : OptCacheStore, public GenBase<BetaGen<_Scalar>, _Scalar>
 		{
@@ -554,6 +660,11 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new beta generator
+			 * 
+			 * @param _a, _b shape parameter
+			 */
 			BetaGen(_Scalar _a = 1, _Scalar _b = 1)
 				: a{ _a }, b{ _b },
 				gd1{ _a }, gd2{ _b }
@@ -615,6 +726,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of reals on a Fisher's f distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class FisherFGen : public GenBase<FisherFGen<_Scalar>, _Scalar>
 		{
@@ -623,6 +739,11 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new Fisher's f generator
+			 * 
+			 * @param m, n degrees of freedom
+			 */
 			FisherFGen(_Scalar m = 1, _Scalar n = 1)
 				: beta{ m * _Scalar(0.5), n * _Scalar(0.5) }
 			{
@@ -662,6 +783,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param a,b shape parameter
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::BetaGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const BetaType<Derived, Urng>
@@ -681,6 +804,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param a,b shape parameter
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::BetaGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const BetaType<Derived, Urng>
@@ -705,6 +830,8 @@ namespace Eigen
 		 * @param a a location parameter of the distribution
 		 * @param b a scale parameter of the distribution
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::CauchyGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const CauchyType<Derived, Urng>
@@ -725,6 +852,8 @@ namespace Eigen
 		 * @param a a location parameter of the distribution
 		 * @param b a scale parameter of the distribution
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::CauchyGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const CauchyType<Derived, Urng>
@@ -747,6 +876,8 @@ namespace Eigen
 		 * @param cols the number of columns being generated
 		 * @param urng c++11-style random number generator
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::StdNormalGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const NormalType<Derived, Urng>
@@ -765,6 +896,8 @@ namespace Eigen
 		 * @param o an instance of any type of Eigen::DenseBase
 		 * @param urng c++11-style random number generator
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::StdNormalGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const NormalType<Derived, Urng>
@@ -789,6 +922,8 @@ namespace Eigen
 		 * @param mean a mean value of the distribution
 		 * @param stdev a standard deviation value of the distribution
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::NormalGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const Normal2Type<Derived, Urng>
@@ -809,6 +944,8 @@ namespace Eigen
 		 * @param mean a mean value of the distribution
 		 * @param stdev a standard deviation value of the distribution
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::NormalGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const Normal2Type<Derived, Urng>
@@ -833,6 +970,8 @@ namespace Eigen
 		 * @param mean a mean value of the distribution
 		 * @param stdev a standard deviation value of the distribution
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::LognormalGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const LognormalType<Derived, Urng>
@@ -853,6 +992,8 @@ namespace Eigen
 		 * @param mean a mean value of the distribution
 		 * @param stdev a standard deviation value of the distribution
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::LognormalGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const LognormalType<Derived, Urng>
@@ -876,6 +1017,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param n degrees of freedom
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::StudentTGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const StudentTType<Derived, Urng>
@@ -895,6 +1038,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param n degrees of freedom
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::StudentTGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const StudentTType<Derived, Urng>
@@ -918,6 +1063,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param lambda a scale parameter of the distribution
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::ExponentialGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const ExponentialType<Derived, Urng>
@@ -937,6 +1084,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param lambda a scale parameter of the distribution
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::ExponentialGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const ExponentialType<Derived, Urng>
@@ -961,6 +1110,8 @@ namespace Eigen
 		 * @param alpha a shape parameter of the distribution
 		 * @param beta a scale parameter of the distribution
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::GammaGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const GammaType<Derived, Urng>
@@ -981,6 +1132,8 @@ namespace Eigen
 		 * @param alpha a shape parameter of the distribution
 		 * @param beta a scale parameter of the distribution
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::GammaGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const GammaType<Derived, Urng>
@@ -1005,6 +1158,8 @@ namespace Eigen
 		 * @param a a shape parameter of the distribution
 		 * @param b a scale parameter of the distribution
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::WeibullGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const WeibullType<Derived, Urng>
@@ -1025,6 +1180,8 @@ namespace Eigen
 		 * @param a a shape parameter of the distribution
 		 * @param b a scale parameter of the distribution
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::WeibullGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const WeibullType<Derived, Urng>
@@ -1050,6 +1207,8 @@ namespace Eigen
 		 * @param a a location parameter of the distribution
 		 * @param b a scale parameter of the distribution
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::ExtremeValueGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const ExtremeValueType<Derived, Urng>
@@ -1071,6 +1230,8 @@ namespace Eigen
 		 * @param a a location parameter of the distribution
 		 * @param b a scale parameter of the distribution
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::ExtremeValueGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const ExtremeValueType<Derived, Urng>
@@ -1094,6 +1255,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param n the degrees of freedom of the distribution
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::ChiSquaredGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const ChiSquaredType<Derived, Urng>
@@ -1113,6 +1276,8 @@ namespace Eigen
 		 * @param urng c++11-style random number generator
 		 * @param n the degrees of freedom of the distribution
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::ChiSquaredGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const ChiSquaredType<Derived, Urng>
@@ -1137,6 +1302,8 @@ namespace Eigen
 		 * @param m degrees of freedom
 		 * @param n degrees of freedom
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::FisherFGen 
 		 */
 		template<typename Derived, typename Urng>
 		inline const FisherFType<Derived, Urng>
@@ -1157,6 +1324,8 @@ namespace Eigen
 		 * @param m degrees of freedom
 		 * @param n degrees of freedom
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::FisherFGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const FisherFType<Derived, Urng>

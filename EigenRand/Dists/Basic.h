@@ -22,10 +22,27 @@ namespace Eigen
 			static constexpr double e = 2.7182818284590452;
 		}
 
+		/**
+		 * @brief Base class of all univariate random generators
+		 * 
+		 * @tparam DerivedGen 
+		 * @tparam Scalar 
+		 */
 		template<typename DerivedGen, typename Scalar>
 		class GenBase
 		{
 		public:
+			/**
+			 * @brief generate random values from its distribution
+			 * 
+			 * @tparam Derived 
+			 * @tparam Urng 
+			 * @param rows the number of rows being generated
+			 * @param cols the number of columns being generated
+			 * @param urng c++11-style random number generator
+			 * @return 
+			 * a random matrix expression with a shape `(rows, cols)`
+			 */
 			template<typename Derived, typename Urng>
 			inline const CwiseNullaryOp<internal::scalar_rng_adaptor<DerivedGen&, Scalar, Urng>, const Derived>
 				generate(Index rows, Index cols, Urng&& urng)
@@ -35,6 +52,16 @@ namespace Eigen
 				};
 			}
 
+			/**
+			 * @brief generate random values from its distribution
+			 * 
+			 * @tparam Derived 
+			 * @tparam Urng 
+			 * @param o an instance of any type of Eigen::DenseBase
+			 * @param urng c++11-style random number generator
+			 * @return 
+			 * a random matrix expression of the same shape as `o`
+			 */
 			template<typename Derived, typename Urng>
 			inline const CwiseNullaryOp<internal::scalar_rng_adaptor<DerivedGen&, Scalar, Urng>, const Derived>
 				generateLike(const Derived& o, Urng&& urng)
@@ -42,6 +69,96 @@ namespace Eigen
 				return {
 					o.rows(), o.cols(), { std::forward<Urng>(urng), static_cast<DerivedGen&>(*this) }
 				};
+			}
+		};
+
+		/**
+		 * @brief Base class of all multivariate random vector generators
+		 * 
+		 * @tparam DerivedGen 
+		 * @tparam _Scalar 
+		 * @tparam Dim 
+		 */
+		template<typename DerivedGen, typename _Scalar, Index Dim>
+		class MvVecGenBase
+		{
+		public:
+			/**
+			 * @brief returns the dimensions of vectors to be generated
+			 */
+			Index dims() const { return static_cast<DerivedGen&>(*this).dims(); }
+
+			/**
+			 * @brief generates multiple samples at once
+			 * 
+			 * @tparam Urng 
+			 * @param urng c++11-style random number generator
+			 * @param samples the number of samples to be generated
+			 * @return
+			 * a random matrix with a shape `(dim, samples)` which is consist of `samples` random vector columns
+			 */
+			template<typename Urng>
+			inline Matrix<_Scalar, Dim, -1> generate(Urng&& urng, Index samples)
+			{
+				return static_cast<DerivedGen&>(*this).generatr(std::forward<Urng>(urng), samples);
+			}
+
+			/**
+			 * @brief generates one sample
+			 * 
+			 * @tparam Urng 
+			 * @param urng c++11-style random number generator
+			 * @return a random vector with a shape `(dim,)`
+			 */
+			template<typename Urng>
+			inline Matrix<_Scalar, Dim, 1> generate(Urng&& urng)
+			{
+				return static_cast<DerivedGen&>(*this).generatr(std::forward<Urng>(urng));
+			}
+		};
+
+		/**
+		 * @brief Base class of all multivariate random matrix generators
+		 * 
+		 * @tparam DerivedGen 
+		 * @tparam _Scalar 
+		 * @tparam Dim 
+		 */
+		template<typename DerivedGen, typename _Scalar, Index Dim>
+		class MvMatGenBase
+		{
+		public:
+			/**
+			 * @brief returns the dimensions of matrices to be generated
+			 */
+			Index dims() const { return static_cast<DerivedGen&>(*this).dims(); }
+
+			/**
+			 * @brief generates multiple samples at once
+			 * 
+			 * @tparam Urng 
+			 * @param urng c++11-style random number generator
+			 * @param samples the number of samples to be generated
+			 * @return
+			 * a random matrix with a shape `(dim, dim * samples)` which is `samples` random matrices concatenated along the column axis
+			 */
+			template<typename Urng>
+			inline Matrix<_Scalar, Dim, -1> generate(Urng&& urng, Index samples)
+			{
+				return static_cast<DerivedGen&>(*this).generate(std::forward<Urng>(urng), samples);
+			}
+
+			/**
+			 * @brief generates one sample
+			 * 
+			 * @tparam Urng 
+			 * @param urng c++11-style random number generator
+			 * @return a random matrix with a shape `(dim, dim)`
+			 */
+			template<typename Urng>
+			inline Matrix<_Scalar, Dim, Dim> generate(Urng&& urng)
+			{
+				return static_cast<DerivedGen&>(*this).generate(std::forward<Urng>(urng));
 			}
 		};
 
@@ -124,7 +241,7 @@ namespace Eigen
 		/**
 		 * @brief Generator of random bits for integral scalars
 		 * 
-		 * @tparam _Scalar 
+		 * @tparam _Scalar any integral type
 		 */
 		template<typename _Scalar>
 		class RandbitsGen : public GenBase<RandbitsGen<_Scalar>, _Scalar>
@@ -153,7 +270,7 @@ namespace Eigen
 		/**
 		 * @brief Generator of reals in a range `[-1, 1]`
 		 * 
-		 * @tparam _Scalar 
+		 * @tparam _Scalar any real type
 		 */
 		template<typename _Scalar>
 		class BalancedGen : public GenBase<BalancedGen<_Scalar>, _Scalar>
@@ -182,7 +299,7 @@ namespace Eigen
 		/**
 		 * @brief Generator of reals in a range `[0, 1)`
 		 * 
-		 * @tparam _Scalar 
+		 * @tparam _Scalar any real type
 		 */
 		template<typename _Scalar>
 		class UniformRealGen : public GenBase<UniformRealGen<_Scalar>, _Scalar>
@@ -221,13 +338,15 @@ namespace Eigen
 
 		/**
 		 * @brief generates integers with random bits
-		 *
+		 * 
 		 * @tparam Derived
 		 * @tparam Urng
 		 * @param rows the number of rows being generated
 		 * @param cols the number of columns being generated
 		 * @param urng c++11-style random number generator
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::RandbitsGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const RandBitsType<Derived, Urng>
@@ -246,6 +365,8 @@ namespace Eigen
 		 * @param o an instance of any type of Eigen::DenseBase
 		 * @param urng c++11-style random number generator
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::RandbitsGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const RandBitsType<Derived, Urng>
@@ -255,7 +376,6 @@ namespace Eigen
 				o.rows(), o.cols(), { std::forward<Urng>(urng) }
 			};
 		}
-
 
 		template<typename Derived, typename Urng>
 		using BalancedType = CwiseNullaryOp<internal::scalar_rng_adaptor<BalancedGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
@@ -269,6 +389,8 @@ namespace Eigen
 		 * @param cols the number of columns being generated
 		 * @param urng c++11-style random number generator
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::BalancedGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const BalancedType<Derived, Urng>
@@ -287,6 +409,8 @@ namespace Eigen
 		 * @param o an instance of any type of Eigen::DenseBase
 		 * @param urng c++11-style random number generator
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::BalancedGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const BalancedType<Derived, Urng>
@@ -309,6 +433,8 @@ namespace Eigen
 		 * @param cols the number of columns being generated
 		 * @param urng c++11-style random number generator
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::UniformRealGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const UniformRealType<Derived, Urng>
@@ -327,6 +453,8 @@ namespace Eigen
 		 * @param o an instance of any type of Eigen::DenseBase
 		 * @param urng c++11-style random number generator
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::UniformRealGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const UniformRealType<Derived, Urng>
