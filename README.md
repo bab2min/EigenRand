@@ -77,6 +77,17 @@ https://bab2min.github.io/eigenrand/
 | `Eigen::Rand::Vmt19937_64` | a vectorized version of Mersenne Twister algorithm. It generates two 64bit random integers simultaneously with SSE2 and four integers with AVX2. | `std::mt19937_64` |
 
 ## Performance
+The following charts show the relative speed-up of EigenRand compared to references(equivalent functions of C++ std or Eigen).
+
+![Perf_no_vect](/doxygen/images/perf_no_vect.png)
+![Perf_no_vect](/doxygen/images/perf_sse2.png)
+![Perf_no_vect](/doxygen/images/perf_avx.png)
+![Perf_no_vect](/doxygen/images/perf_avx2.png)
+
+The following charts are about multivariate distributions.
+![Perf_no_vect](/doxygen/images/perf_mv_part1.png)
+![Perf_no_vect](/doxygen/images/perf_mv_part2.png)
+
 
 The following result is a measure of the time in seconds it takes to generate 1M random numbers. 
 It shows the average of 20 times.
