@@ -113,6 +113,22 @@ It shows the average of 20 times.
 | Mersenne Twister(int32) | 4.7 | 5.6 | 4.0 | 3.7 | 3.5 | 3.6 |
 | Mersenne Twister(int64) | 5.4 | 5.3 | 4.0 | 3.9 | 3.4 | 2.6 |
 
+|  | Python 3.6 + scipy 1.5.2 + numpy 1.19.2 | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) | EigenRand (AVX2) |
+|---|---:|---:|---:|---:|---:|---:|
+| `Dirichlet(4)` | 6.47 | 6.60 | 2.39 | 2.49 | 1.34 | 1.67 |
+| `Dirichlet(100)` | 75.95 | 189.97 | 66.60 | 72.11 | 38.86 | 34.98 |
+| `InvWishart(4)` | 140.18 | 7.62 | 4.21 | 4.54 | 3.58 | 3.39 |
+| `InvWishart(50)` | 1510.47 | 1737.4 | 697.39 | 733.69 | 604.59 | 554.006 |
+| `Multinomial(4, t=20)` | 3.32 | 4.12 | 0.95 | 1.06 | 1.00 | 1.03 |
+| `Multinomial(4, t=1000)` | 3.51 | 192.51 | 35.99 | 39.58 | 27.84 | 35.45 |
+| `Multinomial(100, t=20)` | 69.19 | 4.80 | 2.00 | 2.20 | 2.28 | 2.09 |
+| `Multinomial(100, t=1000)` | 139.74 | 179.43 | 49.48 | 56.19 | 40.78 | 43.18 |
+| `MvNormal(4)` | 2.32 | 0.96 | 0.36 | 0.37 | 0.25 | 0.30 |
+| `MvNormal(100)` | 49.09 | 57.18 | 17.17 | 18.51 | 10.82 | 11.03 |
+| `Wishart(4)` | 71.19 | 5.28 | 2.70 | 2.93 | 2.04 | 1.94 |
+| `Wishart(50)` | 1185.26 | 1360.49 | 492.91 | 517.44 | 359.03 | 324.60 |
+
+
 ### Intel(R) Xeon(R) CPU E5-1650 v2 @ 3.50GHz (macOS 10.15, clang-1103)
 
 |  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) |
@@ -157,6 +173,23 @@ It shows the average of 20 times.
 | Mersenne Twister(int32) | 6.2 | 6.4 | 1.7 | 2.0 | 1.8 |
 | Mersenne Twister(int64) | 6.4 | 6.3 | 2.5 | 3.1 | 2.4 |
 
+
+|  | Python 3.6 + scipy 1.5.2 + numpy 1.19.2 | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) |
+|---|---:|---:|---:|---:|---:|
+| `Dirichlet(4)` | 3.54 | 3.29 | 1.25 | 1.25 | 0.83 |
+| `Dirichlet(100)` | 57.63 | 145.32 | 49.71 | 49.50 | 29.13 |
+| `InvWishart(4)` | 210.92 | 7.53 | 3.72 | 3.66 | 3.10 |
+| `InvWishart(50)` | 1980.73 | 1446.40 | 560.40 | 559.73 | 457.07 |
+| `Multinomial(4, t=20)` | 2.60 | 5.22 | 1.48 | 1.50 | 1.42 |
+| `Multinomial(4, t=1000)` | 3.90 | 208.75 | 29.19 | 29.50 | 27.70 |
+| `Multinomial(100, t=20)` | 47.71 | 7.09 | 3.71 | 3.63 | 3.60 |
+| `Multinomial(100, t=1000)` | 128.69 | 215.19 | 44.48 | 44.63 | 43.76 |
+| `MvNormal(4)` | 2.04 | 1.05 | 0.35 | 0.34 | 0.19 |
+| `MvNormal(100)` | 48.69 | 47.10 | 16.25 | 16.12 | 11.41 |
+| `Wishart(4)` | 81.11 | 13.24 | 9.87 | 9.81 | 5.90 |
+| `Wishart(50)` | 1419.02 | 1087.40 | 448.06 | 442.97 | 328.20 |
+
+
 ### Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Windows Server 2019, MSVC2019)
 
 |  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
@@ -200,6 +233,23 @@ It shows the average of 20 times.
 |---|---:|---:|---:|---:|---:|
 | Mersenne Twister(int32) | 6.5 | 6.4 | 5.6 | 5.1 | 4.5 |
 | Mersenne Twister(int64) | 6.6 | 6.5 | 6.9 | 5.9 | 5.1 |
+
+
+|  | Python 3.6 + scipy 1.5.2 + numpy 1.19.2 | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
+|---|---:|---:|---:|---:|---:|
+| `Dirichlet(4)` | 4.27 | 3.20 | 2.31 | 1.43 | 1.25 |
+| `Dirichlet(100)` | 69.61 | 150.33 | 67.01 | 47.34 | 32.47 |
+| `InvWishart(4)` | 482.87 | 14.52 | 8.88 | 13.17 | 11.28 |
+| `InvWishart(50)` | 2222.72 | 2211.66 | 902.34 | 775.36 | 610.60 |
+| `Multinomial(4, t=20)` | 2.99 | 5.41 | 1.99 | 1.92 | 1.78 |
+| `Multinomial(4, t=1000)` | 4.23 | 235.84 | 49.73 | 42.41 | 40.76 |
+| `Multinomial(100, t=20)` | 58.20 | 9.12 | 5.84 | 6.02 | 5.98 |
+| `Multinomial(100, t=1000)` | 130.54 | 234.40 | 72.99 | 66.36 | 55.28 |
+| `MvNormal(4)` | 2.25 | 1.89 | 0.35 | 0.32 | 0.25 |
+| `MvNormal(100)` | 57.71 | 68.80 | 24.40 | 18.28 | 13.05 |
+| `Wishart(4)` | 70.18 | 16.25 | 4.49 | 3.97 | 3.07 |
+| `Wishart(50)` | 1471.29 | 1641.73 | 628.58 | 485.68 | 349.81 |
+
 
 ### AMD Ryzen 7 3700x CPU @ 3.60GHz (Windows 10, MSVC2017)
 
