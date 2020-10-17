@@ -40,6 +40,7 @@ jobs:
     - name: Run Bench
       run: |
         cat /proc/cpuinfo
+        g++ -v
         ./bench.out
     - name: Build BenchMv
       run: |
@@ -79,6 +80,7 @@ jobs:
       continue-on-error: true
       run: |
         sysctl -a | grep machdep.cpu
+        g++ -v
         ./bench.out
     - name: Build BenchMv
       run: |

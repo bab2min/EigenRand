@@ -608,7 +608,7 @@ namespace Eigen
 		 * and Pmt19937_64<internal::Packet8i> when AVX2 enabled
 		 *
 		 * @note It yields the same random sequence only within the same seed and the same SIMD ISA.
-		 * If you want to keep the same random sequence across different SIMD ISA, use P8_mt19937_64.
+		 * If you want to keep the same random sequence across different SIMD ISAs, use P8_mt19937_64.
 		 */
 		using Vmt19937_64 = std::mt19937_64;
 #endif
