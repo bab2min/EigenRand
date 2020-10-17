@@ -16,6 +16,9 @@
     <Filter Include="EigenRand\Dists">
       <UniqueIdentifier>{1470243f-1ac0-48c8-bc2e-406d292e8550}</UniqueIdentifier>
     </Filter>
+    <Filter Include="EigenRand\MvDists">
+      <UniqueIdentifier>{9aa8288d-cadf-40d0-9665-a7e61ad37e47}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EigenRand\MorePacketMath.h">
@@ -53,6 +56,12 @@
     </ClInclude>
     <ClInclude Include="EigenRand\doc.h">
       <Filter>EigenRand</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\MvDists\MvNormal.h">
+      <Filter>EigenRand\MvDists</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\MvDists\Multinomial.h">
+      <Filter>EigenRand\MvDists</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

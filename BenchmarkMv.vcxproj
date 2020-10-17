@@ -43,38 +43,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="test\benchmark.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="EigenRand\Core.h" />
-    <ClInclude Include="EigenRand\Dists\Basic.h" />
-    <ClInclude Include="EigenRand\Dists\Discrete.h" />
-    <ClInclude Include="EigenRand\Dists\NormalExp.h" />
-    <ClInclude Include="EigenRand\Dists\GammaPoisson.h" />
-    <ClInclude Include="EigenRand\doc.h" />
-    <ClInclude Include="EigenRand\Macro.h" />
-    <ClInclude Include="EigenRand\MorePacketMath.h" />
-    <ClInclude Include="EigenRand\MvDists\Multinomial.h" />
-    <ClInclude Include="EigenRand\MvDists\MvNormal.h" />
-    <ClInclude Include="EigenRand\PacketFilter.h" />
-    <ClInclude Include="EigenRand\PacketRandomEngine.h" />
-    <ClInclude Include="EigenRand\RandUtils.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="EigenRand\EigenRand">
-      <FileType>Document</FileType>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="test\benchmark_mv.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{F45E39EE-2863-4550-8531-31723AD0BC09}</ProjectGuid>
+    <ProjectGuid>{85BACD1D-1D4F-4084-8C6A-5C3AC938FE50}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>EigenAddOn</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>Benchmark</ProjectName>
+    <ProjectName>BenchmarkMv</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

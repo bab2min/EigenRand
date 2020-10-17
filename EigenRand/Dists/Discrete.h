@@ -2,9 +2,9 @@
  * @file Discrete.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.2.0
- * @date 2020-06-22
- * 
+ * @version 0.3.0
+ * @date 2020-10-07
+ *
  * @copyright Copyright (c) 2020
  * 
  */
@@ -18,113 +18,8 @@
 
 namespace Eigen
 {
-	namespace internal
+	namespace Rand
 	{
-		template<typename Scalar, typename Rng>
-		struct scalar_uniform_int_op : public scalar_randbits_op<Scalar, Rng>
-		{
-			static_assert(std::is_same<Scalar, int32_t>::value, "uniformInt needs integral types.");
-			using ur_base = scalar_randbits_op<Scalar, Rng>;
-
-			Scalar pmin;
-			size_t pdiff, bitsize, bitmask;
-			
-			scalar_uniform_int_op(const Rng& _rng, Scalar _min, Scalar _max)
-				: ur_base{ _rng }, pmin{ _min }, pdiff{ (size_t)(_max - _min) }
-			{
-				if ((pdiff + 1) > pdiff)
-				{
-					bitsize = (size_t)std::ceil(std::log2(pdiff + 1));
-				}
-				else
-				{
-					bitsize = (size_t)std::ceil(std::log2(pdiff));
-				}
-				bitmask = (Scalar)(((size_t)-1) >> (sizeof(size_t) * 8 - bitsize));
-			}
-
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
-			{
-				auto rx = ur_base::operator()();
-				if (pdiff == bitmask)
-				{
-					return (Scalar)(rx & bitmask) + pmin;
-				}
-				else
-				{
-					size_t bitcnt = bitsize;
-					while (1)
-					{
-						Scalar cands = (Scalar)(rx & bitmask);
-						if (cands <= pdiff) return cands;
-						if (bitcnt + bitsize < 32)
-						{
-							rx >>= bitsize;
-							bitcnt += bitsize;
-						}
-						else
-						{
-							rx = ur_base::operator()();
-							bitcnt = bitsize;
-						}
-					}
-				}
-			}
-
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
-			{
-				auto rx = ur_base::template packetOp<Packet>();
-				auto pbitmask = pset1<Packet>(bitmask);
-				if (pdiff == bitmask)
-				{
-					return padd(pand(rx, pbitmask), pset1<Packet>(pmin));
-				}
-				else
-				{
-					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
-					thread_local Packet cache_rest;
-					thread_local int cache_rest_cnt;
-					thread_local const scalar_uniform_int_op* cache_ptr = nullptr;
-					if (cache_ptr != this)
-					{
-						cache_ptr = this;
-						cache_rest = pset1<Packet>(0);
-						cache_rest_cnt = 0;
-					}
-
-					auto plen = pset1<Packet>(pdiff + 1);
-					size_t bitcnt = bitsize;
-					while (1)
-					{
-						// accept cands that only < plen
-						auto cands = pand(rx, pbitmask);
-						bool full = false;
-						cache_rest_cnt = cm.compress_append(cands, pcmplt(cands, plen),
-							cache_rest, cache_rest_cnt, full);
-						if (full) return padd(cands, pset1<Packet>(pmin));
-
-						if (bitcnt + bitsize < 32)
-						{
-							rx = psrl(rx, bitsize);
-							bitcnt += bitsize;
-						}
-						else
-						{
-							rx = ur_base::template packetOp<Packet>();
-							bitcnt = bitsize;
-						}
-					}
-				}
-			}
-		};
-
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_uniform_int_op<Scalar, Urng> >
-		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
-
 		template<typename _Precision = uint32_t, typename _Size = uint32_t>
 		class AliasMethod
 		{
@@ -311,21 +206,124 @@ namespace Eigen
 			}
 		};
 
-		template<typename Scalar, typename Rng, typename Precision = float>
-		struct scalar_discrete_dist_op;
-
-		template<typename Scalar, typename Rng>
-		struct scalar_discrete_dist_op<Scalar, Rng, int32_t> : public scalar_randbits_op<Scalar, Rng>
+		template<typename _Scalar>
+		class UniformIntGen : OptCacheStore, public GenBase<UniformIntGen<_Scalar>, _Scalar>
 		{
-			static_assert(std::is_same<Scalar, int32_t>::value, "discreteDist needs integral types.");
-			using ur_base = scalar_randbits_op<Scalar, Rng>;
+			static_assert(std::is_same<_Scalar, int32_t>::value, "uniformInt needs integral types.");
+			int cache_rest_cnt = 0;
+			RandbitsGen<_Scalar> randbits;
+			_Scalar pmin;
+			size_t pdiff, bitsize, bitmask;
+		
+		public:
+			using Scalar = _Scalar;
 
+			UniformIntGen(_Scalar _min, _Scalar _max)
+				: pmin{ _min }, pdiff{ (size_t)(_max - _min) }
+			{
+				if ((pdiff + 1) > pdiff)
+				{
+					bitsize = (size_t)std::ceil(std::log2(pdiff + 1));
+				}
+				else
+				{
+					bitsize = (size_t)std::ceil(std::log2(pdiff));
+				}
+				bitmask = (_Scalar)(((size_t)-1) >> (sizeof(size_t) * 8 - bitsize));
+			}
+
+			UniformIntGen(const UniformIntGen&) = default;
+			UniformIntGen(UniformIntGen&&) = default;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				auto rx = randbits(rng);
+				if (pdiff == bitmask)
+				{
+					return (_Scalar)(rx & bitmask) + pmin;
+				}
+				else
+				{
+					size_t bitcnt = bitsize;
+					while (1)
+					{
+						_Scalar cands = (_Scalar)(rx & bitmask);
+						if (cands <= pdiff) return cands;
+						if (bitcnt + bitsize < 32)
+						{
+							rx >>= bitsize;
+							bitcnt += bitsize;
+						}
+						else
+						{
+							rx = randbits(rng);
+							bitcnt = bitsize;
+						}
+					}
+				}
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				auto rx = randbits.template packetOp<Packet>(rng);
+				auto pbitmask = pset1<Packet>(bitmask);
+				if (pdiff == bitmask)
+				{
+					return padd(pand(rx, pbitmask), pset1<Packet>(pmin));
+				}
+				else
+				{
+					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
+					auto plen = pset1<Packet>(pdiff + 1);
+					size_t bitcnt = bitsize;
+					while (1)
+					{
+						// accept cands that only < plen
+						auto cands = pand(rx, pbitmask);
+						bool full = false;
+						cache_rest_cnt = cm.compress_append(cands, pcmplt(cands, plen),
+							OptCacheStore::template get<Packet>(), cache_rest_cnt, full);
+						if (full) return padd(cands, pset1<Packet>(pmin));
+
+						if (bitcnt + bitsize < 32)
+						{
+							rx = psrl(rx, bitsize);
+							bitcnt += bitsize;
+						}
+						else
+						{
+							rx = randbits.template packetOp<Packet>(rng);
+							bitcnt = bitsize;
+						}
+					}
+				}
+			}
+		};
+
+		template<typename _Scalar, typename Precision = float>
+		class DiscreteGen;
+
+		template<typename _Scalar>
+		class DiscreteGen<_Scalar, int32_t> : public GenBase<DiscreteGen<_Scalar, int32_t>, _Scalar>
+		{
+			static_assert(std::is_same<_Scalar, int32_t>::value, "discreteDist needs integral types.");
+#ifdef EIGEN_VECTORIZE_AVX2
+			OptCacheStore cache;
+			bool valid = false;
+#endif
+			RandbitsGen<int32_t> randbits;
 			std::vector<uint32_t> cdf;
-			AliasMethod<int32_t, Scalar> alias_table;
+			AliasMethod<int32_t, _Scalar> alias_table;
+
+		public:
+			using Scalar = _Scalar;
 
 			template<typename RealIter>
-			scalar_discrete_dist_op(const Rng& _rng, RealIter first, RealIter last)
-				: ur_base{ _rng }
+			DiscreteGen(RealIter first, RealIter last)
 			{
 				if (std::distance(first, last) < 16)
 				{
@@ -345,20 +343,29 @@ namespace Eigen
 				else
 				{
 					// use alias table
-					alias_table = AliasMethod<int32_t, Scalar>{ first, last };
+					alias_table = AliasMethod<int32_t, _Scalar>{ first, last };
 				}
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			template<typename Real,
+				typename std::enable_if<std::is_arithmetic<Real>::value, int>::type = 0>
+			DiscreteGen(const std::initializer_list<Real>& il)
+				: DiscreteGen(il.begin(), il.end())
 			{
+			}
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
+			{
+				using namespace Eigen::internal;
 				if (!cdf.empty())
 				{
-					auto rx = ur_base::operator()() & 0x7FFFFFFF;
-					return (Scalar)(std::lower_bound(cdf.begin(), cdf.end() - 1, rx) - cdf.begin());
+					auto rx = randbits(std::forward<Rng>(rng)) & 0x7FFFFFFF;
+					return (_Scalar)(std::lower_bound(cdf.begin(), cdf.end() - 1, rx) - cdf.begin());
 				}
 				else
 				{
-					auto rx = ur_base::operator()();
+					auto rx = randbits(std::forward<Rng>(rng));
 					auto albit = rx & alias_table.get_bitmask();
 					uint32_t alx = (uint32_t)(rx >> (sizeof(rx) * 8 - 31));
 					if (alx < alias_table.get_prob()[albit]) return albit;
@@ -366,18 +373,16 @@ namespace Eigen
 				}
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 #ifdef EIGEN_VECTORIZE_AVX2
-				thread_local Packet4i cache;
-				thread_local const scalar_discrete_dist_op* cache_ptr = nullptr;
-				if (cache_ptr == this)
+				if (valid)
 				{
-					cache_ptr = nullptr;
-					return cache;
+					valid = false;
+					return cache.template get<Packet>();
 				}
-
 				using PacketType = Packet8i;
 #else
 				using PacketType = Packet;
@@ -387,7 +392,7 @@ namespace Eigen
 				if (!cdf.empty())
 				{
 					ret = pset1<PacketType>(cdf.size() - 1);
-					auto rx = pand(ur_base::template packetOp<PacketType>(), pset1<PacketType>(0x7FFFFFFF));
+					auto rx = pand(randbits.template packetOp<PacketType>(std::forward<Rng>(rng)), pset1<PacketType>(0x7FFFFFFF));
 					for (size_t i = 0; i < cdf.size() - 1; ++i)
 					{
 						ret = padd(ret, pcmplt(rx, pset1<PacketType>(cdf[i])));
@@ -395,15 +400,15 @@ namespace Eigen
 				}
 				else
 				{
-					auto rx = ur_base::template packetOp<PacketType>();
+					auto rx = randbits.template packetOp<PacketType>(std::forward<Rng>(rng));
 					auto albit = pand(rx, pset1<PacketType>(alias_table.get_bitmask()));
 					auto c = pcmplt(psrl(rx, 1), pgather(alias_table.get_prob(), albit));
 					ret = pblendv(c, albit, pgather(alias_table.get_alias(), albit));
 				}
 
 #ifdef EIGEN_VECTORIZE_AVX2
-				cache = _mm256_extractf128_si256(ret, 1);
-				cache_ptr = this;
+				valid = true;
+				cache.template get<Packet>() = _mm256_extractf128_si256(ret, 1);
 				return _mm256_extractf128_si256(ret, 0);
 #else
 				return ret;
@@ -411,18 +416,19 @@ namespace Eigen
 			}
 		};
 
-		template<typename Scalar, typename Rng>
-		struct scalar_discrete_dist_op<Scalar, Rng, float> : public scalar_uniform_real_op<float, Rng>
+		template<typename _Scalar>
+		class DiscreteGen<_Scalar, float> : public GenBase<DiscreteGen<_Scalar, float>, _Scalar>
 		{
-			static_assert(std::is_same<Scalar, int32_t>::value, "discreteDist needs integral types.");
-			using ur_base = scalar_uniform_real_op<float, Rng>;
-
+			static_assert(std::is_same<_Scalar, int32_t>::value, "discreteDist needs integral types.");
+			UniformRealGen<float> ur;
 			std::vector<float> cdf;
-			AliasMethod<float, Scalar> alias_table;
+			AliasMethod<float, _Scalar> alias_table;
+
+		public:
+			using Scalar = _Scalar;
 
 			template<typename RealIter>
-			scalar_discrete_dist_op(const Rng& _rng, RealIter first, RealIter last)
-				: ur_base{ _rng }
+			DiscreteGen(RealIter first, RealIter last)
 			{
 				if (std::distance(first, last) < 16)
 				{
@@ -442,35 +448,45 @@ namespace Eigen
 				else
 				{
 					// use alias table
-					alias_table = AliasMethod<float, Scalar>{ first, last };
+					alias_table = AliasMethod<float, _Scalar>{ first, last };
 				}
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			template<typename Real, 
+				typename std::enable_if<std::is_arithmetic<Real>::value, int>::type = 0>
+			DiscreteGen(const std::initializer_list<Real>& il)
+				: DiscreteGen(il.begin(), il.end())
 			{
+			}
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
+			{
+				using namespace Eigen::internal;
 				if (!cdf.empty())
 				{
-					auto rx = ur_base::operator()();
-					return (Scalar)(std::lower_bound(cdf.begin(), cdf.end() - 1, rx) - cdf.begin());
+					auto rx = ur(std::forward<Rng>(rng));
+					return (_Scalar)(std::lower_bound(cdf.begin(), cdf.end() - 1, rx) - cdf.begin());
 				}
 				else
 				{
-					auto albit = pfirst(this->rng()) & alias_table.get_bitmask();
-					auto alx = ur_base::operator()();
+					auto albit = pfirst(rng()) & alias_table.get_bitmask();
+					auto alx = ur(rng);
 					if (alx < alias_table.get_prob()[albit]) return albit;
 					return alias_table.get_alias()[albit];
 				}
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				using PacketType = decltype(reinterpret_to_float(std::declval<Packet>()));
 
 				if (!cdf.empty())
 				{
 					auto ret = pset1<Packet>(cdf.size());
-					auto rx = ur_base::template packetOp<PacketType>();
+					auto rx = ur.template packetOp<PacketType>(std::forward<Rng>(rng));
 					for (auto& p : cdf)
 					{
 						ret = padd(ret, reinterpret_to_int(pcmplt(rx, pset1<PacketType>(p))));
@@ -480,25 +496,26 @@ namespace Eigen
 				else
 				{
 					using RUtils = RawbitsMaker<Packet, Rng>;
-					auto albit = pand(RUtils{}.rawbits(this->rng), pset1<Packet>(alias_table.get_bitmask()));
-					auto c = reinterpret_to_int(pcmplt(ur_base::template packetOp<PacketType>(), pgather(alias_table.get_prob(), albit)));
+					auto albit = pand(RUtils{}.rawbits(rng), pset1<Packet>(alias_table.get_bitmask()));
+					auto c = reinterpret_to_int(pcmplt(ur.template packetOp<PacketType>(rng), pgather(alias_table.get_prob(), albit)));
 					return pblendv(c, albit, pgather(alias_table.get_alias(), albit));
 				}
 			}
 		};
 
-		template<typename Scalar, typename Rng>
-		struct scalar_discrete_dist_op<Scalar, Rng, double> : public scalar_uniform_real_op<double, Rng>
+		template<typename _Scalar>
+		class DiscreteGen<_Scalar, double> : public GenBase<DiscreteGen<_Scalar, double>, _Scalar>
 		{
-			static_assert(std::is_same<Scalar, int32_t>::value, "discreteDist needs integral types.");
-			using ur_base = scalar_uniform_real_op<double, Rng>;
-
+			static_assert(std::is_same<_Scalar, int32_t>::value, "discreteDist needs integral types.");
+			UniformRealGen<double> ur;
 			std::vector<double> cdf;
-			AliasMethod<double, Scalar> alias_table;
+			AliasMethod<double, _Scalar> alias_table;
+
+		public:
+			using Scalar = _Scalar;
 
 			template<typename RealIter>
-			scalar_discrete_dist_op(const Rng& _rng, RealIter first, RealIter last)
-				: ur_base{ _rng }
+			DiscreteGen(RealIter first, RealIter last)
 			{
 				if (std::distance(first, last) < 16)
 				{
@@ -518,35 +535,45 @@ namespace Eigen
 				else
 				{
 					// use alias table
-					alias_table = AliasMethod<double, Scalar>{ first, last };
+					alias_table = AliasMethod<double, _Scalar>{ first, last };
 				}
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			template<typename Real,
+				typename std::enable_if<std::is_arithmetic<Real>::value, int>::type = 0>
+			DiscreteGen(const std::initializer_list<Real>& il)
+				: DiscreteGen(il.begin(), il.end())
 			{
+			}
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
+			{
+				using namespace Eigen::internal;
 				if (!cdf.empty())
 				{
-					auto rx = ur_base::operator()();
-					return (Scalar)(std::lower_bound(cdf.begin(), cdf.end() - 1, rx) - cdf.begin());
+					auto rx = ur(std::forward<Rng>(rng));
+					return (_Scalar)(std::lower_bound(cdf.begin(), cdf.end() - 1, rx) - cdf.begin());
 				}
 				else
 				{
-					auto albit = pfirst(this->rng()) & alias_table.get_bitmask();
-					auto alx = ur_base::operator()();
+					auto albit = pfirst(rng()) & alias_table.get_bitmask();
+					auto alx = ur(rng);
 					if (alx < alias_table.get_prob()[albit]) return albit;
 					return alias_table.get_alias()[albit];
 				}
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				using DPacket = decltype(reinterpret_to_double(std::declval<Packet>()));
 				if (!cdf.empty())
 				{
 					auto ret = pset1<Packet>(cdf.size());
 #ifdef EIGEN_VECTORIZE_AVX
-					auto rx = ur_base::template packetOp<Packet4d>();
+					auto rx = ur.template packetOp<Packet4d>(std::forward<Rng>(rng));
 					for (auto& p : cdf)
 					{
 						auto c = reinterpret_to_int(pcmplt(rx, pset1<decltype(rx)>(p)));
@@ -554,8 +581,8 @@ namespace Eigen
 						ret = padd(ret, r);
 					}
 #else
-					auto rx1 = ur_base::template packetOp<DPacket>(),
-						rx2 = ur_base::template packetOp<DPacket>();
+					auto rx1 = ur.template packetOp<DPacket>(rng),
+						rx2 = ur.template packetOp<DPacket>(rng);
 					for (auto& p : cdf)
 					{
 						auto pp = pset1<decltype(rx1)>(p);
@@ -568,64 +595,68 @@ namespace Eigen
 				{
 #ifdef EIGEN_VECTORIZE_AVX
 					using RUtils = RawbitsMaker<Packet, Rng>;
-					auto albit = pand(RUtils{}.rawbits(this->rng), pset1<Packet>(alias_table.get_bitmask()));
-					auto c = reinterpret_to_int(pcmplt(ur_base::template packetOp<Packet4d>(), pgather(alias_table.get_prob(), _mm256_castsi128_si256(albit))));
+					auto albit = pand(RUtils{}.rawbits(rng), pset1<Packet>(alias_table.get_bitmask()));
+					auto c = reinterpret_to_int(pcmplt(ur.template packetOp<Packet4d>(rng), pgather(alias_table.get_prob(), _mm256_castsi128_si256(albit))));
 					return pblendv(combine_low32(c), albit, pgather(alias_table.get_alias(), albit));
 #else
 					using RUtils = RawbitsMaker<Packet, Rng>;
-					auto albit = pand(RUtils{}.rawbits(this->rng), pset1<Packet>(alias_table.get_bitmask()));
-					auto c1 = reinterpret_to_int(pcmplt(ur_base::template packetOp<DPacket>(), pgather(alias_table.get_prob(), albit)));
-					auto c2 = reinterpret_to_int(pcmplt(ur_base::template packetOp<DPacket>(), pgather(alias_table.get_prob(), albit, true)));
+					auto albit = pand(RUtils{}.rawbits(rng), pset1<Packet>(alias_table.get_bitmask()));
+					auto c1 = reinterpret_to_int(pcmplt(ur.template packetOp<DPacket>(rng), pgather(alias_table.get_prob(), albit)));
+					auto c2 = reinterpret_to_int(pcmplt(ur.template packetOp<DPacket>(rng), pgather(alias_table.get_prob(), albit, true)));
 					return pblendv(combine_low32(c1, c2), albit, pgather(alias_table.get_alias(), albit));
 #endif
 				}
 			}
 		};
 
-		template<typename Scalar, typename Urng, typename Precision>
-		struct functor_traits<scalar_discrete_dist_op<Scalar, Urng, Precision> >
-		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+		template<typename> class BinomialGen;
 
-		template<typename Scalar, typename Rng>
-		struct scalar_poisson_dist_op : public scalar_uniform_real_op<float, Rng>
+		template<typename _Scalar>
+		class PoissonGen : OptCacheStore, public GenBase<PoissonGen<_Scalar>, _Scalar>
 		{
-			static_assert(std::is_same<Scalar, int32_t>::value, "poisson needs integral types.");
-			using ur_base = scalar_uniform_real_op<float, Rng>;
+			friend BinomialGen<_Scalar>;
+			static_assert(std::is_same<_Scalar, int32_t>::value, "poisson needs integral types.");
+			int cache_rest_cnt = 0;
+			UniformRealGen<float> ur;
 
+		protected:
 			double mean, ne_mean, sqrt_tmean, log_mean, g1;
 
-			scalar_poisson_dist_op(const Rng& _rng, double _mean)
-				: ur_base{ _rng }, mean{ _mean }, ne_mean{ std::exp(-_mean) }
+		public:
+			using Scalar = _Scalar;
+
+			PoissonGen(double _mean)
+				: mean{ _mean }, ne_mean{ std::exp(-_mean) }
 			{
 				sqrt_tmean = std::sqrt(2 * mean);
 				log_mean = std::log(mean);
 				g1 = mean * log_mean - std::lgamma(mean + 1);
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				if (mean < 12)
 				{
-					Scalar res = 0;
+					_Scalar res = 0;
 					double val = 1;
 					for (; ; ++res)
 					{
-						val *= ur_base::operator()();
+						val *= ur(rng);
 						if (val <= ne_mean) break;
 					}
 					return res;
 				}
 				else
 				{
-					Scalar res;
+					_Scalar res;
 					double yx;
-					while(1)
+					while (1)
 					{
-						yx = std::tan(constant::pi * ur_base::operator()());
-						res = (Scalar)(sqrt_tmean * yx + mean);
-						if (res >= 0 && ur_base::operator()() <= 0.9 * (1.0 + yx * yx)
+						yx = std::tan(constant::pi * ur(rng));
+						res = (_Scalar)(sqrt_tmean * yx + mean);
+						if (res >= 0 && ur(rng) <= 0.9 * (1.0 + yx * yx)
 							* std::exp(res * log_mean - std::lgamma(res + 1.0) - g1))
 						{
 							return res;
@@ -634,9 +665,10 @@ namespace Eigen
 				}
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				using PacketType = decltype(reinterpret_to_float(std::declval<Packet>()));
 
 				if (mean < 12)
@@ -645,7 +677,7 @@ namespace Eigen
 					PacketType val = pset1<PacketType>(1), pne_mean = pset1<PacketType>(ne_mean);
 					while (1)
 					{
-						val = pmul(val, ur_base::template packetOp<PacketType>());
+						val = pmul(val, ur.template packetOp<PacketType>(rng));
 						auto c = reinterpret_to_int(pcmplt(pne_mean, val));
 						if (pmovemask(c) == 0) break;
 						res = padd(res, pnegate(c));
@@ -655,16 +687,6 @@ namespace Eigen
 				else
 				{
 					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
-					thread_local PacketType cache_rest;
-					thread_local int cache_rest_cnt;
-					thread_local const scalar_poisson_dist_op* cache_ptr = nullptr;
-					if (cache_ptr != this)
-					{
-						cache_ptr = this;
-						cache_rest = pset1<PacketType>(0);
-						cache_rest_cnt = 0;
-					}
-
 					const PacketType ppi = pset1<PacketType>(constant::pi),
 						psqrt_tmean = pset1<PacketType>(sqrt_tmean),
 						pmean = pset1<PacketType>(mean),
@@ -673,7 +695,7 @@ namespace Eigen
 					while (1)
 					{
 						PacketType fres, yx, psin, pcos;
-						psincos(pmul(ppi, ur_base::template packetOp<PacketType>()), psin, pcos);
+						psincos(pmul(ppi, ur.template packetOp<PacketType>(rng)), psin, pcos);
 						yx = pdiv(psin, pcos);
 						fres = ptruncate(padd(pmul(psqrt_tmean, yx), pmean));
 
@@ -681,68 +703,70 @@ namespace Eigen
 						auto p2 = pexp(psub(psub(pmul(fres, plog_mean), plgamma(padd(fres, pset1<PacketType>(1)))), pg1));
 
 						auto c1 = pcmple(pset1<PacketType>(0), fres);
-						auto c2 = pcmple(ur_base::template packetOp<PacketType>(), pmul(p1, p2));
+						auto c2 = pcmple(ur.template packetOp<PacketType>(rng), pmul(p1, p2));
 
 						auto cands = fres;
 						bool full = false;
 						cache_rest_cnt = cm.compress_append(cands, pand(c1, c2),
-							cache_rest, cache_rest_cnt, full);
+							OptCacheStore::template get<PacketType>(), cache_rest_cnt, full);
 						if (full) return pcast<PacketType, Packet>(cands);
 					}
 				}
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_poisson_dist_op<Scalar, Urng> >
+		template<typename _Scalar>
+		class BinomialGen : public GenBase<BinomialGen<_Scalar>, _Scalar>
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
+			static_assert(std::is_same<_Scalar, int32_t>::value, "binomial needs integral types.");
 
-		template<typename Scalar, typename Rng>
-		struct scalar_binomial_dist_op : public scalar_poisson_dist_op<Scalar, Rng>
-		{
-			static_assert(std::is_same<Scalar, int32_t>::value, "binomial needs integral types.");
-			using ur_base = scalar_uniform_real_op<float, Rng>;
-
-			Scalar trials;
+			PoissonGen<_Scalar> poisson;
+			_Scalar trials;
 			double p, small_p, g1, sqrt_v, log_small_p, log_small_q;
 
-			scalar_binomial_dist_op(const Rng& _rng, Scalar _trials = 1, double _p = 0.5)
-				: scalar_poisson_dist_op<Scalar, Rng>{ _rng, _trials * std::min(_p, 1 - _p) }, 
+		public:
+			using Scalar = _Scalar;
+
+			BinomialGen(_Scalar _trials = 1, double _p = 0.5)
+				: poisson{ _trials * std::min(_p, 1 - _p) },
 				trials{ _trials }, p{ _p }, small_p{ std::min(p, 1 - p) }
-				
+
 			{
-				g1 = std::lgamma(trials + 1);
-				sqrt_v = std::sqrt(2 * this->mean * (1 - small_p));
-				log_small_p = std::log(small_p);
-				log_small_q = std::log(1 - small_p);
+				if (!(trials < 25 || poisson.mean < 1.0))
+				{
+					g1 = std::lgamma(trials + 1);
+					sqrt_v = std::sqrt(2 * poisson.mean * (1 - small_p));
+					log_small_p = std::log(small_p);
+					log_small_q = std::log(1 - small_p);
+				}
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
-				Scalar res;
+				using namespace Eigen::internal;
+				_Scalar res;
 				if (trials < 25)
 				{
 					res = 0;
 					for (int i = 0; i < trials; ++i)
 					{
-						if (ur_base::operator()() < p) ++res;
+						if (poisson.ur(rng) < p) ++res;
 					}
 					return res;
 				}
-				else if (this->mean < 1.0)
+				else if (poisson.mean < 1.0)
 				{
-					res = scalar_poisson_dist_op<Scalar, Rng>::operator()();
+					res = poisson(rng);
 				}
 				else
 				{
-					while(1)
+					while (1)
 					{
 						double ys;
-						ys = std::tan(constant::pi * ur_base::operator()());
-						res = (Scalar)(sqrt_v * ys + this->mean);
-						if (0 <= res && res <= trials && ur_base::operator()() <= 1.2 * sqrt_v
+						ys = std::tan(constant::pi * poisson.ur(rng));
+						res = (_Scalar)(sqrt_v * ys + poisson.mean);
+						if (0 <= res && res <= trials && poisson.ur(rng) <= 1.2 * sqrt_v
 							* (1.0 + ys * ys)
 							* std::exp(g1 - std::lgamma(res + 1)
 								- std::lgamma(trials - res + 1.0)
@@ -757,9 +781,10 @@ namespace Eigen
 				return p == small_p ? res : trials - res;
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				using PacketType = decltype(reinterpret_to_float(std::declval<Packet>()));
 				Packet res;
 				if (trials < 25)
@@ -768,42 +793,32 @@ namespace Eigen
 					res = pset1<Packet>(trials);
 					for (int i = 0; i < trials; ++i)
 					{
-						auto c = reinterpret_to_int(pcmple(pp, ur_base::template packetOp<PacketType>()));
+						auto c = reinterpret_to_int(pcmple(pp, poisson.ur.template packetOp<PacketType>(rng)));
 						res = padd(res, c);
 					}
 					return res;
 				}
-				else if (this->mean < 1.0)
+				else if (poisson.mean < 1.0)
 				{
-					res = scalar_poisson_dist_op<Scalar, Rng>::template packetOp<Packet>();
+					res = poisson.template packetOp<Packet>(rng);
 				}
 				else
 				{
 					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
-					thread_local PacketType cache_rest;
-					thread_local int cache_rest_cnt;
-					thread_local const scalar_binomial_dist_op* cache_ptr = nullptr;
-					if (cache_ptr != this)
-					{
-						cache_ptr = this;
-						cache_rest = pset1<PacketType>(0);
-						cache_rest_cnt = 0;
-					}
-
 					const PacketType ppi = pset1<PacketType>(constant::pi),
 						ptrials = pset1<PacketType>(trials),
 						psqrt_v = pset1<PacketType>(sqrt_v),
-						pmean = pset1<PacketType>(this->mean),
+						pmean = pset1<PacketType>(poisson.mean),
 						plog_small_p = pset1<PacketType>(log_small_p),
 						plog_small_q = pset1<PacketType>(log_small_q),
 						pg1 = pset1<PacketType>(g1);
 					while (1)
 					{
 						PacketType fres, ys, psin, pcos;
-						psincos(pmul(ppi, ur_base::template packetOp<PacketType>()), psin, pcos);
+						psincos(pmul(ppi, poisson.ur.template packetOp<PacketType>(rng)), psin, pcos);
 						ys = pdiv(psin, pcos);
 						fres = ptruncate(padd(pmul(psqrt_v, ys), pmean));
-						
+
 						auto p1 = pmul(pmul(pset1<PacketType>(1.2), psqrt_v), padd(pset1<PacketType>(1), pmul(ys, ys)));
 						auto p2 = pexp(
 							padd(padd(psub(
@@ -813,12 +828,12 @@ namespace Eigen
 						);
 
 						auto c1 = pand(pcmple(pset1<PacketType>(0), fres), pcmple(fres, ptrials));
-						auto c2 = pcmple(ur_base::template packetOp<PacketType>(), pmul(p1, p2));
+						auto c2 = pcmple(poisson.ur.template packetOp<PacketType>(rng), pmul(p1, p2));
 
 						auto cands = fres;
 						bool full = false;
-						cache_rest_cnt = cm.compress_append(cands, pand(c1, c2),
-							cache_rest, cache_rest_cnt, full);
+						poisson.cache_rest_cnt = cm.compress_append(cands, pand(c1, c2),
+							poisson.template get<PacketType>(), poisson.cache_rest_cnt, full);
 						if (full)
 						{
 							res = pcast<PacketType, Packet>(cands);
@@ -830,47 +845,465 @@ namespace Eigen
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_binomial_dist_op<Scalar, Urng> >
+		template<typename _Scalar>
+		class GeometricGen : public GenBase<GeometricGen<_Scalar>, _Scalar>
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
-
-		template<typename Scalar, typename Rng>
-		struct scalar_geometric_dist_op : public scalar_uniform_real_op<float, Rng>
-		{
-			static_assert(std::is_same<Scalar, int32_t>::value, "geomtric needs integral types.");
-			using ur_base = scalar_uniform_real_op<float, Rng>;
-
+			static_assert(std::is_same<_Scalar, int32_t>::value, "geomtric needs integral types.");
+			UniformRealGen<float> ur;
 			double p, rlog_q;
 
-			scalar_geometric_dist_op(const Rng& _rng, double _p)
-				: ur_base{ _rng }, p{ _p }, rlog_q{ 1 / std::log(1 - p) }
+		public:
+			using Scalar = _Scalar;
+
+			GeometricGen(double _p)
+				: p{ _p }, rlog_q{ 1 / std::log(1 - p) }
 			{
 			}
 
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
-				return (Scalar)(std::log(1 - ur_base::operator()()) * rlog_q);
+				using namespace Eigen::internal;
+				return (_Scalar)(std::log(1 - ur(std::forward<Rng>(rng))) * rlog_q);
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
+				using namespace Eigen::internal;
 				using PacketType = decltype(reinterpret_to_float(std::declval<Packet>()));
 
 				return pcast<PacketType, Packet>(ptruncate(pmul(plog(
-					psub(pset1<PacketType>(1), ur_base::template packetOp<PacketType>())
+					psub(pset1<PacketType>(1), ur.template packetOp<PacketType>(std::forward<Rng>(rng)))
 				), pset1<PacketType>(rlog_q))));
 			}
 		};
 
-		template<typename Scalar, typename Urng>
-		struct functor_traits<scalar_geometric_dist_op<Scalar, Urng> >
-		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = false };
-		};
 
+		template<typename Derived, typename Urng>
+		using UniformIntType = CwiseNullaryOp<internal::scalar_rng_adaptor<UniformIntGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates integers with a given range `[min, max]`
+		 *
+		 * @tparam Derived a type of Eigen::DenseBase
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param min, max the range of integers being generated
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const UniformIntType<Derived, Urng>
+			uniformInt(Index rows, Index cols, Urng&& urng, typename Derived::Scalar min, typename Derived::Scalar max)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), UniformIntGen<typename Derived::Scalar>{ min, max } }
+			};
+		}
+
+		/**
+		 * @brief generates integers with a given range `[min, max]`
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param min, max the range of integers being generated
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const UniformIntType<Derived, Urng>
+			uniformIntLike(Derived& o, Urng&& urng, typename Derived::Scalar min, typename Derived::Scalar max)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), UniformIntGen<typename Derived::Scalar>{ min, max } }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using DiscreteFType = CwiseNullaryOp<internal::scalar_rng_adaptor<DiscreteGen<typename Derived::Scalar, float>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is float(23bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng, typename RealIter>
+		inline const DiscreteFType<Derived, Urng>
+			discreteF(Index rows, Index cols, Urng&& urng, RealIter first, RealIter last)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, float>{first, last} }
+			};
+		}
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is float(23bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng, typename RealIter>
+		inline const DiscreteFType<Derived, Urng>
+			discreteFLike(Derived& o, Urng&& urng, RealIter first, RealIter last)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, float>(first, last) }
+			};
+		}
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is float(23bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng, typename Real>
+		inline const DiscreteFType<Derived, Urng>
+			discreteF(Index rows, Index cols, Urng&& urng, const std::initializer_list<Real>& il)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, float>{il.begin(), il.end()} }
+			};
+		}
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is float(23bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng, typename Real>
+		inline const DiscreteFType<Derived, Urng>
+			discreteFLike(Derived& o, Urng&& urng, const std::initializer_list<Real>& il)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, float>(il.begin(), il.end()) }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using DiscreteDType = CwiseNullaryOp<internal::scalar_rng_adaptor<DiscreteGen<typename Derived::Scalar, double>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is double(52bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng, typename RealIter>
+		inline const DiscreteDType<Derived, Urng>
+			discreteD(Index rows, Index cols, Urng&& urng, RealIter first, RealIter last)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, double>{first, last} }
+			};
+		}
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is double(52bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng, typename RealIter>
+		inline const DiscreteDType<Derived, Urng>
+			discreteDLike(Derived& o, Urng&& urng, RealIter first, RealIter last)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, double>{first, last} }
+			};
+		}
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is double(52bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng, typename Real>
+		inline const DiscreteDType<Derived, Urng>
+			discreteD(Index rows, Index cols, Urng&& urng, const std::initializer_list<Real>& il)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, double>{il.begin(), il.end()} }
+			};
+		}
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is double(52bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng, typename Real>
+		inline const DiscreteDType<Derived, Urng>
+			discreteDLike(Derived& o, Urng&& urng, const std::initializer_list<Real>& il)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, double>{il.begin(), il.end()} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using DiscreteType = CwiseNullaryOp<internal::scalar_rng_adaptor<DiscreteGen<typename Derived::Scalar, int32_t>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is int32(32bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng, typename RealIter>
+		inline const DiscreteType<Derived, Urng>
+			discrete(Index rows, Index cols, Urng&& urng, RealIter first, RealIter last)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, int32_t>{first, last} }
+			};
+		}
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is int32(32bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param first, last the range of elements defining the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng, typename RealIter>
+		inline const DiscreteType<Derived, Urng>
+			discreteLike(Derived& o, Urng&& urng, RealIter first, RealIter last)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, int32_t>{first, last} }
+			};
+		}
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is int32(32bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng, typename Real>
+		inline const DiscreteType<Derived, Urng>
+			discrete(Index rows, Index cols, Urng&& urng, const std::initializer_list<Real>& il)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, int32_t>{il.begin(), il.end()} }
+			};
+		}
+
+		/**
+		 * @brief generates random integers on the interval `[0, n)`, where the probability of each individual integer `i` is proportional to `w(i)`.
+		 * The data type used for calculation of probabilities is int32(32bit precision).
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param il an instance of `initializer_list` containing the numbers to use as weights. The type of the elements referred by `RealIter` must be convertible to `double`.
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng, typename Real>
+		inline const DiscreteType<Derived, Urng>
+			discreteLike(Derived& o, Urng&& urng, const std::initializer_list<Real>& il)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), DiscreteGen<typename Derived::Scalar, int32_t>{il.begin(), il.end()} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using PoissonType = CwiseNullaryOp<internal::scalar_rng_adaptor<PoissonGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on the Poisson distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param mean rate parameter
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const PoissonType<Derived, Urng>
+			poisson(Index rows, Index cols, Urng&& urng, double mean = 1)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), PoissonGen<typename Derived::Scalar>{mean} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on the Poisson distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param mean rate parameter
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const PoissonType<Derived, Urng>
+			poissonLike(Derived& o, Urng&& urng, double mean = 1)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), PoissonGen<typename Derived::Scalar>{mean} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using BinomialType = CwiseNullaryOp<internal::scalar_rng_adaptor<BinomialGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on the binomial distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param trials the number of trials
+		 * @param p probability of a trial generating true
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const BinomialType<Derived, Urng>
+			binomial(Index rows, Index cols, Urng&& urng, typename Derived::Scalar trials = 1, double p = 0.5)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), BinomialGen<typename Derived::Scalar>{trials, p} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on the binomial distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param trials the number of trials
+		 * @param p probability of a trial generating true
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const BinomialType<Derived, Urng>
+			binomialLike(Derived& o, Urng&& urng, typename Derived::Scalar trials = 1, double p = 0.5)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), BinomialGen<typename Derived::Scalar>{trials, p} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using GeometricType = CwiseNullaryOp<internal::scalar_rng_adaptor<GeometricGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals on the geometric distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param p probability of a trial generating true
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const GeometricType<Derived, Urng>
+			geometric(Index rows, Index cols, Urng&& urng, double p = 0.5)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), GeometricGen<typename Derived::Scalar>{p} }
+			};
+		}
+
+		/**
+		 * @brief generates reals on the geometric distribution.
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param p probability of a trial generating true
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const GeometricType<Derived, Urng>
+			geometricLike(Derived& o, Urng&& urng, double p = 0.5)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), GeometricGen<typename Derived::Scalar>{p} }
+			};
+		}
 	}
 }
 

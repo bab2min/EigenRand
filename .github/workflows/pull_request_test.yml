@@ -13,16 +13,17 @@ jobs:
       max-parallel: 4
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx, mavx2]
+        eigenversion: [3.3.7, 3.3.8]
         os: [ubuntu-16.04, ubuntu-18.04]
     steps:        
     - uses: actions/checkout@v1
     - name: Install dependencies
       run: |
-        git clone https://github.com/eigenteam/eigen-git-mirror
-        cd eigen-git-mirror
-        git checkout tags/3.3.7
+        git clone https://gitlab.com/libeigen/eigen
+        cd eigen
+        git checkout tags/${{ matrix.eigenversion }}
         cd ..
-        mv eigen-git-mirror include
+        mv eigen include
     - name: Build Bench
       run: |
         g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
@@ -30,6 +31,12 @@ jobs:
       run: |
         cat /proc/cpuinfo
         ./bench.out
+    - name: Build BenchMv
+      run: |
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark_mv.cpp -o benchmv.out
+    - name: Run BenchMv
+      run: |
+        ./benchmv.out
     - name: Build Accuracy
       run: |
         g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/accuracy.cpp -o accuracy.out
@@ -44,13 +51,14 @@ jobs:
       max-parallel: 4
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx]
+        eigenversion: [3.3.7, 3.3.8]
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies
       run: |
-        wget https://github.com/eigenteam/eigen-git-mirror/archive/3.3.7.tar.gz
-        tar -zxvf 3.3.7.tar.gz
-        mv eigen-git-mirror-3.3.7 include
+        wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
+        tar -zxvf eigen-${{ matrix.eigenversion }}.tar.gz
+        mv eigen-${{ matrix.eigenversion }} include
     - name: Build Bench
       run: |
         g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
@@ -59,6 +67,13 @@ jobs:
       run: |
         sysctl -a | grep machdep.cpu
         ./bench.out
+    - name: Build BenchMv
+      run: |
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark_mv.cpp -o benchmv.out
+    - name: Run BenchMv
+      continue-on-error: true
+      run: |
+        ./benchmv.out
     - name: Build Accuracy
       run: |
         g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/accuracy.cpp -o accuracy.out
@@ -73,13 +88,14 @@ jobs:
       max-parallel: 4
       matrix:
         arch: ['/D EIGEN_DONT_VECTORIZE', '/arch:SSE2', '/arch:AVX', '/arch:AVX2']
+        eigenversion: [3.3.7, 3.3.8]
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies
       run: |
-        Invoke-WebRequest -OutFile 3.3.7.tar.gz https://github.com/eigenteam/eigen-git-mirror/archive/3.3.7.tar.gz
-        tar -zxvf 3.3.7.tar.gz
-        mv eigen-git-mirror-3.3.7 include
+        Invoke-WebRequest -OutFile eigen.tar.gz https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
+        tar -zxvf eigen.tar.gz
+        mv eigen-${{ matrix.eigenversion }} include
     - uses: ilammy/msvc-dev-cmd@v1
     - name: Build Bench
       run: |
@@ -88,9 +104,34 @@ jobs:
       run: |
         bash -c "cat /proc/cpuinfo"
         .\bench.exe
+    - name: Build BenchMv
+      run: |
+        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:benchmv.exe .\test\benchmark_mv.cpp
+    - name: Run BenchMv
+      run: |
+        .\benchmv.exe
     - name: Build Accuracy
       run: |
         cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:accuracy.exe .\test\accuracy.cpp
     - name: Run Accuracy
       run: |
         .\accuracy.exe
+
+  reference:
+    name: Reference
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 4
+      matrix:
+        os: [ubuntu-16.04, ubuntu-18.04, macOS-latest, windows-latest]
+    steps:        
+    - uses: actions/checkout@v1
+    - name: Set up Python3
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+        architecture: x64
+    - name: Test Reference
+      run: |
+        pip install scipy
+        python test/comp_scipy.py

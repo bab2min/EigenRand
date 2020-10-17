@@ -2,8 +2,8 @@
  * @file RandUtils.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.2.0
- * @date 2020-06-22
+ * @version 0.3.0
+ * @date 2020-10-07
  * 
  * @copyright Copyright (c) 2020
  * 
@@ -380,8 +380,8 @@ namespace Eigen
 {
 	namespace internal
 	{
-		template<typename Scalar, typename Rng>
-		struct scalar_base_rng
+		template<typename Gen, typename _Scalar, typename Rng, bool _mutable = false>
+		struct scalar_rng_adaptor
 		{
 			static_assert(
 				Rand::IsScalarRandomEngine<
@@ -391,21 +391,75 @@ namespace Eigen
 				typename std::remove_reference<Rng>::type
 				>::value, "Rng must satisfy RandomNumberEngine");
 
+			Gen gen;
 			Rng rng;
 
-			scalar_base_rng(const Rng& _rng) : rng{ _rng }
+			scalar_rng_adaptor(const Rng& _rng) : rng{ _rng }
 			{
 			}
 
-			scalar_base_rng(const scalar_base_rng& o)
-				: rng{ o.rng }
+			template<typename _Gen>
+			scalar_rng_adaptor(const Rng& _rng, _Gen&& _gen) : gen{ _gen }, rng{ _rng }
 			{
 			}
 
-			scalar_base_rng(scalar_base_rng&& o)
-				: rng{ std::move(o.rng) }
+			scalar_rng_adaptor(const scalar_rng_adaptor& o) = default;
+			scalar_rng_adaptor(scalar_rng_adaptor&& o) = default;
+
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const _Scalar operator() () const
+			{
+				return gen(rng);
+			}
+
+			template<typename Packet>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			{
+				return gen.template packetOp<Packet>(rng);
+			}
+		};
+
+		template<typename Gen, typename _Scalar, typename Rng>
+		struct scalar_rng_adaptor<Gen, _Scalar, Rng, true>
+		{
+			static_assert(
+				Rand::IsScalarRandomEngine<
+				typename std::remove_reference<Rng>::type
+				>::value ||
+				Rand::IsPacketRandomEngine<
+				typename std::remove_reference<Rng>::type
+				>::value, "Rng must satisfy RandomNumberEngine");
+
+			mutable Gen gen;
+			Rng rng;
+
+			scalar_rng_adaptor(const Rng& _rng) : rng{ _rng }
 			{
 			}
+
+			template<typename _Gen>
+			scalar_rng_adaptor(const Rng& _rng, _Gen&& _gen) : gen{ _gen }, rng{ _rng }
+			{
+			}
+
+			scalar_rng_adaptor(const scalar_rng_adaptor& o) = default;
+			scalar_rng_adaptor(scalar_rng_adaptor&& o) = default;
+
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const _Scalar operator() () const
+			{
+				return gen(rng);
+			}
+
+			template<typename Packet>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp() const
+			{
+				return gen.template packetOp<Packet>(rng);
+			}
+		};
+
+		template<typename Gen, typename _Scalar, typename Urng, bool _mutable>
+		struct functor_traits<scalar_rng_adaptor<Gen, _Scalar, Urng, _mutable> >
+		{
+			enum { Cost = HugeCost, PacketAccess = packet_traits<_Scalar>::Vectorizable, IsRepeatable = false };
 		};
 	}
 }
