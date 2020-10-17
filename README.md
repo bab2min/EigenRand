@@ -20,7 +20,7 @@ You can get 5~10 times speed by just replacing old Eigen's Random or unvectoriza
 
 ## Requirement
 
-* Eigen 3.3.7
+* Eigen 3.3.7 or later
 * C++11-compatible compilers
 
 ## Documentation
