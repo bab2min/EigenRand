@@ -214,7 +214,20 @@
 
  * 
  * @page performance Performance
- * 
+ * The following charts show the relative speed-up of EigenRand compared to Reference(C++ std or Eigen functions). Detailed results are below the charts.
+
+ \image html perf_no_vect.png
+
+ \image html perf_sse2.png
+
+ \image html perf_avx.png
+
+ \image html perf_avx2.png
+
+ \image html perf_mv_part1.png
+
+ \image html perf_mv_part2.png
+
  * The following result is a measure of the time in seconds it takes to generate 1M random numbers. It shows the average of 20 times.
 
  @section performance_1 Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Ubuntu 16.04, gcc7.5)
