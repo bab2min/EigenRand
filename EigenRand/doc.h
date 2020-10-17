@@ -48,7 +48,16 @@
 | `Eigen::Rand::randBits` | int | generates integers with random bits. | `Eigen::DenseBase<Ty>::Random` for integer types |
 | `Eigen::Rand::uniformInt` | int | generates integers in the `[min, max]` range. | `std::uniform_int_distribution` |
 
- @section list_of_distribution_3 Random Number Engines
+ @section list_of_distribution_3 Multivariate Random Distributions
+| Class | Description | Equivalent to |
+|:---:|:---:|:---:|
+| `Eigen::Rand::MultinomialGen` | generates real vectors on a [multinomial distribution](https://en.wikipedia.org/wiki/Multinomial_distribution) | [scipy.stats.multinomial in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multinomial.html#scipy.stats.multinomial) |
+| `Eigen::Rand::DirichletGen` | generates real vectors on a [Dirichlet distribution](https://en.wikipedia.org/wiki/Dirichlet_distribution) | [scipy.stats.dirichlet in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.dirichlet.html#scipy.stats.dirichlet) |
+| `Eigen::Rand::MvNormalGen` | generates real vectors on a [multivariate normal distribution](https://en.wikipedia.org/wiki/Multivariate_normal_distribution) | [scipy.stats.multivariate_normal in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multivariate_normal.html#scipy.stats.multivariate_normal) |
+| `Eigen::Rand::WishartGen` | generates real matrices on a [Wishart distribution](https://en.wikipedia.org/wiki/Wishart_distribution) | [scipy.stats.wishart in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wishart.html#scipy.stats.wishart) |
+| `Eigen::Rand::InvWishartGen` | generates real matrices on a [inverse Wishart distribution](https://en.wikipedia.org/wiki/Inverse-Wishart_distribution) | [scipy.stats.invwishart in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.invwishart.html#scipy.stats.invwishart) |
+
+ @section list_of_distribution_4 Random Number Engines
 
 |  | Description | Equivalent to |
 |:---:|:---:|:---:|
@@ -102,6 +111,8 @@
 |---|---:|---:|---:|---:|---:|---:|
 | Mersenne Twister(int32) | 4.7 | 5.6 | 4.0 | 3.7 | 3.5 | 3.6 |
 | Mersenne Twister(int64) | 5.4 | 5.3 | 4.0 | 3.9 | 3.4 | 2.6 |
+
+
 
  @section performance_2 AMD Ryzen 7 3700x CPU @ 3.60GHz (Windows 10, MSVC2017)
 

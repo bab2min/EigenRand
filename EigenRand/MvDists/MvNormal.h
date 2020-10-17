@@ -16,6 +16,37 @@ namespace Eigen
 {
 	namespace Rand
 	{
+		namespace detail
+		{
+			template<typename _Scalar, Index Dim, typename _Mat>
+			Matrix<_Scalar, Dim, Dim> get_lt(const MatrixBase<_Mat>& mat)
+			{
+				LLT<Matrix<_Scalar, Dim, Dim>> llt(mat);
+				if (llt.info() == Eigen::Success)
+				{
+					return llt.matrixL();
+				}
+				else
+				{
+					SelfAdjointEigenSolver<Matrix<_Scalar, Dim, Dim>> solver(mat);
+					if (solver.info() != Eigen::Success)
+					{
+						throw std::runtime_error{ "The matrix cannot be solved!" };
+					}
+					return solver.eigenvectors() * solver.eigenvalues().cwiseMax(0).cwiseSqrt().asDiagonal();
+				}
+			}
+
+			class FullMatrix {};
+			class LowerTriangular {};
+			class InvLowerTriangular {};
+		}
+
+		constexpr detail::FullMatrix full_matrix;
+		constexpr detail::LowerTriangular lower_triangular;
+		constexpr detail::InvLowerTriangular inv_lower_triangular;
+		
+
 		/**
 		 * @brief Generator of multivariate normal distribution
 		 * 
@@ -29,43 +60,18 @@ namespace Eigen
 			Matrix<_Scalar, Dim, Dim> lt;
 			StdNormalGen<_Scalar> stdnorm;
 
-			struct LowerTriangular {};
-
+		public:
 			template<typename MeanTy, typename LTTy>
-			MvNormalGen(LowerTriangular, const MatrixBase<MeanTy>& _mean, const MatrixBase<LTTy>& _lt)
+			MvNormalGen(const MatrixBase<MeanTy>& _mean, const MatrixBase<LTTy>& _lt, detail::LowerTriangular)
 				: mean{ _mean }, lt{ _lt }
 			{
 				eigen_assert(_mean.cols() == 1 && _mean.rows() == _lt.rows() && _lt.rows() == _lt.cols());
 			}
 
-		public:
-
 			template<typename MeanTy, typename CovTy>
-			MvNormalGen(const MatrixBase<MeanTy>& _mean, const MatrixBase<CovTy>& _cov)
-				: mean{ _mean }
+			MvNormalGen(const MatrixBase<MeanTy>& _mean, const MatrixBase<CovTy>& _cov, detail::FullMatrix = {})
+				: MvNormalGen{ _mean, detail::template get_lt<_Scalar, Dim>(_cov), lower_triangular }
 			{
-				eigen_assert(_mean.cols() == 1 && _mean.rows() == _cov.rows() && _cov.rows() == _cov.cols());
-
-				LLT<Matrix<_Scalar, Dim, Dim>> llt(_cov);
-				if (llt.info() == Eigen::Success)
-				{
-					lt = llt.matrixL();
-				}
-				else
-				{
-					SelfAdjointEigenSolver<Matrix<_Scalar, Dim, Dim>> solver(_cov);
-					if (solver.info() != Eigen::Success)
-					{
-						throw std::runtime_error{ "Matrix `_cov` cannot be solved!" };
-					}
-					lt = solver.eigenvectors() * solver.eigenvalues().cwiseMax(0).cwiseSqrt().asDiagonal();
-				}
-			}
-
-			template<typename MeanTy, typename LTTy>
-			static MvNormalGen fromLt(const MatrixBase<MeanTy>& _mean, const MatrixBase<LTTy>& _lt)
-			{
-				return MvNormalGen{ LowerTriangular{}, _mean, _lt };
 			}
 
 			MvNormalGen(const MvNormalGen&) = default;
@@ -117,7 +123,7 @@ namespace Eigen
 				MatrixBase<LTTy>::RowsAtCompileTime == MatrixBase<LTTy>::ColsAtCompileTime,
 				"assert: mean.RowsAtCompileTime == lt.RowsAtCompileTime && lt.RowsAtCompileTime == lt.ColsAtCompileTime"
 			);
-			return MvNormalGen<typename MatrixBase<MeanTy>::Scalar, MatrixBase<MeanTy>::RowsAtCompileTime>::fromLt(mean, lt);
+			return { mean, lt, lower_triangular };
 		}
 
 
@@ -131,20 +137,23 @@ namespace Eigen
 		public:
 
 			template<typename ScaleTy>
-			WishartGen(Index _df, const MatrixBase<ScaleTy>& _scale)
-				: df{ _df }
+			WishartGen(Index _df, const MatrixBase<ScaleTy>& _lt, detail::LowerTriangular)
+				: df{ _df }, chol{ _lt }
 			{
-				eigen_assert(df > _scale.rows() - 1);
-				eigen_assert(_scale.rows() == _scale.cols());
+				eigen_assert(df > chol.rows() - 1);
+				eigen_assert(chol.rows() == chol.cols());
 
-				LLT<Matrix<_Scalar, Dim, Dim>> llt(_scale);
-				if (llt.info() != Eigen::Success) throw std::runtime_error{ "Matrix `_scale` cannot be solved!" };
-				chol = llt.matrixL();
-				
 				for (Index i = 0; i < chol.rows(); ++i)
 				{
 					chisqs.emplace_back(df - i);
 				}
+			}
+
+			template<typename ScaleTy>
+			WishartGen(Index _df, const MatrixBase<ScaleTy>& _scale, detail::FullMatrix = {})
+				: WishartGen{ _df, detail::template get_lt<_Scalar, Dim>(_scale), lower_triangular }
+			{
+				eigen_assert(_scale.rows() == _scale.cols());
 			}
 
 			WishartGen(const WishartGen&) = default;
@@ -231,6 +240,17 @@ namespace Eigen
 			return { df, scale };
 		}
 
+		template<typename LTTy>
+		inline auto makeWishartGenFromLt(Index df, const MatrixBase<LTTy>& lt)
+			-> WishartGen<typename MatrixBase<LTTy>::Scalar, MatrixBase<LTTy>::RowsAtCompileTime>
+		{
+			static_assert(
+				MatrixBase<LTTy>::RowsAtCompileTime == MatrixBase<LTTy>::ColsAtCompileTime,
+				"assert: lt.RowsAtCompileTime == lt.ColsAtCompileTime"
+				);
+			return { df, lt, lower_triangular };
+		}
+
 		template<typename _Scalar, Index Dim>
 		class InvWishartGen
 		{
@@ -241,20 +261,23 @@ namespace Eigen
 		public:
 
 			template<typename ScaleTy>
-			InvWishartGen(Index _df, const MatrixBase<ScaleTy>& _scale)
-				: df{ _df }
+			InvWishartGen(Index _df, const MatrixBase<ScaleTy>& _ilt, detail::InvLowerTriangular)
+				: df{ _df }, chol{ _ilt }
 			{
-				eigen_assert(df > _scale.rows() - 1);
-				eigen_assert(_scale.rows() == _scale.cols());
-				using Mat = Eigen::Matrix<_Scalar, Dim, Dim>;
-				LLT<Mat> llt(_scale.inverse());
-				if (llt.info() != Eigen::Success) throw std::runtime_error{ "Matrix `_scale` cannot be solved!" };
-				chol = llt.matrixL();
+				eigen_assert(df > chol.rows() - 1);
+				eigen_assert(chol.rows() == chol.cols());
 
 				for (Index i = 0; i < chol.rows(); ++i)
 				{
 					chisqs.emplace_back(df - i);
 				}
+			}
+
+			template<typename ScaleTy>
+			InvWishartGen(Index _df, const MatrixBase<ScaleTy>& _scale, detail::FullMatrix = {})
+				: InvWishartGen{ _df, detail::template get_lt<_Scalar, Dim>(_scale.inverse()), inv_lower_triangular }
+			{
+				eigen_assert(_scale.rows() == _scale.cols());	
 			}
 
 			InvWishartGen(const InvWishartGen&) = default;
@@ -343,8 +366,19 @@ namespace Eigen
 			static_assert(
 				MatrixBase<ScaleTy>::RowsAtCompileTime == MatrixBase<ScaleTy>::ColsAtCompileTime,
 				"assert: scale.RowsAtCompileTime == scale.ColsAtCompileTime"
-				);
+			);
 			return { df, scale };
+		}
+
+		template<typename ILTTy>
+		inline auto makeInvWishartGenFromIlt(Index df, const MatrixBase<ILTTy>& ilt)
+			-> InvWishartGen<typename MatrixBase<ILTTy>::Scalar, MatrixBase<ILTTy>::RowsAtCompileTime>
+		{
+			static_assert(
+				MatrixBase<ILTTy>::RowsAtCompileTime == MatrixBase<ILTTy>::ColsAtCompileTime,
+				"assert: ilt.RowsAtCompileTime == ilt.ColsAtCompileTime"
+			);
+			return { df, ilt, inv_lower_triangular };
 		}
 	}
 }
