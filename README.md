@@ -23,6 +23,10 @@ You can get 5~10 times speed by just replacing old Eigen's Random or unvectoriza
 * Eigen 3.3.7
 * C++11-compatible compilers
 
+## Documentation
+
+https://bab2min.github.io/eigenrand/
+
 ## Functions
 
 ### Random distributions for real types
@@ -65,7 +69,7 @@ You can get 5~10 times speed by just replacing old Eigen's Random or unvectoriza
 The following result is a measure of the time in seconds it takes to generate 1M random numbers. 
 It shows the average of 20 times.
 
-### Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Ubuntu 16.04, gcc7.5)
+### Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Ubuntu 16.04, gcc5.4)
 
 |  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) | EigenRand (AVX2) |
 |---|---:|---:|---:|---:|---:|---:|
@@ -109,40 +113,40 @@ It shows the average of 20 times.
 | Mersenne Twister(int32) | 4.7 | 5.6 | 4.0 | 3.7 | 3.5 | 3.6 |
 | Mersenne Twister(int64) | 5.4 | 5.3 | 4.0 | 3.9 | 3.4 | 2.6 |
 
-### Intel(R) Xeon(R) CPU E5-1650 v2 @ 3.50GHz (macOS 10.15, gcc8.4)
+### Intel(R) Xeon(R) CPU E5-1650 v2 @ 3.50GHz (macOS 10.15, clang-1103)
 
 |  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) |
 |---|---:|---:|---:|---:|---:|
 | `balanced`* | 6.5 | 7.3 | 1.1 | 1.4 | 1.1 |
 | `balanced`(double)* | 6.6 | 7.5 | 2.6 | 3.3 | 2.4 |
-| `binomial(20, 0.5)` | 38.8 | 164.9 | 27.7 | 29.3 | |
-| `binomial(50, 0.01)` | 21.9 | 27.6 | 6.6 | 7.0 | |
-| `binomial(100, 0.75)` | 52.2 | 421.9 | 93.6 | 94.8 | |
-| `cauchy` | 36.0 | 30.4 | 5.6 | 5.8 | |
+| `binomial(20, 0.5)` | 38.8 | 164.9 | 27.7 | 29.3 | 24.9 |
+| `binomial(50, 0.01)` | 21.9 | 27.6 | 6.6 | 7.0 | 6.3 |
+| `binomial(100, 0.75)` | 52.2 | 421.9 | 93.6 | 94.8 | 89.1 |
+| `cauchy` | 36.0 | 30.4 | 5.6 | 5.8 | 4.0 |
 | `chiSquared` | 84.4 | 152.2 | 44.1 | 48.7 | 26.2 |
 | `discrete`(int32) | - | 12.4 | 2.1 | 2.6 | 2.2 |
 | `discrete`(fp32) | - | 23.2 | 3.4 | 3.7 | 3.4 |
 | `discrete`(fp64) | 48.6 | 22.9 | 4.2 | 5.0 | 4.6 |
 | `exponential` | 22.0 | 18.0 | 4.1 | 4.9 | 3.2 |
 | `extremeValue` | 36.2 | 32.0 | 8.7 | 9.5 | 5.1 |
-| `fisherF(1, 1)` | 158.2 | 73.1 | 32.3 | 32.1 | |
-| `fisherF(5, 5)` | 177.3 | 310.1 | 127.0 | 121.8 | |
+| `fisherF(1, 1)` | 158.2 | 73.1 | 32.3 | 32.1 | 18.1 |
+| `fisherF(5, 5)` | 177.3 | 310.1 | 127.0 | 121.8 | 74.3 |
 | `gamma(0.2, 1)` | 69.8 | 80.4 | 28.5 | 33.8 | 19.2 |
 | `gamma(5, 3)` | 83.9 | 53.3 | 10.6 | 12.4 | 8.6 |
 | `gamma(10.5, 1)` | 83.2 | 150.4 | 43.3 | 48.4 | 26.2 |
-| `geometric` | 39.6 | 19.0 | 4.3 | 4.4 | |
+| `geometric` | 39.6 | 19.0 | 4.3 | 4.4 | 4.1 |
 | `lognormal` | 43.8 | 40.7 | 9.0 | 10.8 | 5.7 |
-| `negativeBinomial(10, 0.5)` | 217.4 | 274.8 | 71.6 | 73.7 | |
-| `negativeBinomial(20, 0.25)` | 192.9 | 464.9 | 112.0 | 111.5 | |
+| `negativeBinomial(10, 0.5)` | 217.4 | 274.8 | 71.6 | 73.7 | 68.2 |
+| `negativeBinomial(20, 0.25)` | 192.9 | 464.9 | 112.0 | 111.5 | 105.7 |
 | `normal(0, 1)` | 32.6 | 28.6 | 5.5 | 6.5 | 3.8 |
 | `normal(2, 3)` | 32.9 | 30.5 | 5.7 | 6.7 | 3.9 |
-| `poisson(1)` | 37.9 | 31.0 | 7.5 | 7.8 | |
-| `poisson(16)` | 92.4 | 243.3 | 55.6 | 57.7 | |
+| `poisson(1)` | 37.9 | 31.0 | 7.5 | 7.8 | 7.1 |
+| `poisson(16)` | 92.4 | 243.3 | 55.6 | 57.7 | 53.7 |
 | `randBits` | 6.5 | 6.5 | 1.1 | 1.3 | 1.1 |
-| `studentT(1)` | 115.0 | 54.1 | 15.5 | 15.7 | |
-| `studentT(20)` | 121.2 | 53.8 | 15.8 | 16.0 | |
-| `uniformInt(0~63)` | 20.2 | 9.8 | 1.8 | 1.8 | |
-| `uniformInt(0~100k)` | 25.7 | 16.1 | 8.1 | 8.5 | |
+| `studentT(1)` | 115.0 | 54.1 | 15.5 | 15.7 | 8.3 |
+| `studentT(20)` | 121.2 | 53.8 | 15.8 | 16.0 | 8.2 |
+| `uniformInt(0~63)` | 20.2 | 9.8 | 1.8 | 1.8 | 1.6 |
+| `uniformInt(0~100k)` | 25.7 | 16.1 | 8.1 | 8.5 | 7.2 |
 | `uniformReal` | 12.7 | 7.0 | 1.0 | 1.2 | 1.1 |
 | `weibull` | 23.1 | 19.2 | 11.6 | 13.6 | 7.6 |
 
@@ -241,14 +245,44 @@ It shows the average of 20 times.
 | Mersenne Twister(int32) | 5.0 | 3.4 | 3.4 | 3.3 |
 | Mersenne Twister(int64) | 5.1 | 3.9 | 3.9 | 3.3 |
 
+## Accuracy
+Since vectorized mathematical functions may have a loss of precision, I measured how well the generated random number fits its actual distribution.
+32768 samples were generated and Earth Mover's Distance between samples and its actual distribution was calculated for each distribution.
+Following table shows the average distance (and stdev.) of results performed 50 times for different seeds.
+
+|  | C++ std | EigenRand |
+|---|---:|---:|
+| `balanced`* | .0034(.0015) | .0034(.0015) |
+| `chiSquared(7)` | .0260(.0091) | .0242(.0079) |
+| `exponential(1)` | .0065(.0025) | .0072(.0022) |
+| `extremeValue(1, 1)` | .0097(.0029) | .0088(.0025) |
+| `gamma(0.2, 1)` | .0380(.0021) | .0377(.0025) |
+| `gamma(1, 1)` | .0070(.0020) | .0065(.0023) |
+| `gamma(5, 1)` | .0169(.0065) | .0170(.0051) |
+| `lognormal(0, 1)` | .0072(.0029) | .0067(.0022) |
+| `normal(0, 1)` | .0070(.0024) | .0073(.0020) |
+| `uniformReal` | .0018(.0008) | .0017(.0007) |
+| `weibull(2, 1)` | .0032(.0013) | .0031(.0010) |
+
+(* Result of `balanced` were from Eigen::Random, not C++ std)
+
+The smaller value means that the sample result fits its distribution better.
+The results of EigenRand and C++ std appear to be equivalent within the margin of error.
+
+
 ## License
 MIT License
 
 ## History
+### 0.2.2 (2020-08-02)
+* Now `ParallelRandomEngineAdaptor` and `MersenneTwister` use aligned array on heap.
+
+### 0.2.1 (2020-07-11)
+* A new template class `ParallelRandomEngineAdaptor` yielding the same random sequence regardless of SIMD ISA was added.
 
 ### 0.2.0 (2020-07-04)
 * New distributions including `cauchy`, `studentT`, `fisherF`, `uniformInt`, `binomial`, `negativeBinomial`, `poisson` and `geometric` were added.
-* A new member function `uniform_real` for `PacketRandomEngine` is added.
+* A new member function `uniform_real` for `PacketRandomEngine` was added.
 
 ### 0.1.0 (2020-06-27)
 * The first version of `EigenRand`
