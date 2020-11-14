@@ -869,7 +869,7 @@ namespace Eigen
 			return _mm_i32gather_epi32(addr, index, 4);
 #else
 			uint32_t u[4];
-			_mm_storeu_si128((Packet4i*)u, index);
+			_mm_storeu_si128((__m128i*)u, index);
 			return _mm_setr_epi32(addr[u[0]], addr[u[1]], addr[u[2]], addr[u[3]]);
 #endif
 		}
@@ -881,7 +881,7 @@ namespace Eigen
 			return _mm_i32gather_ps(addr, index, 4);
 #else
 			uint32_t u[4];
-			_mm_storeu_si128((Packet4i*)u, index);
+			_mm_storeu_si128((__m128i*)u, index);
 			return _mm_setr_ps(addr[u[0]], addr[u[1]], addr[u[2]], addr[u[3]]);
 #endif
 		}
@@ -893,7 +893,7 @@ namespace Eigen
 			return _mm_i32gather_pd(addr, index, 8);
 #else
 			uint32_t u[4];
-			_mm_storeu_si128((Packet4i*)u, index);
+			_mm_storeu_si128((__m128i*)u, index);
 			if (upperhalf)
 			{
 				return _mm_setr_pd(addr[u[2]], addr[u[3]]);
