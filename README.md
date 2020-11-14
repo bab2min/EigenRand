@@ -347,6 +347,9 @@ The results of EigenRand and C++ std appear to be equivalent within the margin o
 MIT License
 
 ## History
+### 0.3.1 (2020-11-15)
+* Compiling errors in the environment `EIGEN_COMP_MINGW && __GXX_ABI_VERSION < 1004` was fixed.
+
 ### 0.3.0 (2020-10-17)
 * Potential cache conflict in generator was solved.
 * Generator classes were added for efficient reusability.
