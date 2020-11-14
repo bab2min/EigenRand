@@ -348,7 +348,7 @@ namespace Eigen
 		{
 			EIGEN_STRONG_INLINE Packet4f zero_to_one(Rng& rng)
 			{
-				return pdiv(_mm_cvtepi32_ps(pand(this->rawbits(rng), pset1<Packet4i>(0x7FFFFFFF))),
+				return pdiv((Packet4f)_mm_cvtepi32_ps(pand(this->rawbits(rng), pset1<Packet4i>(0x7FFFFFFF))),
 					pset1<Packet4f>(0x7FFFFFFF));
 			}
 
@@ -363,7 +363,7 @@ namespace Eigen
 		{
 			EIGEN_STRONG_INLINE Packet2d zero_to_one(Rng& rng)
 			{
-				return pdiv(_mm_cvtepi32_pd(pand(this->rawbits_half(rng), pset1<Packet4i>(0x7FFFFFFF))),
+				return pdiv((Packet2d)_mm_cvtepi32_pd(pand(this->rawbits_half(rng), pset1<Packet4i>(0x7FFFFFFF))),
 					pset1<Packet2d>(0x7FFFFFFF));
 			}
 

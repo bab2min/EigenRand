@@ -412,7 +412,7 @@ namespace Eigen
 			Packet4i a1, a2, b1, b2;
 			split_two(a, a1, a2);
 			split_two(b, b1, b2);
-			return combine_two(_mm_cmpeq_epi32(a1, b1), _mm_cmpeq_epi32(a2, b2));
+			return combine_two((Packet4i)_mm_cmpeq_epi32(a1, b1), (Packet4i)_mm_cmpeq_epi32(a2, b2));
 #endif
 		}
 
@@ -424,7 +424,7 @@ namespace Eigen
 #else
 			Packet4i a1, a2;
 			split_two(a, a1, a2);
-			return combine_two(_mm_slli_epi32(a1, b), _mm_slli_epi32(a2, b));
+			return combine_two((Packet4i)_mm_slli_epi32(a1, b), (Packet4i)_mm_slli_epi32(a2, b));
 #endif
 		}
 
@@ -436,7 +436,7 @@ namespace Eigen
 #else
 			Packet4i a1, a2;
 			split_two(a, a1, a2);
-			return combine_two(_mm_srli_epi32(a1, b), _mm_srli_epi32(a2, b));
+			return combine_two((Packet4i)_mm_srli_epi32(a1, b), (Packet4i)_mm_srli_epi32(a2, b));
 #endif
 		}
 
@@ -448,7 +448,7 @@ namespace Eigen
 #else
 			Packet4i a1, a2;
 			split_two(a, a1, a2);
-			return combine_two(_mm_slli_epi64(a1, b), _mm_slli_epi64(a2, b));
+			return combine_two((Packet4i)_mm_slli_epi64(a1, b), (Packet4i)_mm_slli_epi64(a2, b));
 #endif
 		}
 
@@ -460,7 +460,7 @@ namespace Eigen
 #else
 			Packet4i a1, a2;
 			split_two(a, a1, a2);
-			return combine_two(_mm_srli_epi64(a1, b), _mm_srli_epi64(a2, b));
+			return combine_two((Packet4i)_mm_srli_epi64(a1, b), (Packet4i)_mm_srli_epi64(a2, b));
 #endif
 		}
 
@@ -472,7 +472,7 @@ namespace Eigen
 			Packet4i a1, a2, b1, b2;
 			split_two(a, a1, a2);
 			split_two(b, b1, b2);
-			return combine_two(_mm_add_epi32(a1, b1), _mm_add_epi32(a2, b2));
+			return combine_two((Packet4i)_mm_add_epi32(a1, b1), (Packet4i)_mm_add_epi32(a2, b2));
 #endif
 		}
 
@@ -484,7 +484,7 @@ namespace Eigen
 			Packet4i a1, a2, b1, b2;
 			split_two(a, a1, a2);
 			split_two(b, b1, b2);
-			return combine_two(_mm_sub_epi32(a1, b1), _mm_sub_epi32(a2, b2));
+			return combine_two((Packet4i)_mm_sub_epi32(a1, b1), (Packet4i)_mm_sub_epi32(a2, b2));
 #endif
 		}
 
@@ -493,7 +493,7 @@ namespace Eigen
 #ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_and_si256(a, b);
 #else
-			return reinterpret_to_int(_mm256_and_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
+			return reinterpret_to_int((Packet8f)_mm256_and_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
 #endif
 		}
 
@@ -502,7 +502,7 @@ namespace Eigen
 #ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_andnot_si256(a, b);
 #else
-			return reinterpret_to_int(_mm256_andnot_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
+			return reinterpret_to_int((Packet8f)_mm256_andnot_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
 #endif
 		}
 
@@ -511,7 +511,7 @@ namespace Eigen
 #ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_or_si256(a, b);
 #else
-			return reinterpret_to_int(_mm256_or_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
+			return reinterpret_to_int((Packet8f)_mm256_or_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
 #endif
 		}
 
@@ -520,7 +520,7 @@ namespace Eigen
 #ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_xor_si256(a, b);
 #else
-			return reinterpret_to_int(_mm256_xor_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
+			return reinterpret_to_int((Packet8f)_mm256_xor_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
 #endif
 		}
 
@@ -660,7 +660,7 @@ namespace Eigen
 			Packet4i a1, a2, b1, b2;
 			split_two(a, a1, a2);
 			split_two(b, b1, b2);
-			return combine_two(_mm_cmpeq_epi64(a1, b1), _mm_cmpeq_epi64(a2, b2));
+			return combine_two((Packet4i)_mm_cmpeq_epi64(a1, b1), (Packet4i)_mm_cmpeq_epi64(a2, b2));
 #endif
 		}
 
@@ -869,7 +869,7 @@ namespace Eigen
 			return _mm_i32gather_epi32(addr, index, 4);
 #else
 			uint32_t u[4];
-			_mm_storeu_si128((Packet4i*)u, index);
+			_mm_storeu_si128((__m128i*)u, index);
 			return _mm_setr_epi32(addr[u[0]], addr[u[1]], addr[u[2]], addr[u[3]]);
 #endif
 		}
@@ -881,7 +881,7 @@ namespace Eigen
 			return _mm_i32gather_ps(addr, index, 4);
 #else
 			uint32_t u[4];
-			_mm_storeu_si128((Packet4i*)u, index);
+			_mm_storeu_si128((__m128i*)u, index);
 			return _mm_setr_ps(addr[u[0]], addr[u[1]], addr[u[2]], addr[u[3]]);
 #endif
 		}
@@ -893,7 +893,7 @@ namespace Eigen
 			return _mm_i32gather_pd(addr, index, 8);
 #else
 			uint32_t u[4];
-			_mm_storeu_si128((Packet4i*)u, index);
+			_mm_storeu_si128((__m128i*)u, index);
 			if (upperhalf)
 			{
 				return _mm_setr_pd(addr[u[2]], addr[u[3]]);
@@ -920,7 +920,7 @@ namespace Eigen
 		template<>
 		EIGEN_STRONG_INLINE int pmovemask<Packet4i>(const Packet4i& a)
 		{
-			return pmovemask(_mm_castsi128_ps(a));
+			return pmovemask((Packet4f)_mm_castsi128_ps(a));
 		}
 
 		template<>
@@ -958,7 +958,7 @@ namespace Eigen
 			return _mm_cmpeq_epi64(a, b);
 #else
 			Packet4i c = _mm_cmpeq_epi32(a, b);
-			return pand(c, _mm_shuffle_epi32(c, _MM_SHUFFLE(2, 3, 0, 1)));
+			return pand(c, (Packet4i)_mm_shuffle_epi32(c, _MM_SHUFFLE(2, 3, 0, 1)));
 #endif
 		}
 
