@@ -77,6 +77,9 @@ namespace Eigen
 			MvNormalGen(const MvNormalGen&) = default;
 			MvNormalGen(MvNormalGen&&) = default;
 
+			MvNormalGen& operator=(const MvNormalGen&) = default;
+			MvNormalGen& operator=(MvNormalGen&&) = default;
+
 			Index dims() const { return mean.rows(); }
 
 			template<typename Urng>
@@ -95,7 +98,7 @@ namespace Eigen
 		};
 
 		template<typename MeanTy, typename CovTy>
-		inline auto makeMvNormGen(const MatrixBase<MeanTy>& mean, const MatrixBase<CovTy>& cov)
+		inline auto makeMvNormalGen(const MatrixBase<MeanTy>& mean, const MatrixBase<CovTy>& cov)
 			-> MvNormalGen<typename MatrixBase<MeanTy>::Scalar, MatrixBase<MeanTy>::RowsAtCompileTime>
 		{
 			static_assert(
@@ -111,7 +114,7 @@ namespace Eigen
 		}
 
 		template<typename MeanTy, typename LTTy>
-		inline auto makeMvNormGenFromLt(const MatrixBase<MeanTy>& mean, const MatrixBase<LTTy>& lt)
+		inline auto makeMvNormalGenFromLt(const MatrixBase<MeanTy>& mean, const MatrixBase<LTTy>& lt)
 			-> MvNormalGen<typename MatrixBase<MeanTy>::Scalar, MatrixBase<MeanTy>::RowsAtCompileTime>
 		{
 			static_assert(
@@ -158,6 +161,9 @@ namespace Eigen
 
 			WishartGen(const WishartGen&) = default;
 			WishartGen(WishartGen&&) = default;
+
+			WishartGen& operator=(const WishartGen&) = default;
+			WishartGen& operator=(WishartGen&&) = default;
 
 			Index dims() const { return chol.rows(); }
 
@@ -282,6 +288,9 @@ namespace Eigen
 
 			InvWishartGen(const InvWishartGen&) = default;
 			InvWishartGen(InvWishartGen&&) = default;
+
+			InvWishartGen& operator=(const InvWishartGen&) = default;
+			InvWishartGen& operator=(InvWishartGen&&) = default;
 
 			Index dims() const { return chol.rows(); }
 

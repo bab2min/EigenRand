@@ -94,6 +94,9 @@ namespace Eigen
 			NormalGen(const NormalGen&) = default;
 			NormalGen(NormalGen&&) = default;
 
+			NormalGen& operator=(const NormalGen&) = default;
+			NormalGen& operator=(NormalGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -129,6 +132,9 @@ namespace Eigen
 			LognormalGen(const LognormalGen&) = default;
 			LognormalGen(LognormalGen&&) = default;
 
+			LognormalGen& operator=(const LognormalGen&) = default;
+			LognormalGen& operator=(LognormalGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -161,6 +167,9 @@ namespace Eigen
 
 			StudentTGen(const StudentTGen&) = default;
 			StudentTGen(StudentTGen&&) = default;
+
+			StudentTGen& operator=(const StudentTGen&) = default;
+			StudentTGen& operator=(StudentTGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
@@ -220,6 +229,9 @@ namespace Eigen
 			ExponentialGen(const ExponentialGen&) = default;
 			ExponentialGen(ExponentialGen&&) = default;
 
+			ExponentialGen& operator=(const ExponentialGen&) = default;
+			ExponentialGen& operator=(ExponentialGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -261,6 +273,9 @@ namespace Eigen
 
 			GammaGen(const GammaGen&) = default;
 			GammaGen(GammaGen&&) = default;
+
+			GammaGen& operator=(const GammaGen&) = default;
+			GammaGen& operator=(GammaGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
@@ -418,6 +433,9 @@ namespace Eigen
 			WeibullGen(const WeibullGen&) = default;
 			WeibullGen(WeibullGen&&) = default;
 
+			WeibullGen& operator=(const WeibullGen&) = default;
+			WeibullGen& operator=(WeibullGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -453,6 +471,9 @@ namespace Eigen
 			ExtremeValueGen(const ExtremeValueGen&) = default;
 			ExtremeValueGen(ExtremeValueGen&&) = default;
 
+			ExtremeValueGen& operator=(const ExtremeValueGen&) = default;
+			ExtremeValueGen& operator=(ExtremeValueGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -487,6 +508,9 @@ namespace Eigen
 			ChiSquaredGen(const ChiSquaredGen&) = default;
 			ChiSquaredGen(ChiSquaredGen&&) = default;
 
+			ChiSquaredGen& operator=(const ChiSquaredGen&) = default;
+			ChiSquaredGen& operator=(ChiSquaredGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -517,6 +541,9 @@ namespace Eigen
 
 			CauchyGen(const CauchyGen&) = default;
 			CauchyGen(CauchyGen&&) = default;
+
+			CauchyGen& operator=(const CauchyGen&) = default;
+			CauchyGen& operator=(CauchyGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
@@ -562,6 +589,9 @@ namespace Eigen
 
 			BetaGen(const BetaGen&) = default;
 			BetaGen(BetaGen&&) = default;
+
+			BetaGen& operator=(const BetaGen&) = default;
+			BetaGen& operator=(BetaGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
@@ -630,6 +660,9 @@ namespace Eigen
 			
 			FisherFGen(const FisherFGen&) = default;
 			FisherFGen(FisherFGen&&) = default;
+
+			FisherFGen& operator=(const FisherFGen&) = default;
+			FisherFGen& operator=(FisherFGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)

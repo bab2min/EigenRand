@@ -190,6 +190,39 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 		auto scope = bh.measure("discrete/int(s=250)" + suffix, xi);
 		xi = Eigen::Rand::discreteLike(xi, urng, ws.begin(), ws.end());
 	}
+
+	{
+		auto scope = bh.measure("bernoulli/int" + suffix, xi);
+		xi = Eigen::Rand::bernoulli(xi, urng, 1. / 3);
+	}
+
+	{
+		auto scope = bh.measure("bernoulli/int/gen" + suffix, xi);
+		Eigen::Rand::BernoulliGen<int32_t> gen{ 1. / 3};
+		xi = gen.generateLike(xi, urng);
+	}
+
+	{
+		auto scope = bh.measure("bernoulli" + suffix, x);
+		x = Eigen::Rand::bernoulli(x, urng, 1. / 3);
+	}
+
+	{
+		auto scope = bh.measure("bernoulli/gen" + suffix, x);
+		Eigen::Rand::BernoulliGen<float> gen{ 1. / 3 };
+		x = gen.generateLike(x, urng);
+	}
+
+	{
+		auto scope = bh.measure("bernoulli/double" + suffix, xd);
+		xd = Eigen::Rand::bernoulli(xd, urng, 1. / 3);
+	}
+
+	{
+		auto scope = bh.measure("bernoulli/double/gen" + suffix, x);
+		Eigen::Rand::BernoulliGen<double> gen{ 1. / 3 };
+		xd = gen.generateLike(xd, urng);
+	}
 	
 	{
 		auto scope = bh.measure("balanced" + suffix, x);

@@ -235,6 +235,9 @@ namespace Eigen
 			UniformIntGen(const UniformIntGen&) = default;
 			UniformIntGen(UniformIntGen&&) = default;
 
+			UniformIntGen& operator=(const UniformIntGen&) = default;
+			UniformIntGen& operator=(UniformIntGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -354,6 +357,12 @@ namespace Eigen
 			{
 			}
 
+			DiscreteGen(const DiscreteGen&) = default;
+			DiscreteGen(DiscreteGen&&) = default;
+
+			DiscreteGen& operator=(const DiscreteGen&) = default;
+			DiscreteGen& operator=(DiscreteGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -459,6 +468,12 @@ namespace Eigen
 			{
 			}
 
+			DiscreteGen(const DiscreteGen&) = default;
+			DiscreteGen(DiscreteGen&&) = default;
+
+			DiscreteGen& operator=(const DiscreteGen&) = default;
+			DiscreteGen& operator=(DiscreteGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -546,6 +561,12 @@ namespace Eigen
 			{
 			}
 
+			DiscreteGen(const DiscreteGen&) = default;
+			DiscreteGen(DiscreteGen&&) = default;
+
+			DiscreteGen& operator=(const DiscreteGen&) = default;
+			DiscreteGen& operator=(DiscreteGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -632,6 +653,12 @@ namespace Eigen
 				log_mean = std::log(mean);
 				g1 = mean * log_mean - std::lgamma(mean + 1);
 			}
+
+			PoissonGen(const PoissonGen&) = default;
+			PoissonGen(PoissonGen&&) = default;
+
+			PoissonGen& operator=(const PoissonGen&) = default;
+			PoissonGen& operator=(PoissonGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
@@ -740,6 +767,12 @@ namespace Eigen
 					log_small_q = std::log(1 - small_p);
 				}
 			}
+
+			BinomialGen(const BinomialGen&) = default;
+			BinomialGen(BinomialGen&&) = default;
+
+			BinomialGen& operator=(const BinomialGen&) = default;
+			BinomialGen& operator=(BinomialGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
@@ -859,6 +892,12 @@ namespace Eigen
 				: p{ _p }, rlog_q{ 1 / std::log(1 - p) }
 			{
 			}
+
+			GeometricGen(const GeometricGen&) = default;
+			GeometricGen(GeometricGen&&) = default;
+
+			GeometricGen& operator=(const GeometricGen&) = default;
+			GeometricGen& operator=(GeometricGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
