@@ -527,7 +527,14 @@ namespace Eigen
 		template<>
 		EIGEN_STRONG_INLINE Packet8i pcmplt<Packet8i>(const Packet8i& a, const Packet8i& b)
 		{
+#ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_cmpgt_epi32(b, a);
+#else
+			Packet4i a1, a2, b1, b2;
+			split_two(a, a1, a2);
+			split_two(b, b1, b2);
+			return combine_two((Packet4i)_mm256_cmpgt_epi32(b1, a1), (Packet4i)_mm256_cmpgt_epi32(b2, a2));
+#endif
 		}
 
 		template<>
