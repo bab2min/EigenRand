@@ -533,7 +533,7 @@ namespace Eigen
 			Packet4i a1, a2, b1, b2;
 			split_two(a, a1, a2);
 			split_two(b, b1, b2);
-			return combine_two((Packet4i)_mm256_cmpgt_epi32(b1, a1), (Packet4i)_mm256_cmpgt_epi32(b2, a2));
+			return combine_two((Packet4i)_mm_cmpgt_epi32(b1, a1), (Packet4i)_mm_cmpgt_epi32(b2, a2));
 #endif
 		}
 
