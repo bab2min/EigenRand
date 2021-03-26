@@ -48,19 +48,27 @@ namespace Eigen
 		
 
 		/**
-		 * @brief Generator of multivariate normal distribution
+		 * @brief Generator of real vectors on a multivariate normal distribution
 		 * 
 		 * @tparam _Scalar Numeric type
 		 * @tparam Dim number of dimensions, or `Eigen::Dynamic`
 		 */
 		template<typename _Scalar, Index Dim = -1>
-		class MvNormalGen
+		class MvNormalGen : public MvVecGenBase<MvNormalGen<_Scalar, Dim>, _Scalar, Dim>
 		{
 			Matrix<_Scalar, Dim, 1> mean;
 			Matrix<_Scalar, Dim, Dim> lt;
 			StdNormalGen<_Scalar> stdnorm;
 
 		public:
+			/**
+			 * @brief Construct a new multivariate normal generator from lower triangular matrix of decomposed covariance
+			 * 
+			 * @tparam MeanTy 
+			 * @tparam LTTy 
+			 * @param _mean mean vector of the distribution
+			 * @param _lt lower triangular matrix of decomposed covariance
+			 */
 			template<typename MeanTy, typename LTTy>
 			MvNormalGen(const MatrixBase<MeanTy>& _mean, const MatrixBase<LTTy>& _lt, detail::LowerTriangular)
 				: mean{ _mean }, lt{ _lt }
@@ -68,6 +76,14 @@ namespace Eigen
 				eigen_assert(_mean.cols() == 1 && _mean.rows() == _lt.rows() && _lt.rows() == _lt.cols());
 			}
 
+			/**
+			 * @brief Construct a new multivariate normal generator from covariance matrix
+			 * 
+			 * @tparam MeanTy 
+			 * @tparam CovTy 
+			 * @param _mean mean vector of the distribution
+			 * @param _cov covariance matrix (should be positive semi-definite)
+			 */
 			template<typename MeanTy, typename CovTy>
 			MvNormalGen(const MatrixBase<MeanTy>& _mean, const MatrixBase<CovTy>& _cov, detail::FullMatrix = {})
 				: MvNormalGen{ _mean, detail::template get_lt<_Scalar, Dim>(_cov), lower_triangular }
@@ -97,6 +113,14 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief helper function constructing Eigen::Rand::MvNormal
+		 * 
+		 * @tparam MeanTy 
+		 * @tparam CovTy 
+		 * @param mean mean vector of the distribution
+		 * @param cov covariance matrix (should be positive semi-definite)
+		 */
 		template<typename MeanTy, typename CovTy>
 		inline auto makeMvNormalGen(const MatrixBase<MeanTy>& mean, const MatrixBase<CovTy>& cov)
 			-> MvNormalGen<typename MatrixBase<MeanTy>::Scalar, MatrixBase<MeanTy>::RowsAtCompileTime>
@@ -113,6 +137,14 @@ namespace Eigen
 			return { mean, cov };
 		}
 
+		/**
+		 * @brief helper function constructing Eigen::Rand::MvNormal
+		 * 
+		 * @tparam MeanTy 
+		 * @tparam LTTy 
+		 * @param mean mean vector of the distribution
+		 * @param lt lower triangular matrix of decomposed covariance
+		 */
 		template<typename MeanTy, typename LTTy>
 		inline auto makeMvNormalGenFromLt(const MatrixBase<MeanTy>& mean, const MatrixBase<LTTy>& lt)
 			-> MvNormalGen<typename MatrixBase<MeanTy>::Scalar, MatrixBase<MeanTy>::RowsAtCompileTime>
@@ -129,16 +161,27 @@ namespace Eigen
 			return { mean, lt, lower_triangular };
 		}
 
-
+		/**
+		 * @brief Generator of real matrices on a Wishart distribution
+		 * 
+		 * @tparam _Scalar 
+		 * @tparam Dim number of dimensions, or `Eigen::Dynamic`
+		 */
 		template<typename _Scalar, Index Dim>
-		class WishartGen
+		class WishartGen : public MvMatGenBase<WishartGen<_Scalar, Dim>, _Scalar, Dim>
 		{
 			Index df;
 			Matrix<_Scalar, Dim, Dim> chol;
 			StdNormalGen<_Scalar> stdnorm;
 			std::vector<ChiSquaredGen<_Scalar>> chisqs;
 		public:
-
+			/**
+			 * @brief Construct a new Wishart generator from lower triangular matrix of decomposed scale
+			 * 
+			 * @tparam ScaleTy 
+			 * @param _df degrees of freedom
+			 * @param _lt lower triangular matrix of decomposed scale
+			 */
 			template<typename ScaleTy>
 			WishartGen(Index _df, const MatrixBase<ScaleTy>& _lt, detail::LowerTriangular)
 				: df{ _df }, chol{ _lt }
@@ -152,6 +195,13 @@ namespace Eigen
 				}
 			}
 
+			/**
+			 * @brief Construct a new Wishart generator from scale matrix
+			 * 
+			 * @tparam ScaleTy 
+			 * @param _df degrees of freedom
+			 * @param _lt scale matrix (should be positive definitive)
+			 */
 			template<typename ScaleTy>
 			WishartGen(Index _df, const MatrixBase<ScaleTy>& _scale, detail::FullMatrix = {})
 				: WishartGen{ _df, detail::template get_lt<_Scalar, Dim>(_scale), lower_triangular }
@@ -235,6 +285,13 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief helper function constructing Eigen::Rand::WishartGen
+		 * 
+		 * @tparam ScaleTy 
+		 * @param df degrees of freedom
+		 * @param scale scale matrix (should be positive definitive)
+		 */
 		template<typename ScaleTy>
 		inline auto makeWishartGen(Index df, const MatrixBase<ScaleTy>& scale)
 			-> WishartGen<typename MatrixBase<ScaleTy>::Scalar, MatrixBase<ScaleTy>::RowsAtCompileTime>
@@ -246,6 +303,13 @@ namespace Eigen
 			return { df, scale };
 		}
 
+		/**
+		 * @brief helper function constructing Eigen::Rand::WishartGen
+		 * 
+		 * @tparam LTTy 
+		 * @param df degrees of freedom
+		 * @param lt lower triangular matrix of decomposed scale
+		 */
 		template<typename LTTy>
 		inline auto makeWishartGenFromLt(Index df, const MatrixBase<LTTy>& lt)
 			-> WishartGen<typename MatrixBase<LTTy>::Scalar, MatrixBase<LTTy>::RowsAtCompileTime>
@@ -257,15 +321,27 @@ namespace Eigen
 			return { df, lt, lower_triangular };
 		}
 
+		/**
+		 * @brief Generator of real matrices on a inverse Wishart distribution
+		 * 
+		 * @tparam _Scalar 
+		 * @tparam Dim number of dimensions, or `Eigen::Dynamic`
+		 */
 		template<typename _Scalar, Index Dim>
-		class InvWishartGen
+		class InvWishartGen : public MvMatGenBase<InvWishartGen<_Scalar, Dim>, _Scalar, Dim>
 		{
 			Index df;
 			Matrix<_Scalar, Dim, Dim> chol;
 			StdNormalGen<_Scalar> stdnorm;
 			std::vector<ChiSquaredGen<_Scalar>> chisqs;
 		public:
-
+			/**
+			 * @brief Construct a new inverse Wishart generator
+			 * 
+			 * @tparam ScaleTy 
+			 * @param _df degrees of freedom
+			 * @param _ilt lower triangular matrix of decomposed inverse scale
+			 */
 			template<typename ScaleTy>
 			InvWishartGen(Index _df, const MatrixBase<ScaleTy>& _ilt, detail::InvLowerTriangular)
 				: df{ _df }, chol{ _ilt }
@@ -279,6 +355,13 @@ namespace Eigen
 				}
 			}
 
+			/**
+			 * @brief Construct a new inverse Wishart generator
+			 * 
+			 * @tparam ScaleTy 
+			 * @param _df degrees of freedom
+			 * @param _scale scale matrix (should be positive definitive)
+			 */
 			template<typename ScaleTy>
 			InvWishartGen(Index _df, const MatrixBase<ScaleTy>& _scale, detail::FullMatrix = {})
 				: InvWishartGen{ _df, detail::template get_lt<_Scalar, Dim>(_scale.inverse()), inv_lower_triangular }
@@ -368,6 +451,13 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief helper function constructing Eigen::Rand::InvWishartGen
+		 * 
+		 * @tparam ScaleTy 
+		 * @param df degrees of freedom
+		 * @param scale scale matrix
+		 */
 		template<typename ScaleTy>
 		inline auto makeInvWishartGen(Index df, const MatrixBase<ScaleTy>& scale)
 			-> InvWishartGen<typename MatrixBase<ScaleTy>::Scalar, MatrixBase<ScaleTy>::RowsAtCompileTime>
@@ -379,6 +469,13 @@ namespace Eigen
 			return { df, scale };
 		}
 
+		/**
+		 * @brief helper function constructing Eigen::Rand::InvWishartGen
+		 * 
+		 * @tparam ILTTy 
+		 * @param df degrees of freedom
+		 * @param ilt lower triangular matrix of decomposed inverse scale
+		 */
 		template<typename ILTTy>
 		inline auto makeInvWishartGenFromIlt(Index df, const MatrixBase<ILTTy>& ilt)
 			-> InvWishartGen<typename MatrixBase<ILTTy>::Scalar, MatrixBase<ILTTy>::RowsAtCompileTime>

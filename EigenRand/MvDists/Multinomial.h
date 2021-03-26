@@ -16,14 +16,27 @@ namespace Eigen
 {
 	namespace Rand
 	{
+		/**
+		 * @brief Generator of real vectors on a multinomial distribution
+		 * 
+		 * @tparam _Scalar 
+		 * @tparam Dim number of dimensions, or `Eigen::Dynamic`
+		 */
 		template<typename _Scalar = int32_t, Index Dim = -1>
-		class MultinomialGen
+		class MultinomialGen : public MvVecGenBase<MultinomialGen<_Scalar, Dim>, _Scalar, Dim>
 		{
 			static_assert(std::is_same<_Scalar, int32_t>::value, "`MultinomialGen` needs integral types.");
 			_Scalar trials;
 			Matrix<double, Dim, 1> probs;
 			DiscreteGen<_Scalar> discrete;
 		public:
+			/**
+			 * @brief Construct a new multinomial generator
+			 * 
+			 * @tparam WeightTy 
+			 * @param _trials the number of trials
+			 * @param _weights the weights of each category, `(Dim, 1)` shape matrix or vector
+			 */
 			template<typename WeightTy>
 			MultinomialGen(_Scalar _trials, const MatrixBase<WeightTy>& _weights)
 				: trials{ _trials }, probs{ _weights.template cast<double>() }, discrete(probs.data(), probs.data() + probs.size())
@@ -108,6 +121,16 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief helper function constructing Eigen::Rand::MultinomialGen
+		 * 
+		 * @tparam IntTy 
+		 * @tparam WeightTy 
+		 * @param trials the number of trials
+		 * @param probs The weights of each category with shape `(Dim, 1)` of matrix or vector.
+		 * The number of entries determines the dimensionality of the distribution
+		 * @return an instance of MultinomialGen in the appropriate type
+		 */
 		template<typename IntTy, typename WeightTy>
 		inline auto makeMultinomialGen(IntTy trials, const MatrixBase<WeightTy>& probs)
 			-> MultinomialGen<IntTy, MatrixBase<WeightTy>::RowsAtCompileTime>
@@ -115,12 +138,24 @@ namespace Eigen
 			return MultinomialGen<IntTy, MatrixBase<WeightTy>::RowsAtCompileTime>{ trials, probs };
 		}
 
+		/**
+		 * @brief Generator of reals on a Dirichlet distribution
+		 * 
+		 * @tparam _Scalar 
+		 * @tparam Dim number of dimensions, or `Eigen::Dynamic`
+		 */
 		template<typename _Scalar, Index Dim = -1>
-		class DirichletGen
+		class DirichletGen : public MvVecGenBase<DirichletGen<_Scalar, Dim>, _Scalar, Dim>
 		{
 			Matrix<_Scalar, Dim, 1> alpha;
 			std::vector<GammaGen<_Scalar>> gammas;
 		public:
+			/**
+			 * @brief Construct a new Dirichlet generator
+			 * 
+			 * @tparam AlphaTy 
+			 * @param _alpha the concentration parameters with shape `(Dim, 1)` matrix or vector
+			 */
 			template<typename AlphaTy>
 			DirichletGen(const MatrixBase<AlphaTy>& _alpha)
 				: alpha{ _alpha }
@@ -167,6 +202,14 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief helper function constructing Eigen::Rand::DirichletGen
+		 * 
+		 * @tparam AlphaTy 
+		 * @param alpha The concentration parameters with shape `(Dim, 1)` of matrix or vector.
+		 * The number of entries determines the dimensionality of the distribution.
+		 * @return an instance of MultinomialGen in the appropriate type
+		 */
 		template<typename AlphaTy>
 		inline auto makeDirichletGen(const MatrixBase<AlphaTy>& alpha)
 			-> DirichletGen<typename MatrixBase<AlphaTy>::Scalar, MatrixBase<AlphaTy>::RowsAtCompileTime>

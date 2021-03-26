@@ -20,7 +20,7 @@ You can get 5~10 times speed by just replacing old Eigen's Random or unvectoriza
 
 ## Requirement
 
-* Eigen 3.3.7
+* Eigen 3.3.7 or later
 * C++11-compatible compilers
 
 ## Documentation
@@ -31,32 +31,44 @@ https://bab2min.github.io/eigenrand/
 
 ### Random distributions for real types
 
-| Function | Scalar Type | Description | Equivalent to |
-|:---:|:---:|:---:|:---:|
-| `Eigen::Rand::balanced` | float, double | generates real values in the [-1, 1] range | `Eigen::DenseBase<Ty>::Random` for floating point types |
-| `Eigen::Rand::cauchy` | float, double | generates real values on the [Cauchy distribution](https://en.wikipedia.org/wiki/Cauchy_distribution). | `std::cauchy_distribution` |
-| `Eigen::Rand::chiSquared` | float, double | generates real values on a [chi-squared distribution](https://en.wikipedia.org/wiki/Chi-squared_distribution). | `std::chi_squared_distribution` |
-| `Eigen::Rand::exponential` | float, double | generates real values on an [exponential distribution](https://en.wikipedia.org/wiki/Exponential_distribution). | `std::exponential_distribution` |
-| `Eigen::Rand::extremeValue` | float, double | generates real values on an [extreme value distribution](https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution). | `std::extreme_value_distribution` |
-| `Eigen::Rand::fisherF` | float, double | generates real values on the [Fisher's F distribution](https://en.wikipedia.org/wiki/F_distribution). | `std::fisher_f_distribution` |
-| `Eigen::Rand::gamma` | float, double | generates real values on a [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution). | `std::gamma_distribution` |
-| `Eigen::Rand::lognormal` | float, double | generates real values on a [lognormal distribution](https://en.wikipedia.org/wiki/Lognormal_distribution). | `std::lognormal_distribution` |
-| `Eigen::Rand::normal` | float, double | generates real values on a [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution). | `std::normal_distribution` |
-| `Eigen::Rand::studentT` | float, double | generates real values on the [Student's t distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution). | `std::student_t_distribution` |
-| `Eigen::Rand::uniformReal` | float, double | generates real values in the `[-1, 0)` range. | `std::generate_canonical` |
-| `Eigen::Rand::weibull` | float, double | generates real values on the [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution). | `std::weibull_distribution` |
+| Function | Generator | Scalar Type | Description | Equivalent to |
+|:---:|:---:|:---:|:---:|:---:|
+| `Eigen::Rand::balanced` | `Eigen::Rand::BalancedGen` | float, double | generates real values in the [-1, 1] range | `Eigen::DenseBase<Ty>::Random` for floating point types |
+| `Eigen::Rand::beta` | `Eigen::Rand::BetaGen` | float, double | generates real values on a [beta distribution](https://en.wikipedia.org/wiki/Beta_distribution) |  |
+| `Eigen::Rand::cauchy` | `Eigen::Rand::CauchyGen` | float, double | generates real values on the [Cauchy distribution](https://en.wikipedia.org/wiki/Cauchy_distribution). | `std::cauchy_distribution` |
+| `Eigen::Rand::chiSquared` | `Eigen::Rand::ChiSquaredGen` | float, double | generates real values on a [chi-squared distribution](https://en.wikipedia.org/wiki/Chi-squared_distribution). | `std::chi_squared_distribution` |
+| `Eigen::Rand::exponential` | `Eigen::Rand::ExponentialGen` | float, double | generates real values on an [exponential distribution](https://en.wikipedia.org/wiki/Exponential_distribution). | `std::exponential_distribution` |
+| `Eigen::Rand::extremeValue` | `Eigen::Rand::ExtremeValueGen` | float, double | generates real values on an [extreme value distribution](https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution). | `std::extreme_value_distribution` |
+| `Eigen::Rand::fisherF` | `Eigen::Rand::FisherFGen` | float, double | generates real values on the [Fisher's F distribution](https://en.wikipedia.org/wiki/F_distribution). | `std::fisher_f_distribution` |
+| `Eigen::Rand::gamma` | `Eigen::Rand::GammaGen` | float, double | generates real values on a [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution). | `std::gamma_distribution` |
+| `Eigen::Rand::lognormal` | `Eigen::Rand::LognormalGen` | float, double | generates real values on a [lognormal distribution](https://en.wikipedia.org/wiki/Lognormal_distribution). | `std::lognormal_distribution` |
+| `Eigen::Rand::normal` | `Eigen::Rand::StdNormalGen`, `Eigen::Rand::NormalGen` | float, double | generates real values on a [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution). | `std::normal_distribution` |
+| `Eigen::Rand::studentT` | `Eigen::Rand::StudentTGen` | float, double | generates real values on the [Student's t distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution). | `std::student_t_distribution` |
+| `Eigen::Rand::uniformReal` | `Eigen::Rand::UniformRealGen` | float, double | generates real values in the `[0, 1)` range. | `std::generate_canonical` |
+| `Eigen::Rand::weibull` | `Eigen::Rand::WeibullGen` | float, double | generates real values on the [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution). | `std::weibull_distribution` |
 
 ### Random distributions for integer types
 
-| Function | Scalar Type | Description | Equivalent to |
-|:---:|:---:|:---:|:---:|
-| `Eigen::Rand::binomial` | int | generates integers on a [binomial distribution](https://en.wikipedia.org/wiki/Binomial_distribution). | `std::binomial_distribution` |
-| `Eigen::Rand::discrete` | int | generates random integers on a discrete distribution. | `std::discrete_distribution` |
-| `Eigen::Rand::geometric` | int | generates integers on a [geometric distribution](https://en.wikipedia.org/wiki/Geometric_distribution). | `std::geometric_distribution` |
-| `Eigen::Rand::negativeBinomial` | int | generates integers on a [negative binomial distribution](https://en.wikipedia.org/wiki/Negative_binomial_distribution). | `std::negative_binomial_distribution` |
-| `Eigen::Rand::poisson` | int | generates integers on the [Poisson distribution](https://en.wikipedia.org/wiki/Poisson_distribution). | `std::poisson_distribution` |
-| `Eigen::Rand::randBits` | int | generates integers with random bits. | `Eigen::DenseBase<Ty>::Random` for integer types |
-| `Eigen::Rand::uniformInt` | int | generates integers in the `[min, max]` range. | `std::uniform_int_distribution` |
+| Function | Generator | Scalar Type | Description | Equivalent to |
+|:---:|:---:|:---:|:---:|:---:|
+| `Eigen::Rand::binomial` | `Eigen::Rand::BinomialGen` | int | generates integers on a [binomial distribution](https://en.wikipedia.org/wiki/Binomial_distribution). | `std::binomial_distribution` |
+| `Eigen::Rand::discrete` | `Eigen::Rand::DiscreteGen` | int | generates random integers on a discrete distribution. | `std::discrete_distribution` |
+| `Eigen::Rand::geometric` | `Eigen::Rand::GeometricGen` | int | generates integers on a [geometric distribution](https://en.wikipedia.org/wiki/Geometric_distribution). | `std::geometric_distribution` |
+| `Eigen::Rand::negativeBinomial` | `Eigen::Rand::NegativeBinomialGen` | int | generates integers on a [negative binomial distribution](https://en.wikipedia.org/wiki/Negative_binomial_distribution). | `std::negative_binomial_distribution` |
+| `Eigen::Rand::poisson` | `Eigen::Rand::PoissonGen` | int | generates integers on the [Poisson distribution](https://en.wikipedia.org/wiki/Poisson_distribution). | `std::poisson_distribution` |
+| `Eigen::Rand::randBits` | `Eigen::Rand::RandbitsGen` | int | generates integers with random bits. | `Eigen::DenseBase<Ty>::Random` for integer types |
+| `Eigen::Rand::uniformInt` | `Eigen::Rand::UniformIntGen` | int | generates integers in the `[min, max]` range. | `std::uniform_int_distribution` |
+
+### Multivariate distributions for real vectors and matrices
+
+| Generator | Description | Equivalent to |
+|:---:|:---:|:---:|
+| `Eigen::Rand::MultinomialGen` | generates real vectors on a [multinomial distribution](https://en.wikipedia.org/wiki/Multinomial_distribution) | [scipy.stats.multinomial in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multinomial.html#scipy.stats.multinomial) |
+| `Eigen::Rand::DirichletGen` | generates real vectors on a [Dirichlet distribution](https://en.wikipedia.org/wiki/Dirichlet_distribution) | [scipy.stats.dirichlet in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.dirichlet.html#scipy.stats.dirichlet) |
+| `Eigen::Rand::MvNormalGen` | generates real vectors on a [multivariate normal distribution](https://en.wikipedia.org/wiki/Multivariate_normal_distribution) | [scipy.stats.multivariate_normal in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multivariate_normal.html#scipy.stats.multivariate_normal) |
+| `Eigen::Rand::WishartGen` | generates real matrices on a [Wishart distribution](https://en.wikipedia.org/wiki/Wishart_distribution) | [scipy.stats.wishart in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wishart.html#scipy.stats.wishart) |
+| `Eigen::Rand::InvWishartGen` | generates real matrices on a [inverse Wishart distribution](https://en.wikipedia.org/wiki/Inverse-Wishart_distribution) | [scipy.stats.invwishart in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.invwishart.html#scipy.stats.invwishart) |
+
 
 ### Random number engines
 
@@ -65,6 +77,17 @@ https://bab2min.github.io/eigenrand/
 | `Eigen::Rand::Vmt19937_64` | a vectorized version of Mersenne Twister algorithm. It generates two 64bit random integers simultaneously with SSE2 and four integers with AVX2. | `std::mt19937_64` |
 
 ## Performance
+The following charts show the relative speed-up of EigenRand compared to references(equivalent functions of C++ std or Eigen).
+
+![Perf_no_vect](/doxygen/images/perf_no_vect.png)
+![Perf_no_vect](/doxygen/images/perf_sse2.png)
+![Perf_no_vect](/doxygen/images/perf_avx.png)
+![Perf_no_vect](/doxygen/images/perf_avx2.png)
+
+The following charts are about multivariate distributions.
+![Perf_no_vect](/doxygen/images/perf_mv_part1.png)
+![Perf_no_vect](/doxygen/images/perf_mv_part2.png)
+
 
 The following result is a measure of the time in seconds it takes to generate 1M random numbers. 
 It shows the average of 20 times.
@@ -113,6 +136,22 @@ It shows the average of 20 times.
 | Mersenne Twister(int32) | 4.7 | 5.6 | 4.0 | 3.7 | 3.5 | 3.6 |
 | Mersenne Twister(int64) | 5.4 | 5.3 | 4.0 | 3.9 | 3.4 | 2.6 |
 
+|  | Python 3.6 + scipy 1.5.2 + numpy 1.19.2 | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) | EigenRand (AVX2) |
+|---|---:|---:|---:|---:|---:|---:|
+| `Dirichlet(4)` | 6.47 | 6.60 | 2.39 | 2.49 | 1.34 | 1.67 |
+| `Dirichlet(100)` | 75.95 | 189.97 | 66.60 | 72.11 | 38.86 | 34.98 |
+| `InvWishart(4)` | 140.18 | 7.62 | 4.21 | 4.54 | 3.58 | 3.39 |
+| `InvWishart(50)` | 1510.47 | 1737.4 | 697.39 | 733.69 | 604.59 | 554.006 |
+| `Multinomial(4, t=20)` | 3.32 | 4.12 | 0.95 | 1.06 | 1.00 | 1.03 |
+| `Multinomial(4, t=1000)` | 3.51 | 192.51 | 35.99 | 39.58 | 27.84 | 35.45 |
+| `Multinomial(100, t=20)` | 69.19 | 4.80 | 2.00 | 2.20 | 2.28 | 2.09 |
+| `Multinomial(100, t=1000)` | 139.74 | 179.43 | 49.48 | 56.19 | 40.78 | 43.18 |
+| `MvNormal(4)` | 2.32 | 0.96 | 0.36 | 0.37 | 0.25 | 0.30 |
+| `MvNormal(100)` | 49.09 | 57.18 | 17.17 | 18.51 | 10.82 | 11.03 |
+| `Wishart(4)` | 71.19 | 5.28 | 2.70 | 2.93 | 2.04 | 1.94 |
+| `Wishart(50)` | 1185.26 | 1360.49 | 492.91 | 517.44 | 359.03 | 324.60 |
+
+
 ### Intel(R) Xeon(R) CPU E5-1650 v2 @ 3.50GHz (macOS 10.15, clang-1103)
 
 |  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) |
@@ -157,6 +196,23 @@ It shows the average of 20 times.
 | Mersenne Twister(int32) | 6.2 | 6.4 | 1.7 | 2.0 | 1.8 |
 | Mersenne Twister(int64) | 6.4 | 6.3 | 2.5 | 3.1 | 2.4 |
 
+
+|  | Python 3.6 + scipy 1.5.2 + numpy 1.19.2 | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) |
+|---|---:|---:|---:|---:|---:|
+| `Dirichlet(4)` | 3.54 | 3.29 | 1.25 | 1.25 | 0.83 |
+| `Dirichlet(100)` | 57.63 | 145.32 | 49.71 | 49.50 | 29.13 |
+| `InvWishart(4)` | 210.92 | 7.53 | 3.72 | 3.66 | 3.10 |
+| `InvWishart(50)` | 1980.73 | 1446.40 | 560.40 | 559.73 | 457.07 |
+| `Multinomial(4, t=20)` | 2.60 | 5.22 | 1.48 | 1.50 | 1.42 |
+| `Multinomial(4, t=1000)` | 3.90 | 208.75 | 29.19 | 29.50 | 27.70 |
+| `Multinomial(100, t=20)` | 47.71 | 7.09 | 3.71 | 3.63 | 3.60 |
+| `Multinomial(100, t=1000)` | 128.69 | 215.19 | 44.48 | 44.63 | 43.76 |
+| `MvNormal(4)` | 2.04 | 1.05 | 0.35 | 0.34 | 0.19 |
+| `MvNormal(100)` | 48.69 | 47.10 | 16.25 | 16.12 | 11.41 |
+| `Wishart(4)` | 81.11 | 13.24 | 9.87 | 9.81 | 5.90 |
+| `Wishart(50)` | 1419.02 | 1087.40 | 448.06 | 442.97 | 328.20 |
+
+
 ### Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Windows Server 2019, MSVC2019)
 
 |  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
@@ -200,6 +256,23 @@ It shows the average of 20 times.
 |---|---:|---:|---:|---:|---:|
 | Mersenne Twister(int32) | 6.5 | 6.4 | 5.6 | 5.1 | 4.5 |
 | Mersenne Twister(int64) | 6.6 | 6.5 | 6.9 | 5.9 | 5.1 |
+
+
+|  | Python 3.6 + scipy 1.5.2 + numpy 1.19.2 | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
+|---|---:|---:|---:|---:|---:|
+| `Dirichlet(4)` | 4.27 | 3.20 | 2.31 | 1.43 | 1.25 |
+| `Dirichlet(100)` | 69.61 | 150.33 | 67.01 | 47.34 | 32.47 |
+| `InvWishart(4)` | 482.87 | 14.52 | 8.88 | 13.17 | 11.28 |
+| `InvWishart(50)` | 2222.72 | 2211.66 | 902.34 | 775.36 | 610.60 |
+| `Multinomial(4, t=20)` | 2.99 | 5.41 | 1.99 | 1.92 | 1.78 |
+| `Multinomial(4, t=1000)` | 4.23 | 235.84 | 49.73 | 42.41 | 40.76 |
+| `Multinomial(100, t=20)` | 58.20 | 9.12 | 5.84 | 6.02 | 5.98 |
+| `Multinomial(100, t=1000)` | 130.54 | 234.40 | 72.99 | 66.36 | 55.28 |
+| `MvNormal(4)` | 2.25 | 1.89 | 0.35 | 0.32 | 0.25 |
+| `MvNormal(100)` | 57.71 | 68.80 | 24.40 | 18.28 | 13.05 |
+| `Wishart(4)` | 70.18 | 16.25 | 4.49 | 3.97 | 3.07 |
+| `Wishart(50)` | 1471.29 | 1641.73 | 628.58 | 485.68 | 349.81 |
+
 
 ### AMD Ryzen 7 3700x CPU @ 3.60GHz (Windows 10, MSVC2017)
 
@@ -274,8 +347,17 @@ The results of EigenRand and C++ std appear to be equivalent within the margin o
 MIT License
 
 ## History
-### 0.2.3 (2021-03-26)
+
+### 0.3.2 (2021-03-26)
 * A default constructor for `DiscreteGen` was added.
+
+### 0.3.1 (2020-11-15)
+* Compiling errors in the environment `EIGEN_COMP_MINGW && __GXX_ABI_VERSION < 1004` was fixed.
+
+### 0.3.0 (2020-10-17)
+* Potential cache conflict in generator was solved.
+* Generator classes were added for efficient reusability.
+* Multivariate distributions including `Multinomial`, `Dirichlet`, `MvNormal`, `Wishart`, `InvWishart` were added.
 
 ### 0.2.2 (2020-08-02)
 * Now `ParallelRandomEngineAdaptor` and `MersenneTwister` use aligned array on heap.

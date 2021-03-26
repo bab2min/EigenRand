@@ -20,6 +20,11 @@ namespace Eigen
 {
 	namespace Rand
 	{
+		/**
+		 * @brief Generator of integers on a negative binomial distribution
+		 * 
+		 * @tparam _Scalar 
+		 */
 		template<typename _Scalar>
 		class NegativeBinomialGen : public GenBase<NegativeBinomialGen<_Scalar>, _Scalar>
 		{
@@ -29,6 +34,12 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
+			/**
+			 * @brief Construct a new negative binomial generator
+			 * 
+			 * @param _trials the number of trial successes
+			 * @param _p probability of a trial generating true
+			 */
 			NegativeBinomialGen(_Scalar _trials = 1, double _p = 0.5)
 				: gamma{ (float)_trials, (float)((1 - _p) / _p) }
 
@@ -108,6 +119,8 @@ namespace Eigen
 		 * @param trials the number of trial successes
 		 * @param p probability of a trial generating true
 		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 * 
+		 * @see Eigen::Rand::NegativeBinomialGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const NegativeBinomialType<Derived, Urng>
@@ -128,6 +141,8 @@ namespace Eigen
 		 * @param trials the number of trial successes
 		 * @param p probability of a trial generating true
 		 * @return a random matrix expression of the same shape as `o`
+		 * 
+		 * @see Eigen::Rand::NegativeBinomialGen
 		 */
 		template<typename Derived, typename Urng>
 		inline const NegativeBinomialType<Derived, Urng>
