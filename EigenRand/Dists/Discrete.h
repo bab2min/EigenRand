@@ -218,7 +218,7 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
-			UniformIntGen(_Scalar _min, _Scalar _max)
+			UniformIntGen(_Scalar _min = 0, _Scalar _max = 0)
 				: pmin{ _min }, pdiff{ (size_t)(_max - _min) }
 			{
 				if ((pdiff + 1) > pdiff)
@@ -357,6 +357,11 @@ namespace Eigen
 			{
 			}
 
+			DiscreteGen()
+				: DiscreteGen({ 1 })
+			{
+			}
+
 			DiscreteGen(const DiscreteGen&) = default;
 			DiscreteGen(DiscreteGen&&) = default;
 
@@ -468,6 +473,11 @@ namespace Eigen
 			{
 			}
 
+			DiscreteGen()
+				: DiscreteGen({ 1 })
+			{
+			}
+
 			DiscreteGen(const DiscreteGen&) = default;
 			DiscreteGen(DiscreteGen&&) = default;
 
@@ -561,6 +571,11 @@ namespace Eigen
 			{
 			}
 
+			DiscreteGen()
+				: DiscreteGen({ 1 })
+			{
+			}
+
 			DiscreteGen(const DiscreteGen&) = default;
 			DiscreteGen(DiscreteGen&&) = default;
 
@@ -646,7 +661,7 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
-			PoissonGen(double _mean)
+			PoissonGen(double _mean = 1)
 				: mean{ _mean }, ne_mean{ std::exp(-_mean) }
 			{
 				sqrt_tmean = std::sqrt(2 * mean);
@@ -888,7 +903,7 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
-			GeometricGen(double _p)
+			GeometricGen(double _p = 0.5)
 				: p{ _p }, rlog_q{ 1 / std::log(1 - p) }
 			{
 			}
