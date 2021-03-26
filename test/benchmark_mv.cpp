@@ -133,7 +133,7 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 			1, 2, 0, 0,
 			0, 0, 3, 1,
 			0, 0, 1, 2;
-		test_single_and_batch<float>(size, bh, "MvNormal/4/float" + suffix, Eigen::Rand::makeMvNormGen(mean, cov), urng);
+		test_single_and_batch<float>(size, bh, "MvNormal/4/float" + suffix, Eigen::Rand::makeMvNormalGen(mean, cov), urng);
 	}
 
 	{
@@ -142,7 +142,7 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 		cov = Eigen::Rand::normalLike(cov, urng) * 0.1f;
 		cov = cov * cov.transpose();
 		cov += Eigen::MatrixXf::Identity(100, 100) * 4;
-		test_single_and_batch<float>(size, bh, "MvNormal/100/float" + suffix, Eigen::Rand::makeMvNormGen(mean, cov), urng);
+		test_single_and_batch<float>(size, bh, "MvNormal/100/float" + suffix, Eigen::Rand::makeMvNormalGen(mean, cov), urng);
 	}
 
 	{

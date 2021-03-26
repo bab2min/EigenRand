@@ -347,6 +347,10 @@ The results of EigenRand and C++ std appear to be equivalent within the margin o
 MIT License
 
 ## History
+
+### 0.3.2 (2021-03-26)
+* A default constructor for `DiscreteGen` was added.
+
 ### 0.3.1 (2020-11-15)
 * Compiling errors in the environment `EIGEN_COMP_MINGW && __GXX_ABI_VERSION < 1004` was fixed.
 

@@ -195,8 +195,8 @@ namespace Eigen
 		template<typename Packet>
 		EIGEN_STRONG_INLINE Packet pcmple(const Packet& a, const Packet& b);
 
-		template<typename Packet>
-		EIGEN_STRONG_INLINE Packet pblendv(const Packet& ifPacket, const Packet& thenPacket, const Packet& elsePacket);
+		template<typename PacketIf, typename Packet>
+		EIGEN_STRONG_INLINE Packet pblendv(const PacketIf& ifPacket, const Packet& thenPacket, const Packet& elsePacket);
 
 		template<typename Packet>
 		EIGEN_STRONG_INLINE Packet pgather(const int* addr, const Packet& index);
@@ -527,7 +527,14 @@ namespace Eigen
 		template<>
 		EIGEN_STRONG_INLINE Packet8i pcmplt<Packet8i>(const Packet8i& a, const Packet8i& b)
 		{
+#ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_cmpgt_epi32(b, a);
+#else
+			Packet4i a1, a2, b1, b2;
+			split_two(a, a1, a2);
+			split_two(b, b1, b2);
+			return combine_two((Packet4i)_mm_cmpgt_epi32(b1, a1), (Packet4i)_mm_cmpgt_epi32(b2, a2));
+#endif
 		}
 
 		template<>
@@ -561,6 +568,12 @@ namespace Eigen
 		}
 
 		template<>
+		EIGEN_STRONG_INLINE Packet8f pblendv(const Packet8i& ifPacket, const Packet8f& thenPacket, const Packet8f& elsePacket)
+		{
+			return pblendv(_mm256_castsi256_ps(ifPacket), thenPacket, elsePacket);
+		}
+
+		template<>
 		EIGEN_STRONG_INLINE Packet8i pblendv(const Packet8i& ifPacket, const Packet8i& thenPacket, const Packet8i& elsePacket)
 		{
 			return _mm256_castps_si256(_mm256_blendv_ps(
@@ -574,6 +587,12 @@ namespace Eigen
 		EIGEN_STRONG_INLINE Packet4d pblendv(const Packet4d& ifPacket, const Packet4d& thenPacket, const Packet4d& elsePacket)
 		{
 			return _mm256_blendv_pd(elsePacket, thenPacket, ifPacket);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4d pblendv(const Packet8i& ifPacket, const Packet4d& thenPacket, const Packet4d& elsePacket)
+		{
+			return pblendv(_mm256_castsi256_pd(ifPacket), thenPacket, elsePacket);
 		}
 
 		template<>
@@ -843,6 +862,12 @@ namespace Eigen
 		}
 
 		template<>
+		EIGEN_STRONG_INLINE Packet4f pblendv(const Packet4i& ifPacket, const Packet4f& thenPacket, const Packet4f& elsePacket)
+		{
+			return pblendv(_mm_castsi128_ps(ifPacket), thenPacket, elsePacket);
+		}
+
+		template<>
 		EIGEN_STRONG_INLINE Packet4i pblendv(const Packet4i& ifPacket, const Packet4i& thenPacket, const Packet4i& elsePacket)
 		{
 #ifdef EIGEN_VECTORIZE_SSE4_1
@@ -860,6 +885,13 @@ namespace Eigen
 #else
 			return _mm_or_pd(_mm_and_pd(ifPacket, thenPacket), _mm_andnot_pd(ifPacket, elsePacket));
 #endif
+		}
+
+
+		template<>
+		EIGEN_STRONG_INLINE Packet2d pblendv(const Packet4i& ifPacket, const Packet2d& thenPacket, const Packet2d& elsePacket)
+		{
+			return pblendv(_mm_castsi128_pd(ifPacket), thenPacket, elsePacket);
 		}
 
 		template<>

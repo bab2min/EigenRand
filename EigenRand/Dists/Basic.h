@@ -333,6 +333,52 @@ namespace Eigen
 		};
 
 
+		/**
+		 * @brief Generator of Bernoulli distribution
+		 *
+		 * @tparam _Scalar
+		 */
+		template<typename _Scalar>
+		class BernoulliGen : public GenBase<BernoulliGen<_Scalar>, _Scalar>
+		{
+			uint32_t p;
+		public:
+			using Scalar = _Scalar;
+
+			BernoulliGen(double _p = 0.5)
+			{
+				eigen_assert(0 <= _p && _p <= 1 );
+				p = (uint32_t)(_p * 0x80000000);
+			}
+
+			BernoulliGen(const BernoulliGen&) = default;
+			BernoulliGen(BernoulliGen&&) = default;
+
+			BernoulliGen& operator=(const BernoulliGen&) = default;
+			BernoulliGen& operator=(BernoulliGen&&) = default;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				return (((uint32_t)pfirst(std::forward<Rng>(rng)()) & 0x7FFFFFFF) < p) ? 1 : 0;
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				using IPacket = decltype(reinterpret_to_int(std::declval<Packet>()));
+				using RUtils = RawbitsMaker<IPacket, Rng>;
+				auto one = pset1<Packet>(1);
+				auto zero = pset1<Packet>(0);
+				auto r = RUtils{}.rawbits(std::forward<Rng>(rng));
+				r = pand(r, pset1<IPacket>(0x7FFFFFFF));
+				return pblendv(pcmplt(r, pset1<IPacket>(p)), one, zero);
+			}
+		};
+
+
 		template<typename Derived, typename Urng>
 		using RandBitsType = CwiseNullaryOp<internal::scalar_rng_adaptor<RandbitsGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
 
@@ -462,6 +508,48 @@ namespace Eigen
 		{
 			return {
 				o.rows(), o.cols(), { std::forward<Urng>(urng) }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using BernoulliType = CwiseNullaryOp<internal::scalar_rng_adaptor<BernoulliGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates 1 with probability `p` and 0 with probability `1 - p`
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param p a probability of generating 1
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 */
+		template<typename Derived, typename Urng>
+		inline const BernoulliType<Derived, Urng>
+			bernoulli(Index rows, Index cols, Urng&& urng, double p = 0.5)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), BernoulliGen<typename Derived::Scalar>{ p } }
+			};
+		}
+
+		/**
+		 * @brief generates 1 with probability `p` and 0 with probability `1 - p`
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param p a probability of generating 1
+		 * @return a random matrix expression of the same shape as `o`
+		 */
+		template<typename Derived, typename Urng>
+		inline const BernoulliType<Derived, Urng>
+			bernoulli(Derived& o, Urng&& urng, double p = 0.5)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), BernoulliGen<typename Derived::Scalar>{ p } }
 			};
 		}
 	}

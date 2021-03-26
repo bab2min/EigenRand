@@ -52,6 +52,9 @@ namespace Eigen
 			MultinomialGen(const MultinomialGen&) = default;
 			MultinomialGen(MultinomialGen&&) = default;
 
+			MultinomialGen& operator=(const MultinomialGen&) = default;
+			MultinomialGen& operator=(MultinomialGen&&) = default;
+
 			Index dims() const { return probs.rows(); }
 
 			template<typename Urng>

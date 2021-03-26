@@ -228,7 +228,7 @@ namespace Eigen
 			 * 
 			 * @param _min, _max the range of integers being generated
 			 */
-			UniformIntGen(_Scalar _min, _Scalar _max)
+			UniformIntGen(_Scalar _min = 0, _Scalar _max = 0)
 				: pmin{ _min }, pdiff{ (size_t)(_max - _min) }
 			{
 				if ((pdiff + 1) > pdiff)
@@ -244,6 +244,9 @@ namespace Eigen
 
 			UniformIntGen(const UniformIntGen&) = default;
 			UniformIntGen(UniformIntGen&&) = default;
+
+			UniformIntGen& operator=(const UniformIntGen&) = default;
+			UniformIntGen& operator=(UniformIntGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
@@ -389,6 +392,17 @@ namespace Eigen
 			{
 			}
 
+			DiscreteGen()
+				: DiscreteGen({ 1 })
+			{
+			}
+
+			DiscreteGen(const DiscreteGen&) = default;
+			DiscreteGen(DiscreteGen&&) = default;
+
+			DiscreteGen& operator=(const DiscreteGen&) = default;
+			DiscreteGen& operator=(DiscreteGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -513,6 +527,17 @@ namespace Eigen
 			{
 			}
 
+			DiscreteGen()
+				: DiscreteGen({ 1 })
+			{
+			}
+
+			DiscreteGen(const DiscreteGen&) = default;
+			DiscreteGen(DiscreteGen&&) = default;
+
+			DiscreteGen& operator=(const DiscreteGen&) = default;
+			DiscreteGen& operator=(DiscreteGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -619,6 +644,17 @@ namespace Eigen
 			{
 			}
 
+			DiscreteGen()
+				: DiscreteGen({ 1 })
+			{
+			}
+
+			DiscreteGen(const DiscreteGen&) = default;
+			DiscreteGen(DiscreteGen&&) = default;
+
+			DiscreteGen& operator=(const DiscreteGen&) = default;
+			DiscreteGen& operator=(DiscreteGen&&) = default;
+
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -708,13 +744,19 @@ namespace Eigen
 			 * 
 			 * @param _mean mean of the distribution
 			 */
-			PoissonGen(double _mean)
+			PoissonGen(double _mean = 1)
 				: mean{ _mean }, ne_mean{ std::exp(-_mean) }
 			{
 				sqrt_tmean = std::sqrt(2 * mean);
 				log_mean = std::log(mean);
 				g1 = mean * log_mean - std::lgamma(mean + 1);
 			}
+
+			PoissonGen(const PoissonGen&) = default;
+			PoissonGen(PoissonGen&&) = default;
+
+			PoissonGen& operator=(const PoissonGen&) = default;
+			PoissonGen& operator=(PoissonGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
@@ -834,6 +876,12 @@ namespace Eigen
 					log_small_q = std::log(1 - small_p);
 				}
 			}
+
+			BinomialGen(const BinomialGen&) = default;
+			BinomialGen(BinomialGen&&) = default;
+
+			BinomialGen& operator=(const BinomialGen&) = default;
+			BinomialGen& operator=(BinomialGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
@@ -959,10 +1007,16 @@ namespace Eigen
 			 * 
 			 * @param _p probability of a trial generating true
 			 */
-			GeometricGen(double _p)
+			GeometricGen(double _p = 0.5)
 				: p{ _p }, rlog_q{ 1 / std::log(1 - p) }
 			{
 			}
+
+			GeometricGen(const GeometricGen&) = default;
+			GeometricGen(GeometricGen&&) = default;
+
+			GeometricGen& operator=(const GeometricGen&) = default;
+			GeometricGen& operator=(GeometricGen&&) = default;
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
