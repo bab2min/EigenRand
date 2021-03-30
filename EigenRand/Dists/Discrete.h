@@ -2,10 +2,10 @@
  * @file Discrete.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.3.0
- * @date 2020-10-07
+ * @version 0.3.3
+ * @date 2021-03-31
  *
- * @copyright Copyright (c) 2020
+ * @copyright Copyright (c) 2020-2021
  * 
  */
 
@@ -825,7 +825,7 @@ namespace Eigen
 						fres = ptruncate(padd(pmul(psqrt_tmean, yx), pmean));
 
 						auto p1 = pmul(padd(pmul(yx, yx), pset1<PacketType>(1)), pset1<PacketType>(0.9));
-						auto p2 = pexp(psub(psub(pmul(fres, plog_mean), plgamma(padd(fres, pset1<PacketType>(1)))), pg1));
+						auto p2 = pexp(psub(psub(pmul(fres, plog_mean), plgamma_approx(padd(fres, pset1<PacketType>(1)))), pg1));
 
 						auto c1 = pcmple(pset1<PacketType>(0), fres);
 						auto c2 = pcmple(ur.template packetOp<PacketType>(rng), pmul(p1, p2));
@@ -964,8 +964,8 @@ namespace Eigen
 						auto p1 = pmul(pmul(pset1<PacketType>(1.2), psqrt_v), padd(pset1<PacketType>(1), pmul(ys, ys)));
 						auto p2 = pexp(
 							padd(padd(psub(
-								psub(pg1, plgamma(padd(fres, pset1<PacketType>(1)))),
-								plgamma(psub(padd(ptrials, pset1<PacketType>(1)), fres))
+								psub(pg1, plgamma_approx(padd(fres, pset1<PacketType>(1)))),
+								plgamma_approx(psub(padd(ptrials, pset1<PacketType>(1)), fres))
 							), pmul(fres, plog_small_p)), pmul(psub(ptrials, fres), plog_small_q))
 						);
 

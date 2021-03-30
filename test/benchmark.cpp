@@ -260,6 +260,11 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	}
 
 	{
+		auto scope = bh.measure("normal(0,1)/double" + suffix, xd);
+		xd = Eigen::Rand::normalLike(xd, urng);
+	}
+
+	{
 		auto scope = bh.measure("normal(0,1) square" + suffix, x);
 		x = Eigen::Rand::normalLike(x, urng).square();
 	}
@@ -270,8 +275,18 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	}
 
 	{
+		auto scope = bh.measure("normal(2,3)/double" + suffix, xd);
+		xd = Eigen::Rand::normalLike(xd, urng, 2, 3);
+	}
+
+	{
 		auto scope = bh.measure("lognormal(0,1)" + suffix, x);
 		x = Eigen::Rand::lognormalLike(x, urng);
+	}
+	
+	{
+		auto scope = bh.measure("lognormal(0,1)/double" + suffix, xd);
+		xd = Eigen::Rand::lognormalLike(xd, urng);
 	}
 
 	{
@@ -280,8 +295,18 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	}
 
 	{
+		auto scope = bh.measure("exponential(1)/double" + suffix, xd);
+		xd = Eigen::Rand::exponentialLike(xd, urng);
+	}
+
+	{
 		auto scope = bh.measure("gamma(1,2)" + suffix, x);
 		x = Eigen::Rand::gammaLike(x, urng, 1, 2);
+	}
+
+	{
+		auto scope = bh.measure("gamma(1,2)/double" + suffix, xd);
+		xd = Eigen::Rand::gammaLike(xd, urng, 1, 2);
 	}
 
 	{
@@ -289,21 +314,25 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 		x = Eigen::Rand::gammaLike(x, urng, 5, 3);
 	}
 
-
 	{
 		auto scope = bh.measure("gamma(5,3)/gen" + suffix, x);
 		Eigen::Rand::GammaGen<float> gen{ 5, 3 };
 		x = gen.generateLike(x, urng);
 	}
 
-	/*{
+	{
 		auto scope = bh.measure("gamma(5,3)/double" + suffix, xd);
 		xd = Eigen::Rand::gammaLike(xd, urng, 5, 3);
-	}*/
+	}
 
 	{
 		auto scope = bh.measure("gamma(0.2,1)" + suffix, x);
 		x = Eigen::Rand::gammaLike(x, urng, 0.2, 1);
+	}
+
+	{
+		auto scope = bh.measure("gamma(0.2,1)/double" + suffix, xd);
+		xd = Eigen::Rand::gammaLike(xd, urng, 0.2, 1);
 	}
 
 	{
@@ -312,8 +341,18 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	}
 
 	{
+		auto scope = bh.measure("gamma(10.5,1)/double" + suffix, xd);
+		xd = Eigen::Rand::gammaLike(xd, urng, 10.5, 1);
+	}
+
+	{
 		auto scope = bh.measure("weibull(2,3)" + suffix, x);
 		x = Eigen::Rand::weibullLike(x, urng, 2, 3);
+	}
+
+	{
+		auto scope = bh.measure("weibull(2,3)/double" + suffix, xd);
+		xd = Eigen::Rand::weibullLike(xd, urng, 2, 3);
 	}
 
 	{
@@ -322,8 +361,18 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	}
 
 	{
+		auto scope = bh.measure("extremeValue(0,1)/double" + suffix, xd);
+		xd = Eigen::Rand::extremeValueLike(xd, urng, 0, 1);
+	}
+
+	{
 		auto scope = bh.measure("chiSquared(15)" + suffix, x);
 		x = Eigen::Rand::chiSquaredLike(x, urng, 15);
+	}
+
+	{
+		auto scope = bh.measure("chiSquared(15)/double" + suffix, xd);
+		xd = Eigen::Rand::chiSquaredLike(xd, urng, 15);
 	}
 
 	{
@@ -332,13 +381,28 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	}
 
 	{
+		auto scope = bh.measure("cauchy/double" + suffix, xd);
+		xd = Eigen::Rand::cauchyLike(xd, urng);
+	}
+
+	{
 		auto scope = bh.measure("studentT(1)" + suffix, x);
 		x = Eigen::Rand::studentTLike(x, urng, 1);
 	}
 
 	{
+		auto scope = bh.measure("studentT(1)/double" + suffix, xd);
+		xd = Eigen::Rand::studentTLike(xd, urng, 1);
+	}
+
+	{
 		auto scope = bh.measure("studentT(5)" + suffix, x);
 		x = Eigen::Rand::studentTLike(x, urng, 5);
+	}
+
+	{
+		auto scope = bh.measure("studentT(5)/double" + suffix, xd);
+		xd = Eigen::Rand::studentTLike(xd, urng, 5);
 	}
 
 	{
@@ -349,6 +413,11 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	{
 		auto scope = bh.measure("fisherF(1,1)" + suffix, x);
 		x = Eigen::Rand::fisherFLike(x, urng, 1, 1);
+	}
+
+	{
+		auto scope = bh.measure("fisherF(1,1)/double" + suffix, xd);
+		xd = Eigen::Rand::fisherFLike(xd, urng, 1, 1);
 	}
 
 	{
@@ -364,6 +433,11 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	{
 		auto scope = bh.measure("fisherF(5,5)" + suffix, x);
 		x = Eigen::Rand::fisherFLike(x, urng, 5, 5);
+	}
+
+	{
+		auto scope = bh.measure("fisherF(5,5)/double" + suffix, xd);
+		xd = Eigen::Rand::fisherFLike(xd, urng, 5, 5);
 	}
 
 	{
@@ -746,7 +820,7 @@ int main(int argc, char** argv)
 
 	for (size_t i = 0; i < repeat; ++i)
 	{
-		for (auto& p : test_rng(std::mt19937{}, size, "rng\tmt19937", results))
+		/*for (auto& p : test_rng(std::mt19937{}, size, "rng\tmt19937", results))
 		{
 			time[p.first] += p.second;
 			timeSq[p.first] += p.second * p.second;
@@ -792,7 +866,7 @@ int main(int argc, char** argv)
 		{
 			time[p.first] += p.second;
 			timeSq[p.first] += p.second * p.second;
-		}
+		}*/
 
 		for (auto& p : test_eigenrand<std::mt19937_64>(size, "\t:ERand", results))
 		{

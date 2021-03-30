@@ -2,10 +2,10 @@
  * @file NormalExp.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.3.0
- * @date 2020-10-07
+ * @version 0.3.3
+ * @date 2021-03-31
  * 
- * @copyright Copyright (c) 2020
+ * @copyright Copyright (c) 2020-2021
  * 
  */
 
@@ -238,8 +238,7 @@ namespace Eigen
 					psub(pexp(pmul(plog(u1), pset1<Packet>(-2 / n))), pset1<Packet>(1))
 				));
 				auto theta = pmul(pset1<Packet>(2 * constant::pi), u2);
-				Packet sintheta, costheta;
-
+				//Packet sintheta, costheta;
 				//psincos(theta, sintheta, costheta);
 				return pmul(radius, psin(theta));
 			}

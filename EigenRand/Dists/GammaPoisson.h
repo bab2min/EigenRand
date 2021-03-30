@@ -2,10 +2,10 @@
  * @file GammaPoisson.h
  * @author bab2min (bab2min@gmail.com)
  * @brief
- * @version 0.3.0
- * @date 2020-10-07
+ * @version 0.3.3
+ * @date 2021-03-31
  *
- * @copyright Copyright (c) 2020
+ * @copyright Copyright (c) 2020-2021
  *
  */
 
@@ -81,7 +81,7 @@ namespace Eigen
 					const PacketType ppi = pset1<PacketType>(constant::pi),
 						psqrt_tmean = psqrt(pmul(pset1<PacketType>(2), mean)),
 						plog_mean = plog(mean),
-						pg1 = psub(pmul(mean, plog_mean), plgamma(padd(mean, pset1<PacketType>(1))));
+						pg1 = psub(pmul(mean, plog_mean), plgamma_approx(padd(mean, pset1<PacketType>(1))));
 					while (1)
 					{
 						PacketType fres, yx, psin, pcos;
@@ -90,7 +90,7 @@ namespace Eigen
 						fres = ptruncate(padd(pmul(psqrt_tmean, yx), mean));
 
 						auto p1 = pmul(padd(pmul(yx, yx), pset1<PacketType>(1)), pset1<PacketType>(0.9));
-						auto p2 = pexp(psub(psub(pmul(fres, plog_mean), plgamma(padd(fres, pset1<PacketType>(1)))), pg1));
+						auto p2 = pexp(psub(psub(pmul(fres, plog_mean), plgamma_approx(padd(fres, pset1<PacketType>(1)))), pg1));
 
 						auto c1 = pcmple(pset1<PacketType>(0), fres);
 						auto c2 = pcmple(ur.template packetOp<PacketType>(rng), pmul(p1, p2));

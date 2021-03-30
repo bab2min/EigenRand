@@ -2,10 +2,10 @@
  * @file PacketRandomEngine.h
  * @author bab2min (bab2min@gmail.com)
  * @brief
- * @version 0.3.0
- * @date 2020-10-07
+ * @version 0.3.3
+ * @date 2021-03-31
  *
- * @copyright Copyright (c) 2020
+ * @copyright Copyright (c) 2020-2021
  *
  */
 
@@ -20,36 +20,6 @@
 
 namespace Eigen
 {
-	namespace internal
-	{
-		template<typename Ty>
-		struct IsIntPacket : std::false_type {};
-
-		template<typename Ty>
-		struct HalfPacket;
-
-#ifdef EIGEN_VECTORIZE_AVX2
-		template<>
-		struct IsIntPacket<Packet8i> : std::true_type {};
-
-		template<>
-		struct HalfPacket<Packet8i>
-		{
-			using type = Packet4i;
-		};
-#endif
-#ifdef EIGEN_VECTORIZE_SSE2
-		template<>
-		struct IsIntPacket<Packet4i> : std::true_type {};
-
-		template<>
-		struct HalfPacket<Packet4i>
-		{
-			using type = uint64_t;
-		};
-#endif
-	}
-
 	namespace Rand
 	{
 		namespace detail
