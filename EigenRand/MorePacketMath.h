@@ -1066,7 +1066,7 @@ namespace Eigen
 			// Truncate input values to the minimum positive normal.
 			x = pmax(x, min_norm_pos);
 
-			Packet4d emm0 = uint64_to_double(_mm256_srli_epi64(_mm256_castpd_si256(x), 52));
+			Packet4d emm0 = uint64_to_double(psrl64(_mm256_castpd_si256(x), 52));
 			Packet4d e = psub(emm0, pset1<Packet4d>(1022));
 
 			// Set the exponents to -1, i.e. x are in the range [0.5,1).
