@@ -347,6 +347,9 @@ The results of EigenRand and C++ std appear to be equivalent within the margin o
 MIT License
 
 ## History
+### 0.3.3 (2021-03-30)
+* A compilation failure with some RNGs in `double` type was fixed.
+* An internal function name `plgamma` conflict with one of `SpecialFunctionsPacketMath.h` was fixed.
 
 ### 0.3.2 (2021-03-26)
 * A default constructor for `DiscreteGen` was added.
