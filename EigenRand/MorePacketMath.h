@@ -2,10 +2,10 @@
  * @file MorePacketMath.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.3.0
- * @date 2020-10-07
+ * @version 0.3.3
+ * @date 2021-03-31
  * 
- * @copyright Copyright (c) 2020
+ * @copyright Copyright (c) 2020-2021
  * 
  */
 
@@ -1011,7 +1011,7 @@ namespace Eigen
 
 		EIGEN_STRONG_INLINE __m256i double_to_int64(__m256d x) {
 			x = _mm256_add_pd(x, _mm256_set1_pd(0x0018000000000000));
-			return _mm256_sub_epi64(
+			return psub64(
 				_mm256_castpd_si256(x),
 				_mm256_castpd_si256(_mm256_set1_pd(0x0018000000000000))
 			);
