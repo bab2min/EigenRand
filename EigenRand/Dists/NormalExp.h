@@ -238,8 +238,7 @@ namespace Eigen
 					psub(pexp(pmul(plog(u1), pset1<Packet>(-2 / n))), pset1<Packet>(1))
 				));
 				auto theta = pmul(pset1<Packet>(2 * constant::pi), u2);
-				Packet sintheta, costheta;
-
+				//Packet sintheta, costheta;
 				//psincos(theta, sintheta, costheta);
 				return pmul(radius, psin(theta));
 			}

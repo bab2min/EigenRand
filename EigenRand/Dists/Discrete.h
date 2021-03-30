@@ -825,7 +825,7 @@ namespace Eigen
 						fres = ptruncate(padd(pmul(psqrt_tmean, yx), pmean));
 
 						auto p1 = pmul(padd(pmul(yx, yx), pset1<PacketType>(1)), pset1<PacketType>(0.9));
-						auto p2 = pexp(psub(psub(pmul(fres, plog_mean), plgamma(padd(fres, pset1<PacketType>(1)))), pg1));
+						auto p2 = pexp(psub(psub(pmul(fres, plog_mean), plgamma_approx(padd(fres, pset1<PacketType>(1)))), pg1));
 
 						auto c1 = pcmple(pset1<PacketType>(0), fres);
 						auto c2 = pcmple(ur.template packetOp<PacketType>(rng), pmul(p1, p2));
@@ -964,8 +964,8 @@ namespace Eigen
 						auto p1 = pmul(pmul(pset1<PacketType>(1.2), psqrt_v), padd(pset1<PacketType>(1), pmul(ys, ys)));
 						auto p2 = pexp(
 							padd(padd(psub(
-								psub(pg1, plgamma(padd(fres, pset1<PacketType>(1)))),
-								plgamma(psub(padd(ptrials, pset1<PacketType>(1)), fres))
+								psub(pg1, plgamma_approx(padd(fres, pset1<PacketType>(1)))),
+								plgamma_approx(psub(padd(ptrials, pset1<PacketType>(1)), fres))
 							), pmul(fres, plog_small_p)), pmul(psub(ptrials, fres), plog_small_q))
 						);
 

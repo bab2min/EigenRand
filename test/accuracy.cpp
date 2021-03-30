@@ -197,47 +197,92 @@ std::map<std::string, double> test_eigenrand_cont(size_t size, size_t step, size
 	arr = Eigen::Rand::normalLike(arr, urng);
 	ret["normal"] = calc_emd_with_cdf(arr, normal_cdf, step);
 
+	arrd = Eigen::Rand::normalLike(arrd, urng);
+	ret["normal/double"] = calc_emd_with_cdf(arrd, normal_cdf, step);
+
 	arr = Eigen::Rand::lognormalLike(arr, urng);
 	ret["lognormal"] = calc_emd_with_cdf(arr, lognormal_cdf, step);
+
+	arrd = Eigen::Rand::lognormalLike(arrd, urng);
+	ret["lognormal/double"] = calc_emd_with_cdf(arrd, lognormal_cdf, step);
 
 	arr = Eigen::Rand::gammaLike(arr, urng, 1, 1);
 	ret["gamma(1,1)"] = calc_emd_with_pdf(arr, gamma11_pdf, step);
 
+	arrd = Eigen::Rand::gammaLike(arrd, urng, 1, 1);
+	ret["gamma(1,1)/double"] = calc_emd_with_pdf(arrd, gamma11_pdf, step);
+
 	arr = Eigen::Rand::gammaLike(arr, urng, 5, 1);
 	ret["gamma(5,1)"] = calc_emd_with_pdf(arr, gamma51_pdf, step);
+
+	arrd = Eigen::Rand::gammaLike(arrd, urng, 5, 1);
+	ret["gamma(5,1)/double"] = calc_emd_with_pdf(arrd, gamma51_pdf, step);
 
 	arr = Eigen::Rand::gammaLike(arr, urng, 0.2, 1);
 	ret["gamma(0.2,1)"] = calc_emd_with_pdf(arr, gamma21_pdf, step);
 
+	arrd = Eigen::Rand::gammaLike(arrd, urng, 0.2, 1);
+	ret["gamma(0.2,1)/double"] = calc_emd_with_pdf(arrd, gamma21_pdf, step);
+
 	arr = Eigen::Rand::exponentialLike(arr, urng);
 	ret["exponential"] = calc_emd_with_cdf(arr, exp_cdf, step);
+
+	arrd = Eigen::Rand::exponentialLike(arrd, urng);
+	ret["exponential/double"] = calc_emd_with_cdf(arrd, exp_cdf, step);
 
 	arr = Eigen::Rand::weibullLike(arr, urng, 2);
 	ret["weibull(2,1)"] = calc_emd_with_cdf(arr, weibull_cdf, step);
 
+	arrd = Eigen::Rand::weibullLike(arrd, urng, 2);
+	ret["weibull(2,1)/double"] = calc_emd_with_cdf(arrd, weibull_cdf, step);
+
 	arr = Eigen::Rand::extremeValueLike(arr, urng, 1, 1);
 	ret["extremeValue(1,1)"] = calc_emd_with_cdf(arr, extreme_value_cdf, step);
+
+	arrd = Eigen::Rand::extremeValueLike(arrd, urng, 1, 1);
+	ret["extremeValue(1,1)/double"] = calc_emd_with_cdf(arrd, extreme_value_cdf, step);
 
 	arr = Eigen::Rand::chiSquaredLike(arr, urng, 7);
 	ret["chiSquared(7)"] = calc_emd_with_pdf(arr, chisquared_pdf, step);
 
+	arrd = Eigen::Rand::chiSquaredLike(arrd, urng, 7);
+	ret["chiSquared(7)/double"] = calc_emd_with_pdf(arrd, chisquared_pdf, step);
+
 	arr = Eigen::Rand::cauchyLike(arr, urng);
 	ret["cauchy"] = calc_emd_with_cdf(arr, cauchy_cdf, step);
+
+	arrd = Eigen::Rand::cauchyLike(arrd, urng);
+	ret["cauchy/double"] = calc_emd_with_cdf(arrd, cauchy_cdf, step);
 
 	arr = Eigen::Rand::studentTLike(arr, urng, 1);
 	ret["studentT(1)"] = calc_emd_with_cdf(arr, cauchy_cdf, step);
 
+	arrd = Eigen::Rand::studentTLike(arrd, urng, 1);
+	ret["studentT(1)/double"] = calc_emd_with_cdf(arrd, cauchy_cdf, step);
+
 	arr = Eigen::Rand::studentTLike(arr, urng, 5);
 	ret["studentT(5)"] = calc_emd_with_pdf(arr, student5_pdf, step);
+
+	arrd = Eigen::Rand::studentTLike(arrd, urng, 5);
+	ret["studentT(5)/double"] = calc_emd_with_pdf(arrd, student5_pdf, step);
 
 	arr = Eigen::Rand::studentTLike(arr, urng, 20);
 	ret["studentT(20)"] = calc_emd_with_pdf(arr, student20_pdf, step);
 
+	arrd = Eigen::Rand::studentTLike(arrd, urng, 20);
+	ret["studentT(20)/double"] = calc_emd_with_pdf(arrd, student20_pdf, step);
+
 	arr = Eigen::Rand::fisherFLike(arr, urng, 1, 1);
 	ret["fisherF(1,1)"] = calc_emd_with_cdf(arr, fisher11_cdf, step);
 
+	arrd = Eigen::Rand::fisherFLike(arrd, urng, 1, 1);
+	ret["fisherF(1,1)/double"] = calc_emd_with_cdf(arrd, fisher11_cdf, step);
+
 	arr = Eigen::Rand::fisherFLike(arr, urng, 5, 5);
 	ret["fisherF(5,5)"] = calc_emd_with_pdf(arr, fisher55_pdf, step);
+
+	arrd = Eigen::Rand::fisherFLike(arrd, urng, 5, 5);
+	ret["fisherF(5,5)/double"] = calc_emd_with_pdf(arrd, fisher55_pdf, step);
 
 	return ret;
 }
@@ -322,6 +367,11 @@ std::map<std::string, double> test_cpp11_cont(size_t size, size_t step, size_t s
 	}
 	ret["normal"] = calc_emd_with_cdf(arr, normal_cdf, step);
 
+	{
+		std::normal_distribution<double> dist;
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["normal/double"] = calc_emd_with_cdf(arrd, normal_cdf, step);
 
 	{
 		std::lognormal_distribution<> dist;
@@ -329,6 +379,11 @@ std::map<std::string, double> test_cpp11_cont(size_t size, size_t step, size_t s
 	}
 	ret["lognormal"] = calc_emd_with_cdf(arr, lognormal_cdf, step);
 
+	{
+		std::lognormal_distribution<double> dist;
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["lognormal/double"] = calc_emd_with_cdf(arrd, lognormal_cdf, step);
 
 	{
 		std::gamma_distribution<> dist{ 1, 1 };
@@ -337,10 +392,22 @@ std::map<std::string, double> test_cpp11_cont(size_t size, size_t step, size_t s
 	ret["gamma(1,1)"] = calc_emd_with_pdf(arr, gamma11_pdf, step);
 
 	{
+		std::gamma_distribution<double> dist{ 1, 1 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["gamma(1,1)/double"] = calc_emd_with_pdf(arrd, gamma11_pdf, step);
+
+	{
 		std::gamma_distribution<> dist{ 5, 1 };
 		arr = Eigen::ArrayXf::NullaryExpr(size, [&]() { return dist(urng); });
 	}
 	ret["gamma(5,1)"] = calc_emd_with_pdf(arr, gamma51_pdf, step);
+
+	{
+		std::gamma_distribution<double> dist{ 5, 1 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["gamma(5,1)/double"] = calc_emd_with_pdf(arrd, gamma51_pdf, step);
 
 	{
 		std::gamma_distribution<> dist{ 0.2, 1 };
@@ -349,10 +416,22 @@ std::map<std::string, double> test_cpp11_cont(size_t size, size_t step, size_t s
 	ret["gamma(0.2,1)"] = calc_emd_with_pdf(arr, gamma21_pdf, step);
 
 	{
+		std::gamma_distribution<double> dist{ 0.2, 1 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["gamma(0.2,1)/double"] = calc_emd_with_pdf(arrd, gamma21_pdf, step);
+
+	{
 		std::exponential_distribution<> dist;
 		arr = Eigen::ArrayXf::NullaryExpr(size, [&]() { return dist(urng); });
 	}
 	ret["exponential"] = calc_emd_with_cdf(arr, exp_cdf, step);
+
+	{
+		std::exponential_distribution<double> dist;
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["exponential/double"] = calc_emd_with_cdf(arrd, exp_cdf, step);
 
 	{
 		std::weibull_distribution<> dist{ 2, 1 };
@@ -361,10 +440,22 @@ std::map<std::string, double> test_cpp11_cont(size_t size, size_t step, size_t s
 	ret["weibull(2,1)"] = calc_emd_with_cdf(arr, weibull_cdf, step);
 
 	{
+		std::weibull_distribution<double> dist{ 2, 1 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["weibull(2,1)/double"] = calc_emd_with_cdf(arrd, weibull_cdf, step);
+
+	{
 		std::extreme_value_distribution<> dist{ 1, 1 };
 		arr = Eigen::ArrayXf::NullaryExpr(size, [&]() { return dist(urng); });
 	}
 	ret["extremeValue(1,1)"] = calc_emd_with_cdf(arr, extreme_value_cdf, step);
+
+	{
+		std::extreme_value_distribution<double> dist{ 1, 1 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["extremeValue(1,1)/double"] = calc_emd_with_cdf(arrd, extreme_value_cdf, step);
 
 	{
 		std::chi_squared_distribution<> dist{ 7 };
@@ -373,10 +464,22 @@ std::map<std::string, double> test_cpp11_cont(size_t size, size_t step, size_t s
 	ret["chiSquared(7)"] = calc_emd_with_pdf(arr, chisquared_pdf, step);
 
 	{
+		std::chi_squared_distribution<double> dist{ 7 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["chiSquared(7)/double"] = calc_emd_with_pdf(arrd, chisquared_pdf, step);
+
+	{
 		std::cauchy_distribution<> dist{ 0, 1 };
 		arr = Eigen::ArrayXf::NullaryExpr(size, [&]() { return dist(urng); });
 	}
 	ret["cauchy"] = calc_emd_with_cdf(arr, cauchy_cdf, step);
+
+	{
+		std::cauchy_distribution<double> dist{ 0, 1 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["cauchy/double"] = calc_emd_with_cdf(arrd, cauchy_cdf, step);
 
 	{
 		std::student_t_distribution<> dist{ 1 };
@@ -385,10 +488,22 @@ std::map<std::string, double> test_cpp11_cont(size_t size, size_t step, size_t s
 	ret["studentT(1)"] = calc_emd_with_cdf(arr, cauchy_cdf, step);
 
 	{
+		std::student_t_distribution<double> dist{ 1 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["studentT(1)/double"] = calc_emd_with_cdf(arrd, cauchy_cdf, step);
+
+	{
 		std::student_t_distribution<> dist{ 5 };
 		arr = Eigen::ArrayXf::NullaryExpr(size, [&]() { return dist(urng); });
 	}
 	ret["studentT(5)"] = calc_emd_with_pdf(arr, student5_pdf, step);
+
+	{
+		std::student_t_distribution<double> dist{ 5 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["studentT(5)/double"] = calc_emd_with_pdf(arrd, student5_pdf, step);
 
 	{
 		std::student_t_distribution<> dist{ 20 };
@@ -397,16 +512,34 @@ std::map<std::string, double> test_cpp11_cont(size_t size, size_t step, size_t s
 	ret["studentT(20)"] = calc_emd_with_pdf(arr, student20_pdf, step);
 
 	{
+		std::student_t_distribution<double> dist{ 20 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["studentT(20)/double"] = calc_emd_with_pdf(arrd, student20_pdf, step);
+
+	{
 		std::fisher_f_distribution<> dist{ 1, 1 };
 		arr = Eigen::ArrayXf::NullaryExpr(size, [&]() { return dist(urng); });
 	}
 	ret["fisherF(1,1)"] = calc_emd_with_cdf(arr, fisher11_cdf, step);
 
 	{
+		std::fisher_f_distribution<double> dist{ 1, 1 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["fisherF(1,1)/double"] = calc_emd_with_cdf(arrd, fisher11_cdf, step);
+
+	{
 		std::fisher_f_distribution<> dist{ 5, 5 };
 		arr = Eigen::ArrayXf::NullaryExpr(size, [&]() { return dist(urng); });
 	}
 	ret["fisherF(5,5)"] = calc_emd_with_pdf(arr, fisher55_pdf, step);
+
+	{
+		std::fisher_f_distribution<double> dist{ 5, 5 };
+		arrd = Eigen::ArrayXd::NullaryExpr(size, [&]() { return dist(urng); });
+	}
+	ret["fisherF(5,5)/double"] = calc_emd_with_pdf(arrd, fisher55_pdf, step);
 	return ret;
 }
 

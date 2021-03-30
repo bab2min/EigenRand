@@ -20,36 +20,6 @@
 
 namespace Eigen
 {
-	namespace internal
-	{
-		template<typename Ty>
-		struct IsIntPacket : std::false_type {};
-
-		template<typename Ty>
-		struct HalfPacket;
-
-#ifdef EIGEN_VECTORIZE_AVX2
-		template<>
-		struct IsIntPacket<Packet8i> : std::true_type {};
-
-		template<>
-		struct HalfPacket<Packet8i>
-		{
-			using type = Packet4i;
-		};
-#endif
-#ifdef EIGEN_VECTORIZE_SSE2
-		template<>
-		struct IsIntPacket<Packet4i> : std::true_type {};
-
-		template<>
-		struct HalfPacket<Packet4i>
-		{
-			using type = uint64_t;
-		};
-#endif
-	}
-
 	namespace Rand
 	{
 		namespace detail
