@@ -18,7 +18,7 @@
 
 #if EIGEN_VERSION_AT_LEAST(3,3,7)
 #else
-#error At least Eigen 3.3.7 is required.
+//#error At least Eigen 3.3.7 is required.
 #endif
 
 #endif
