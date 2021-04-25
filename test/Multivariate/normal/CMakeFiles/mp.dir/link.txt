@@ -1,0 +1,1 @@
+/usr/bin/g++     CMakeFiles/mp.dir/src.cpp.o  -o mp 
