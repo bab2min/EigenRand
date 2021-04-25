@@ -20,7 +20,7 @@ You can get 5~10 times speed by just replacing old Eigen's Random or unvectoriza
 
 ## Requirement
 
-* Eigen 3.3.7 or later
+* Eigen 3.3.4 ~ 3.3.9
 * C++11-compatible compilers
 
 ## Documentation
@@ -347,6 +347,9 @@ The results of EigenRand and C++ std appear to be equivalent within the margin o
 MIT License
 
 ## History
+### 0.3.4 (2021-04-25)
+* Now Eigen 3.3.4 - 3.3.6 versions are additionally supported.
+
 ### 0.3.3 (2021-03-30)
 * A compilation failure with some RNGs in `double` type was fixed.
 * An internal function name `plgamma` conflict with one of `SpecialFunctionsPacketMath.h` was fixed.
