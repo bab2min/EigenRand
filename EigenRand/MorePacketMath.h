@@ -1114,6 +1114,17 @@ namespace Eigen
 			// Filter out invalid inputs, i.e. negative arg will be NAN, 0 will be -INF.
 			return pblendv(iszero_mask, minus_inf, _mm256_or_pd(x, invalid_mask));
 		}
+
+#if EIGEN_VERSION_AT_LEAST(3,3,5)
+#else
+		template<> EIGEN_STRONG_INLINE Packet4f pcast<Packet4i, Packet4f>(const Packet4i& a) {
+			return _mm_cvtepi32_ps(a);
+		}
+
+		template<> EIGEN_STRONG_INLINE Packet4i pcast<Packet4f, Packet4i>(const Packet4f& a) {
+			return _mm_cvttps_epi32(a);
+		}
+#endif
 	}
 }
 #endif
