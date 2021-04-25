@@ -13,7 +13,7 @@ jobs:
       max-parallel: 4
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx, mavx2]
-        eigenversion: [3.3.7, 3.3.8]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9]
         os: [ubuntu-16.04, ubuntu-18.04]
     steps:        
     - uses: actions/checkout@v1
@@ -51,7 +51,7 @@ jobs:
       max-parallel: 4
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx]
-        eigenversion: [3.3.7, 3.3.8]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9]
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies
@@ -88,7 +88,7 @@ jobs:
       max-parallel: 4
       matrix:
         arch: ['/D EIGEN_DONT_VECTORIZE', '/arch:SSE2', '/arch:AVX', '/arch:AVX2']
-        eigenversion: [3.3.7, 3.3.8]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9]
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies

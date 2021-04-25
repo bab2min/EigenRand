@@ -16,9 +16,9 @@
 #define EIGENRAND_MAJOR_VERSION 3
 #define EIGENRAND_MINOR_VERSION 3
 
-#if EIGEN_VERSION_AT_LEAST(3,3,7)
+#if EIGEN_VERSION_AT_LEAST(3,3,4)
 #else
-#error At least Eigen 3.3.7 is required.
+#error At least Eigen 3.3.4 is required.
 #endif
 
 #endif
