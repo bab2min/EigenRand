@@ -29,7 +29,7 @@
 
  You can install EigenRand by just downloading the source codes from [the repository](https://github.com/bab2min/EigenRand/releases). 
  Since EigenRand is a header-only library like Eigen, none of binaries needs to be installed. 
- All you need is [Eigen 3.3.4](http://eigen.tuxfamily.org/index.php?title=Main_Page) and C++11 compiler.
+ All you need is [Eigen 3.3.4](http://eigen.tuxfamily.org/index.php?title=Main_Page) or later and C++11 compiler.
 
  @section getting_started_2 Simple Random Matrix Generators
  @code
