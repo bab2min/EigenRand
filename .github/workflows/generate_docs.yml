@@ -27,7 +27,7 @@ jobs:
         popd
         cp -r doxygen/docs/html/* ../g/bab2min.github.io/eigenrand/${EIGENRAND_VER}/en
         pushd ../g/bab2min.github.io
-        echo "<meta http-equiv='refresh' content='0;url=/eigenrand/${EIGENRAND_VER}/en/' >" > eigenrand/index.html
+        echo "<meta http-equiv='refresh' content='0;url=/eigenrand/${EIGENRAND_VER}/en/index.html' >" > eigenrand/index.html
         git config user.email "bab2min@gmail.com"
         git config user.name "bab2min"
         git add .
