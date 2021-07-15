@@ -27,7 +27,7 @@ namespace Eigen
 		{
 			static_assert(std::is_floating_point<_Scalar>::value, "normalDist needs floating point types.");
 			bool valid = false;
-			UniformRealGen<_Scalar> ur;
+			StdUniformRealGen<_Scalar> ur;
 			
 		public:
 			using Scalar = _Scalar;
@@ -186,7 +186,7 @@ namespace Eigen
 		class StudentTGen : public GenBase<StudentTGen<_Scalar>, _Scalar>
 		{
 			static_assert(std::is_floating_point<_Scalar>::value, "studentT needs floating point types.");
-			UniformRealGen<_Scalar> ur;
+			StdUniformRealGen<_Scalar> ur;
 			_Scalar n;
 
 		public:
@@ -256,7 +256,7 @@ namespace Eigen
 		{
 			friend GammaGen<_Scalar>;
 			static_assert(std::is_floating_point<_Scalar>::value, "expDist needs floating point types.");
-			UniformRealGen<_Scalar> ur;
+			StdUniformRealGen<_Scalar> ur;
 			_Scalar lambda = 1;
 
 		public:
@@ -481,7 +481,7 @@ namespace Eigen
 		class WeibullGen : public GenBase<WeibullGen<_Scalar>, _Scalar>
 		{
 			static_assert(std::is_floating_point<_Scalar>::value, "weilbullDist needs floating point types.");
-			UniformRealGen<_Scalar> ur;
+			StdUniformRealGen<_Scalar> ur;
 			_Scalar a = 1, b = 1;
 
 		public:
@@ -530,7 +530,7 @@ namespace Eigen
 		class ExtremeValueGen : public GenBase<ExtremeValueGen<_Scalar>, _Scalar>
 		{
 			static_assert(std::is_floating_point<_Scalar>::value, "extremeValueDist needs floating point types.");
-			UniformRealGen<_Scalar> ur;
+			StdUniformRealGen<_Scalar> ur;
 			_Scalar a = 0, b = 1;
 
 		public:
@@ -622,7 +622,7 @@ namespace Eigen
 		class CauchyGen : public GenBase<CauchyGen<_Scalar>, _Scalar>
 		{
 			static_assert(std::is_floating_point<_Scalar>::value, "cauchyDist needs floating point types.");
-			UniformRealGen<_Scalar> ur; 
+			StdUniformRealGen<_Scalar> ur;
 			_Scalar a = 0, b = 1;
 
 		public:
@@ -679,7 +679,7 @@ namespace Eigen
 			friend FisherFGen<_Scalar>;
 			static_assert(std::is_floating_point<_Scalar>::value, "betaDist needs floating point types.");
 			int cache_rest_cnt = 0;
-			UniformRealGen<_Scalar> ur;
+			StdUniformRealGen<_Scalar> ur;
 			_Scalar a, b;
 			GammaGen<_Scalar> gd1, gd2;
 

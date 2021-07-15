@@ -26,20 +26,20 @@ jobs:
         mv eigen include
     - name: Build Bench
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark.cpp -o bench.out
     - name: Run Bench
       run: |
         cat /proc/cpuinfo
         ./bench.out
     - name: Build BenchMv
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark_mv.cpp -o benchmv.out
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark_mv.cpp -o benchmv.out
     - name: Run BenchMv
       run: |
         ./benchmv.out
     - name: Build Accuracy
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/accuracy.cpp -o accuracy.out
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/accuracy.cpp -o accuracy.out
     - name: Run Accuracy
       run: |
         ./accuracy.out
@@ -61,7 +61,7 @@ jobs:
         mv eigen-${{ matrix.eigenversion }} include
     - name: Build Bench
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark.cpp -o bench.out
     - name: Run Bench
       continue-on-error: true
       run: |
@@ -69,14 +69,14 @@ jobs:
         ./bench.out
     - name: Build BenchMv
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark_mv.cpp -o benchmv.out
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark_mv.cpp -o benchmv.out
     - name: Run BenchMv
       continue-on-error: true
       run: |
         ./benchmv.out
     - name: Build Accuracy
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/accuracy.cpp -o accuracy.out
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/accuracy.cpp -o accuracy.out
     - name: Run Accuracy
       run: |
         ./accuracy.out
@@ -99,20 +99,20 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1
     - name: Build Bench
       run: |
-        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:bench.exe .\test\benchmark.cpp
+        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:bench.exe .\benchmark\benchmark.cpp
     - name: Run Bench
       run: |
         bash -c "cat /proc/cpuinfo"
         .\bench.exe
     - name: Build BenchMv
       run: |
-        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:benchmv.exe .\test\benchmark_mv.cpp
+        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:benchmv.exe .\benchmark\benchmark_mv.cpp
     - name: Run BenchMv
       run: |
         .\benchmv.exe
     - name: Build Accuracy
       run: |
-        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:accuracy.exe .\test\accuracy.cpp
+        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:accuracy.exe .\benchmark\accuracy.cpp
     - name: Run Accuracy
       run: |
         .\accuracy.exe
@@ -134,4 +134,4 @@ jobs:
     - name: Test Reference
       run: |
         pip install scipy
-        python test/comp_scipy.py
+        python benchmark/comp_scipy.py

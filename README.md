@@ -347,6 +347,11 @@ The results of EigenRand and C++ std appear to be equivalent within the margin o
 MIT License
 
 ## History
+### 0.3.5 (2021-07-16)
+* Now `UniformRealGen` generates accurate double values.
+* Fixed a bug where non-vectorized double-type `NormalGen` would get stuck in an infinite loop.
+* New overloading functions `balanced` and `balancedLike` which generate values over `[a, b]` were added.
+
 ### 0.3.4 (2021-04-25)
 * Now Eigen 3.3.4 - 3.3.6 versions are additionally supported.
 

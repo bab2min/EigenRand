@@ -33,10 +33,10 @@ jobs:
     - name: Test Reference
       run: |
         pip install scipy
-        python test/comp_scipy.py
+        python benchmark/comp_scipy.py
     - name: Build Bench
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark.cpp -o bench.out
     - name: Run Bench
       run: |
         cat /proc/cpuinfo
@@ -44,7 +44,7 @@ jobs:
         ./bench.out
     - name: Build BenchMv
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark_mv.cpp -o benchmv.out
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark_mv.cpp -o benchmv.out
     - name: Run BenchMv
       run: |
         ./benchmv.out
@@ -72,10 +72,10 @@ jobs:
     - name: Test Reference
       run: |
         pip install scipy
-        python test/comp_scipy.py
+        python benchmark/comp_scipy.py
     - name: Build Bench
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark.cpp -o bench.out
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark.cpp -o bench.out
     - name: Run Bench
       continue-on-error: true
       run: |
@@ -84,7 +84,7 @@ jobs:
         ./bench.out
     - name: Build BenchMv
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes test/benchmark_mv.cpp -o benchmv.out
+        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark_mv.cpp -o benchmv.out
     - name: Run BenchMv
       continue-on-error: true
       run: |
@@ -113,18 +113,18 @@ jobs:
     - name: Test Reference
       run: |
         pip install scipy
-        python test/comp_scipy.py
+        python benchmark/comp_scipy.py
     - uses: ilammy/msvc-dev-cmd@v1
     - name: Build Bench
       run: |
-        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:bench.exe .\test\benchmark.cpp
+        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:bench.exe .\benchmark\benchmark.cpp
     - name: Run Bench
       run: |
         bash -c "cat /proc/cpuinfo"
         .\bench.exe
     - name: Build BenchMv
       run: |
-        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:benchmv.exe .\test\benchmark_mv.cpp
+        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:benchmv.exe .\benchmark\benchmark_mv.cpp
     - name: Run BenchMv
       run: |
         .\benchmv.exe
@@ -146,4 +146,4 @@ jobs:
     - name: Test Reference
       run: |
         pip install scipy
-        python test/comp_scipy.py
+        python benchmark/comp_scipy.py

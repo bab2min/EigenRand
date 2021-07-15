@@ -15,7 +15,7 @@
 #include <array>
 #include <random>
 #include <type_traits>
-#include <EigenRand/MorePacketMath.h>
+#include "MorePacketMath.h"
 #include <fstream>
 
 namespace Eigen
@@ -537,7 +537,7 @@ namespace Eigen
 
 			float uniform_real()
 			{
-				internal::bit_scalar<float> bs;
+				internal::BitScalar<float> bs;
 				return bs.to_ur(this->operator()());
 			}
 		};

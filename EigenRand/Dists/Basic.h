@@ -238,6 +238,31 @@ namespace Eigen
 
 		using OptCacheStore = CacheStore<EIGEN_MAX_ALIGN_BYTES>;
 
+		template<typename _Scalar>
+		struct ExtractFirstUint;
+
+		template<>
+		struct ExtractFirstUint<float>
+		{
+			template<typename Packet>
+			auto operator()(Packet v) -> decltype(Eigen::internal::pfirst(v))
+			{
+				return Eigen::internal::pfirst(v);
+			}
+		};
+
+		template<>
+		struct ExtractFirstUint<double>
+		{
+			template<typename Packet>
+			auto operator()(Packet v) -> uint64_t
+			{
+				uint64_t arr[sizeof(Packet) / 8];
+				Eigen::internal::pstoreu((Packet*)arr, v);
+				return arr[0];
+			}
+		};
+
 		/**
 		 * @brief Generator of random bits for integral scalars
 		 * 
@@ -297,12 +322,51 @@ namespace Eigen
 		};
 
 		/**
+		 * @brief Generator of reals in a range `[a, b]`
+		 *
+		 * @tparam _Scalar any real type
+		 */
+		template<typename _Scalar>
+		class Balanced2Gen : public GenBase<Balanced2Gen<_Scalar>, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "balanced needs floating point types.");
+			_Scalar slope = 2, bias = -1;
+		public:
+			using Scalar = _Scalar;
+
+			/**
+			 * @brief Construct a new balanced generator
+			 *
+			 * @param _a,_b left and right boundary
+			 */
+			Balanced2Gen(_Scalar _a = -1, _Scalar _b = 1)
+				: slope{ _b - _a }, bias{ _a }
+			{
+			}
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				return ((_Scalar)((int32_t)pfirst(std::forward<Rng>(rng)()) & 0x7FFFFFFF) / 0x7FFFFFFF) * slope + bias;
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				using RUtils = RandUtils<Packet, Rng>;
+				return RUtils{}.balanced(std::forward<Rng>(rng), slope, bias);
+			}
+		};
+
+		/**
 		 * @brief Generator of reals in a range `[0, 1)`
 		 * 
 		 * @tparam _Scalar any real type
 		 */
 		template<typename _Scalar>
-		class UniformRealGen : public GenBase<UniformRealGen<_Scalar>, _Scalar>
+		class StdUniformRealGen : public GenBase<StdUniformRealGen<_Scalar>, _Scalar>
 		{
 			static_assert(std::is_floating_point<_Scalar>::value, "uniformReal needs floating point types.");
 
@@ -313,14 +377,14 @@ namespace Eigen
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
 				using namespace Eigen::internal;
-				return bit_scalar<_Scalar>{}.to_ur(pfirst(std::forward<Rng>(rng)()));
+				return BitScalar<_Scalar>{}.to_ur(ExtractFirstUint<_Scalar>{}(std::forward<Rng>(rng)()));
 			}
 
 			template<typename Rng>
 			EIGEN_STRONG_INLINE const _Scalar nzur_scalar(Rng&& rng)
 			{
 				using namespace Eigen::internal;
-				return bit_scalar<_Scalar>{}.to_nzur(pfirst(std::forward<Rng>(rng)()));
+				return BitScalar<_Scalar>{}.to_nzur(ExtractFirstUint<_Scalar>{}(std::forward<Rng>(rng)()));
 			}
 
 			template<typename Packet, typename Rng>
@@ -329,6 +393,44 @@ namespace Eigen
 				using namespace Eigen::internal;
 				using RUtils = RandUtils<Packet, Rng>;
 				return RUtils{}.uniform_real(std::forward<Rng>(rng));
+			}
+		};
+
+		template<typename _Scalar>
+		class UniformRealGen : public GenBase<UniformRealGen<_Scalar>, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "uniformReal needs floating point types.");
+			_Scalar bias, slope;
+
+		public:
+			using Scalar = _Scalar;
+
+			UniformRealGen(_Scalar _min = 0, _Scalar _max = 1)
+				: bias{ _min }, slope{ _max - _min }
+			{
+			}
+
+			UniformRealGen(const UniformRealGen&) = default;
+			UniformRealGen(UniformRealGen&&) = default;
+
+			UniformRealGen& operator=(const UniformRealGen&) = default;
+			UniformRealGen& operator=(UniformRealGen&&) = default;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				return bias + BitScalar<_Scalar>{}.to_ur(pfirst(std::forward<Rng>(rng)())) * slope;
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				using RUtils = RandUtils<Packet, Rng>;
+				return padd(pmul(
+					RUtils{}.uniform_real(std::forward<Rng>(rng)), pset1<Packet>(slope)
+				), pset1<Packet>(bias));
 			}
 		};
 
@@ -468,7 +570,53 @@ namespace Eigen
 		}
 
 		template<typename Derived, typename Urng>
-		using UniformRealType = CwiseNullaryOp<internal::scalar_rng_adaptor<UniformRealGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+		using Balanced2Type = CwiseNullaryOp<internal::scalar_rng_adaptor<Balanced2Gen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals in a range `[a, b]`
+		 *
+		 * @tparam Derived a type of Eigen::DenseBase
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param a,b left and right boundary
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 *
+		 * @see Eigen::Rand::BalancedGen
+		 */
+		template<typename Derived, typename Urng>
+		inline const Balanced2Type<Derived, Urng>
+			balanced(Index rows, Index cols, Urng&& urng, typename Derived::Scalar a, typename Derived::Scalar b)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), Balanced2Gen<typename Derived::Scalar>{a, b} }
+			};
+		}
+
+		/**
+		 * @brief generates reals in a range `[a, b]`
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param a,b left and right boundary
+		 * @return a random matrix expression of the same shape as `o`
+		 *
+		 * @see Eigen::Rand::BalancedGen
+		 */
+		template<typename Derived, typename Urng>
+		inline const Balanced2Type<Derived, Urng>
+			balancedLike(const Derived& o, Urng&& urng, typename Derived::Scalar a, typename Derived::Scalar b)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), Balanced2Gen<typename Derived::Scalar>{a, b} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using StdUniformRealType = CwiseNullaryOp<internal::scalar_rng_adaptor<StdUniformRealGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
 
 		/**
 		 * @brief generates reals in a range `[0, 1)`
@@ -483,7 +631,7 @@ namespace Eigen
 		 * @see Eigen::Rand::UniformRealGen
 		 */
 		template<typename Derived, typename Urng>
-		inline const UniformRealType<Derived, Urng>
+		inline const StdUniformRealType<Derived, Urng>
 			uniformReal(Index rows, Index cols, Urng&& urng)
 		{
 			return {
@@ -503,11 +651,57 @@ namespace Eigen
 		 * @see Eigen::Rand::UniformRealGen
 		 */
 		template<typename Derived, typename Urng>
-		inline const UniformRealType<Derived, Urng>
+		inline const StdUniformRealType<Derived, Urng>
 			uniformRealLike(Derived& o, Urng&& urng)
 		{
 			return {
 				o.rows(), o.cols(), { std::forward<Urng>(urng) }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using UniformRealType = CwiseNullaryOp<internal::scalar_rng_adaptor<UniformRealGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
+
+		/**
+		 * @brief generates reals in a range `[min, max)`
+		 *
+		 * @tparam Derived a type of Eigen::DenseBase
+		 * @tparam Urng
+		 * @param rows the number of rows being generated
+		 * @param cols the number of columns being generated
+		 * @param urng c++11-style random number generator
+		 * @param min, max the range of reals being generated
+		 * @return a random matrix expression with a shape (`rows`, `cols`)
+		 *
+		 * @see Eigen::Rand::UniformRealGen
+		 */
+		template<typename Derived, typename Urng>
+		inline const UniformRealType<Derived, Urng>
+			uniformReal(Index rows, Index cols, Urng&& urng, typename Derived::Scalar min, typename Derived::Scalar max)
+		{
+			return {
+				rows, cols, { std::forward<Urng>(urng), UniformRealGen<typename Derived::Scalar>{ min, max } }
+			};
+		}
+
+		/**
+		 * @brief generates reals in a range `[min, max)`
+		 *
+		 * @tparam Derived
+		 * @tparam Urng
+		 * @param o an instance of any type of Eigen::DenseBase
+		 * @param urng c++11-style random number generator
+		 * @param min, max the range of reals being generated
+		 * @return a random matrix expression of the same shape as `o`
+		 *
+		 * @see Eigen::Rand::UniformRealGen
+		 */
+		template<typename Derived, typename Urng>
+		inline const UniformRealType<Derived, Urng>
+			uniformRealLike(Derived& o, Urng&& urng, typename Derived::Scalar min, typename Derived::Scalar max)
+		{
+			return {
+				o.rows(), o.cols(), { std::forward<Urng>(urng), UniformRealGen<typename Derived::Scalar>{ min, max } }
 			};
 		}
 
