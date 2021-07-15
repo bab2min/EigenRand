@@ -14,7 +14,7 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="test\benchmark_mv.cpp">
+    <ClCompile Include="benchmark\benchmark_mv.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

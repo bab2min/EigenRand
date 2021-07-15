@@ -13,15 +13,15 @@
 #ifndef EIGENRAND_CORE_H
 #define EIGENRAND_CORE_H
 
-#include <EigenRand/RandUtils.h>
+#include "RandUtils.h"
 
-#include <EigenRand/Dists/Basic.h>
-#include <EigenRand/Dists/Discrete.h>
-#include <EigenRand/Dists/NormalExp.h>
-#include <EigenRand/Dists/GammaPoisson.h>
+#include "Dists/Basic.h"
+#include "Dists/Discrete.h"
+#include "Dists/NormalExp.h"
+#include "Dists/GammaPoisson.h"
 
-#include <EigenRand/MvDists/MvNormal.h>
-#include <EigenRand/MvDists/Multinomial.h>
+#include "MvDists/MvNormal.h"
+#include "MvDists/Multinomial.h"
 
 namespace Eigen
 {

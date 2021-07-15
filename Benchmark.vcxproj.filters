@@ -19,6 +19,18 @@
     <Filter Include="EigenRand\MvDists">
       <UniqueIdentifier>{9aa8288d-cadf-40d0-9665-a7e61ad37e47}</UniqueIdentifier>
     </Filter>
+    <Filter Include="EigenRand\arch">
+      <UniqueIdentifier>{2dd5c265-07cd-4265-a1c4-fdd2908d029f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EigenRand\arch\SSE">
+      <UniqueIdentifier>{316761d9-7742-4fd3-b64d-4ccb959247d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EigenRand\arch\AVX">
+      <UniqueIdentifier>{a01afb4b-04af-4be7-aa91-8670aff6591c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EigenRand\arch\NEON">
+      <UniqueIdentifier>{5ba81498-594f-45cf-90f7-230750bfecd4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EigenRand\MorePacketMath.h">
@@ -63,12 +75,21 @@
     <ClInclude Include="EigenRand\MvDists\MvNormal.h">
       <Filter>EigenRand\MvDists</Filter>
     </ClInclude>
+    <ClInclude Include="EigenRand\arch\SSE\MorePacketMath.h">
+      <Filter>EigenRand\arch\SSE</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\arch\AVX\MorePacketMath.h">
+      <Filter>EigenRand\arch\AVX</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\arch\NEON\MorePacketMath.h">
+      <Filter>EigenRand\arch\NEON</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="test\benchmark.cpp">
+    <ClCompile Include="benchmark\benchmark.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
