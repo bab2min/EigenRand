@@ -820,7 +820,7 @@ int main(int argc, char** argv)
 
 	for (size_t i = 0; i < repeat; ++i)
 	{
-		/*for (auto& p : test_rng(std::mt19937{}, size, "rng\tmt19937", results))
+		for (auto& p : test_rng(std::mt19937{}, size, "rng\tmt19937", results))
 		{
 			time[p.first] += p.second;
 			timeSq[p.first] += p.second * p.second;
@@ -866,7 +866,7 @@ int main(int argc, char** argv)
 		{
 			time[p.first] += p.second;
 			timeSq[p.first] += p.second * p.second;
-		}*/
+		}
 
 		for (auto& p : test_eigenrand<std::mt19937_64>(size, "\t:ERand", results))
 		{

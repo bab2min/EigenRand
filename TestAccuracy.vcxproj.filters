@@ -6,7 +6,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="test\accuracy.cpp">
+    <ClCompile Include="benchmark\accuracy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

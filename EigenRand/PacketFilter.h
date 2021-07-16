@@ -13,7 +13,7 @@
 #define EIGENRAND_PACKET_FILTER_H
 
 #include <array>
-#include <EigenRand/MorePacketMath.h>
+#include "MorePacketMath.h"
 
 namespace Eigen
 {

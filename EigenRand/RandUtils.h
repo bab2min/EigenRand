@@ -12,9 +12,9 @@
 #ifndef EIGENRAND_RAND_UTILS_H
 #define EIGENRAND_RAND_UTILS_H
 
-#include <EigenRand/MorePacketMath.h>
-#include <EigenRand/PacketFilter.h>
-#include <EigenRand/PacketRandomEngine.h>
+#include "MorePacketMath.h"
+#include "PacketFilter.h"
+#include "PacketRandomEngine.h"
 
 namespace Eigen
 {
@@ -36,6 +36,12 @@ namespace Eigen
 			EIGEN_STRONG_INLINE PacketType balanced(Rng& rng)
 			{
 				return psub(pmul(this->zero_to_one(rng), pset1<PacketType>(2)), pset1<PacketType>(1));
+			}
+
+			template<typename Scalar>
+			EIGEN_STRONG_INLINE PacketType balanced(Rng& rng, Scalar slope, Scalar bias)
+			{
+				return padd(pmul(this->zero_to_one(rng), pset1<PacketType>(slope)), pset1<PacketType>(bias));
 			}
 
 			EIGEN_STRONG_INLINE PacketType nonzero_uniform_real(Rng& rng)
