@@ -18,7 +18,6 @@ namespace Eigen
 {
 	namespace internal
 	{
-#ifdef EIGEN_VECTORIZE_AVX2
 		template<>
 		struct IsIntPacket<Packet8i> : std::true_type {};
 
@@ -33,7 +32,7 @@ namespace Eigen
 		{
 			using type = Packet4f;
 		};
-#endif
+
 		template<>
 		struct IsFloatPacket<Packet8f> : std::true_type {};
 
