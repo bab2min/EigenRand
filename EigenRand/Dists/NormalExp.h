@@ -324,7 +324,7 @@ namespace Eigen
 			GammaGen(_Scalar _alpha = 1, _Scalar _beta = 1)
 				: alpha{ _alpha }, beta{ _beta }
 			{
-				px = constant::e / (alpha + constant::e);
+				px = (_Scalar)(constant::e / (alpha + constant::e));
 				sqrt = std::sqrt(2 * alpha - 1);
 			}
 

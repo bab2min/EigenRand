@@ -12,8 +12,11 @@
 #ifndef EIGENRAND_EIGENRAND_H
 #define EIGENRAND_EIGENRAND_H
 
+#include <Eigen/src/Core/util/DisableStupidWarnings.h>
 #include <Eigen/Dense>
 #include "Macro.h"
 #include "Core.h"
+
+#include <Eigen/src/Core/util/ReenableStupidWarnings.h>
 
 #endif

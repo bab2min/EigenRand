@@ -58,7 +58,6 @@ namespace Eigen
 			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
 				using namespace Eigen::internal;
-				using ur_base = UniformRealGen<float>;
 				using PacketType = decltype(reinterpret_to_float(std::declval<Packet>()));
 
 				auto mean = gamma.template packetOp<PacketType>(rng);
