@@ -51,32 +51,6 @@ namespace Eigen
 			}
 		};
 
-	}
-}
-
-
-#ifdef EIGEN_VECTORIZE_AVX
-#include "arch/AVX/RandUtils.h"
-#endif
-
-#ifdef EIGEN_VECTORIZE_SSE2
-#include "arch/SSE/RandUtils.h"
-#endif
-
-#ifdef EIGEN_VECTORIZE_NEON
-#include "arch/NEON/RandUtils.h"
-#endif
-
-
-namespace Eigen
-{
-	namespace internal
-	{
-		EIGEN_STRONG_INLINE uint32_t collect_upper8bits(uint32_t a, uint32_t b, uint32_t c)
-		{
-			return ((a & 0xFF000000) >> 24) | ((b & 0xFF000000) >> 16) | ((c & 0xFF000000) >> 8);
-		}
-
 		template<typename Gen, typename _Scalar, typename Rng, bool _mutable = false>
 		struct scalar_rng_adaptor
 		{
@@ -162,6 +136,31 @@ namespace Eigen
 		{
 			enum { Cost = HugeCost, PacketAccess = packet_traits<_Scalar>::Vectorizable, IsRepeatable = false };
 		};
+	}
+}
+
+
+#ifdef EIGEN_VECTORIZE_AVX
+#include "arch/AVX/RandUtils.h"
+#endif
+
+#ifdef EIGEN_VECTORIZE_SSE2
+#include "arch/SSE/RandUtils.h"
+#endif
+
+#ifdef EIGEN_VECTORIZE_NEON
+#include "arch/NEON/RandUtils.h"
+#endif
+
+
+namespace Eigen
+{
+	namespace internal
+	{
+		EIGEN_STRONG_INLINE uint32_t collect_upper8bits(uint32_t a, uint32_t b, uint32_t c)
+		{
+			return ((a & 0xFF000000) >> 24) | ((b & 0xFF000000) >> 16) | ((c & 0xFF000000) >> 8);
+		}
 	}
 }
 
