@@ -115,6 +115,12 @@ namespace Eigen
 				return bit_to_ur_float(this->rawbits_34(rng));
 			}
 		};
+
+		template<typename Gen, typename Urng, bool _mutable>
+		struct functor_traits<scalar_rng_adaptor<Gen, double, Urng, _mutable> >
+		{
+			enum { Cost = HugeCost, PacketAccess = 0, IsRepeatable = false };
+		};
 	}
 }
 #endif
