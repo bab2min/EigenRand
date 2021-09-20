@@ -264,3 +264,5 @@ doxygen/docs
 .vscode/
 /RelNoVect
 /RelSSE2
+/build/
+*.out
