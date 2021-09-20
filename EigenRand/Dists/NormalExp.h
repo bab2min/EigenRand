@@ -44,8 +44,9 @@ namespace Eigen
 				valid = true;
 
 				_Scalar v1, v2, sx;
-				while (1)
+				for (int _i = 0; ; ++_i)
 				{
+					EIGENRAND_CHECK_INFINITY_LOOP();
 					v1 = 2 * ur(rng) - 1;
 					v2 = 2 * ur(rng) - 1;
 					sx = v1 * v1 + v2 * v2;
@@ -213,8 +214,9 @@ namespace Eigen
 			{
 				using namespace Eigen::internal;
 				_Scalar v1, v2, sx;
-				while (1)
+				for (int _i = 0; ; ++_i)
 				{
+					EIGENRAND_CHECK_INFINITY_LOOP();
 					v1 = 2 * ur(rng) - 1;
 					v2 = 2 * ur(rng) - 1;
 					sx = v1 * v1 + v2 * v2;
@@ -341,8 +343,9 @@ namespace Eigen
 				if (alpha < 1)
 				{
 					_Scalar ux, vx, xx, qx;
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						ux = expon.ur(rng);
 						vx = expon.ur.nzur_scalar(rng);
 
@@ -379,8 +382,9 @@ namespace Eigen
 					return -beta * std::log(yx);
 				}
 
-				while (1)
+				for (int _i = 0; ; ++_i)
 				{
+					EIGENRAND_CHECK_INFINITY_LOOP();
 					_Scalar yx, xx;
 					yx = std::tan(constant::pi * expon.ur(rng));
 					xx = sqrt * yx + alpha - 1;
@@ -403,8 +407,9 @@ namespace Eigen
 				RUtils ru;
 				if (alpha < 1)
 				{
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						Packet ux = ru.uniform_real(rng);
 						Packet vx = ru.nonzero_uniform_real(rng);
 
@@ -446,8 +451,9 @@ namespace Eigen
 				}
 				else
 				{
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						Packet alpha_1 = pset1<Packet>(alpha - 1);
 						Packet ys, yc;
 						psincos(pmul(pset1<Packet>(constant::pi), ru.uniform_real(rng)), ys, yc);
@@ -710,8 +716,9 @@ namespace Eigen
 				if (a < 1 && b < 1)
 				{
 					_Scalar x, p1, p2;
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						p1 = std::pow(ur(rng), 1 / a);
 						p2 = std::pow(ur(rng), 1 / b);
 						x = p1 + p2;
@@ -734,8 +741,9 @@ namespace Eigen
 				{
 					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
 					Packet x, p1, p2;
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						p1 = pexp(pmul(plog(ur.template packetOp<Packet>(rng)), pset1<Packet>(1 / a)));
 						p2 = pexp(pmul(plog(ur.template packetOp<Packet>(rng)), pset1<Packet>(1 / b)));
 						x = padd(p1, p2);

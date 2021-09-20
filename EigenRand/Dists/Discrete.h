@@ -260,8 +260,9 @@ namespace Eigen
 				else
 				{
 					size_t bitcnt = bitsize;
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						_Scalar cands = (_Scalar)(rx & bitmask);
 						if (cands <= pdiff) return cands;
 						if (bitcnt + bitsize < 32)
@@ -293,8 +294,9 @@ namespace Eigen
 					auto& cm = Rand::detail::CompressMask<sizeof(Packet)>::get_inst();
 					auto plen = pset1<Packet>(pdiff + 1);
 					size_t bitcnt = bitsize;
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						// accept cands that only < plen
 						auto cands = pand(rx, pbitmask);
 						bool full = false;
@@ -780,8 +782,9 @@ namespace Eigen
 				{
 					_Scalar res;
 					double yx;
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						yx = std::tan(constant::pi * ur(rng));
 						res = (_Scalar)(sqrt_tmean * yx + mean);
 						if (res >= 0 && ur(rng) <= 0.9 * (1.0 + yx * yx)
@@ -803,8 +806,9 @@ namespace Eigen
 				{
 					Packet res = pset1<Packet>(0);
 					PacketType val = pset1<PacketType>(1), pne_mean = pset1<PacketType>(ne_mean);
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						val = pmul(val, ur.template packetOp<PacketType>(rng));
 						auto c = reinterpret_to_int(pcmplt(pne_mean, val));
 						if (pmovemask(c) == 0) break;
@@ -820,8 +824,9 @@ namespace Eigen
 						pmean = pset1<PacketType>(mean),
 						plog_mean = pset1<PacketType>(log_mean),
 						pg1 = pset1<PacketType>(g1);
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						PacketType fres, yx, psin, pcos;
 						psincos(pmul(ppi, ur.template packetOp<PacketType>(rng)), psin, pcos);
 						yx = pdiv(psin, pcos);
@@ -906,8 +911,9 @@ namespace Eigen
 				}
 				else
 				{
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						double ys;
 						ys = std::tan(constant::pi * poisson.ur(rng));
 						res = (_Scalar)(sqrt_v * ys + poisson.mean);
@@ -957,8 +963,9 @@ namespace Eigen
 						plog_small_p = pset1<PacketType>(log_small_p),
 						plog_small_q = pset1<PacketType>(log_small_q),
 						pg1 = pset1<PacketType>(g1);
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						PacketType fres, ys, psin, pcos;
 						psincos(pmul(ppi, poisson.ur.template packetOp<PacketType>(rng)), psin, pcos);
 						ys = pdiv(psin, pcos);
