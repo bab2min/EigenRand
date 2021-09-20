@@ -2,8 +2,8 @@
  * @file EigenRand
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.3.3
- * @date 2021-03-31
+ * @version 0.4.0
+ * @date 2021-09-17
  * 
  * @copyright Copyright (c) 2020-2021
  * 
@@ -12,8 +12,10 @@
 #ifndef EIGENRAND_EIGENRAND_H
 #define EIGENRAND_EIGENRAND_H
 
-#include <Eigen/src/Core/util/DisableStupidWarnings.h>
 #include <Eigen/Dense>
+
+#include <Eigen/src/Core/util/DisableStupidWarnings.h>
+
 #include "Macro.h"
 #include "Core.h"
 
