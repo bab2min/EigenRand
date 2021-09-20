@@ -247,7 +247,7 @@ namespace Eigen
 				Packet prev = state[0] = x0;
 				for (int i = 1; i < _Nx; ++i)
 				{
-					prev = state[i] = pmuluadd64(pxor(prev, psrl64(prev, word_size - 2)), _Fx, i);
+					prev = state[i] = pmuluadd64(pxor(prev, psrl64<word_size - 2>(prev)), _Fx, i);
 				}
 				stateIdx = _Nx;
 			}
@@ -290,10 +290,10 @@ namespace Eigen
 				using namespace Eigen::internal;
 
 				Packet res = state[stateIdx++];
-				res = pxor(res, pand(psrl64(res, _Ux), pseti64<Packet>(_Dx)));
-				res = pxor(res, pand(psll64(res, _Sx), pseti64<Packet>(_Bx)));
-				res = pxor(res, pand(psll64(res, _Tx), pseti64<Packet>(_Cx)));
-				res = pxor(res, psrl64(res, _Lx));
+				res = pxor(res, pand(psrl64<_Ux>(res), pseti64<Packet>(_Dx)));
+				res = pxor(res, pand(psll64<_Sx>(res), pseti64<Packet>(_Bx)));
+				res = pxor(res, pand(psll64<_Tx>(res), pseti64<Packet>(_Cx)));
+				res = pxor(res, psrl64<_Lx>(res));
 				return res;
 			}
 
@@ -341,7 +341,7 @@ namespace Eigen
 						pand(state[i + _Nx + 1], lmask));
 
 					state[i] = pxor(pxor(
-						psrl64(tmp, 1),
+						psrl64<1>(tmp),
 						pand(pcmpeq64(pand(tmp, one), one), px)),
 						state[i + _Nx + _Mx]
 					);
@@ -353,7 +353,7 @@ namespace Eigen
 						pand(state[i + _Nx + 1], lmask));
 
 					state[i] = pxor(pxor(
-						psrl64(tmp, 1),
+						psrl64<1>(tmp),
 						pand(pcmpeq64(pand(tmp, one), one), px)),
 						state[i - _Nx + _Mx]
 					);
@@ -362,7 +362,7 @@ namespace Eigen
 				Packet tmp = por(pand(state[i + _Nx], hmask),
 					pand(state[0], lmask));
 				state[i] = pxor(pxor(
-					psrl64(tmp, 1),
+					psrl64<1>(tmp),
 					pand(pcmpeq64(pand(tmp, one), one), px)),
 					state[_Mx - 1]
 				);
@@ -384,7 +384,7 @@ namespace Eigen
 						pand(state[i - _Nx + 1], lmask));
 
 					state[i] = pxor(pxor(
-						psrl64(tmp, 1),
+						psrl64<1>(tmp),
 						pand(pcmpeq64(pand(tmp, one), one), px)),
 						state[i - _Nx + _Mx]
 					);

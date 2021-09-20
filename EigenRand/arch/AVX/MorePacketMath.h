@@ -177,52 +177,70 @@ namespace Eigen
 		}
 
 		template<>
-		EIGEN_STRONG_INLINE Packet8i psll<Packet8i>(const Packet8i& a, int b)
+		struct BitShifter<Packet8i>
 		{
+			template<int b>
+			EIGEN_STRONG_INLINE Packet8i sll(const Packet8i& a)
+			{
 #ifdef EIGEN_VECTORIZE_AVX2
-			return _mm256_slli_epi32(a, b);
+				return _mm256_slli_epi32(a, b);
 #else
-			Packet4i a1, a2;
-			split_two(a, a1, a2);
-			return combine_two((Packet4i)_mm_slli_epi32(a1, b), (Packet4i)_mm_slli_epi32(a2, b));
+				Packet4i a1, a2;
+				split_two(a, a1, a2);
+				return combine_two((Packet4i)_mm_slli_epi32(a1, b), (Packet4i)_mm_slli_epi32(a2, b));
 #endif
-		}
+			}
 
-		template<>
-		EIGEN_STRONG_INLINE Packet8i psrl<Packet8i>(const Packet8i& a, int b)
-		{
+			template<int b>
+			EIGEN_STRONG_INLINE Packet8i srl(const Packet8i& a, int _b = b)
+			{
 #ifdef EIGEN_VECTORIZE_AVX2
-			return _mm256_srli_epi32(a, b);
+				if (b >= 0)
+				{
+					return _mm256_srli_epi32(a, b);
+				}
+				else
+				{
+					return _mm256_srli_epi32(a, _b);
+				}
 #else
-			Packet4i a1, a2;
-			split_two(a, a1, a2);
-			return combine_two((Packet4i)_mm_srli_epi32(a1, b), (Packet4i)_mm_srli_epi32(a2, b));
+				Packet4i a1, a2;
+				split_two(a, a1, a2);
+				if (b >= 0)
+				{
+					return combine_two((Packet4i)_mm_srli_epi32(a1, b), (Packet4i)_mm_srli_epi32(a2, b));
+				}
+				else
+				{
+					return combine_two((Packet4i)_mm_srli_epi32(a1, _b), (Packet4i)_mm_srli_epi32(a2, _b));
+				}
 #endif
-		}
+			}
 
-		template<>
-		EIGEN_STRONG_INLINE Packet8i psll64<Packet8i>(const Packet8i& a, int b)
-		{
+			template<int b>
+			EIGEN_STRONG_INLINE Packet8i sll64(const Packet8i& a)
+			{
 #ifdef EIGEN_VECTORIZE_AVX2
-			return _mm256_slli_epi64(a, b);
+				return _mm256_slli_epi64(a, b);
 #else
-			Packet4i a1, a2;
-			split_two(a, a1, a2);
-			return combine_two((Packet4i)_mm_slli_epi64(a1, b), (Packet4i)_mm_slli_epi64(a2, b));
+				Packet4i a1, a2;
+				split_two(a, a1, a2);
+				return combine_two((Packet4i)_mm_slli_epi64(a1, b), (Packet4i)_mm_slli_epi64(a2, b));
 #endif
-		}
+			}
 
-		template<>
-		EIGEN_STRONG_INLINE Packet8i psrl64<Packet8i>(const Packet8i& a, int b)
-		{
+			template<int b>
+			EIGEN_STRONG_INLINE Packet8i srl64(const Packet8i& a)
+			{
 #ifdef EIGEN_VECTORIZE_AVX2
-			return _mm256_srli_epi64(a, b);
+				return _mm256_srli_epi64(a, b);
 #else
-			Packet4i a1, a2;
-			split_two(a, a1, a2);
-			return combine_two((Packet4i)_mm_srli_epi64(a1, b), (Packet4i)_mm_srli_epi64(a2, b));
+				Packet4i a1, a2;
+				split_two(a, a1, a2);
+				return combine_two((Packet4i)_mm_srli_epi64(a1, b), (Packet4i)_mm_srli_epi64(a2, b));
 #endif
-		}
+			}
+		};
 
 		template<> EIGEN_STRONG_INLINE Packet8i padd<Packet8i>(const Packet8i& a, const Packet8i& b)
 		{
@@ -535,7 +553,7 @@ namespace Eigen
 			// Truncate input values to the minimum positive normal.
 			x = pmax(x, min_norm_pos);
 
-			Packet4d emm0 = uint64_to_double(psrl64(_mm256_castpd_si256(x), 52));
+			Packet4d emm0 = uint64_to_double(psrl64<52>(_mm256_castpd_si256(x)));
 			Packet4d e = psub(emm0, pset1<Packet4d>(1022));
 
 			// Set the exponents to -1, i.e. x are in the range [0.5,1).

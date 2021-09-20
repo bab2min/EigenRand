@@ -49,11 +49,11 @@ namespace Eigen
 				bitmask = o.bitmask;
 				if (msize)
 				{
-					arr = std::unique_ptr<_Precision[]>(new _Precision[1 << bitsize]);
-					alias = std::unique_ptr<_Size[]>(new _Size[1 << bitsize]);
+					arr = std::unique_ptr<_Precision[]>(new _Precision[(size_t)1 << bitsize]);
+					alias = std::unique_ptr<_Size[]>(new _Size[(size_t)1 << bitsize]);
 
-					std::copy(o.arr.get(), o.arr.get() + (1 << bitsize), arr.get());
-					std::copy(o.alias.get(), o.alias.get() + (1 << bitsize), alias.get());
+					std::copy(o.arr.get(), o.arr.get() + ((size_t)1 << bitsize), arr.get());
+					std::copy(o.alias.get(), o.alias.get() + ((size_t)1 << bitsize), alias.get());
 				}
 				return *this;
 			}
@@ -125,7 +125,7 @@ namespace Eigen
 					{
 						arr[under] = (_Precision)f[under];
 					}
-					alias[under] = over;
+					alias[under] = (_Size)over;
 					f[over] += f[under] - 1;
 					if (f[over] >= 1 || mm <= over)
 					{
@@ -152,7 +152,7 @@ namespace Eigen
 						{
 							arr[over] = 1;
 						}
-						alias[over] = over;
+						alias[over] = (_Size)over;
 					}
 				}
 
@@ -166,7 +166,7 @@ namespace Eigen
 					{
 						arr[under] = 1;
 					}
-					alias[under] = under;
+					alias[under] = (_Size)under;
 					for (under = mm; under < msize; ++under)
 					{
 						if (f[under] < 1)
@@ -179,7 +179,7 @@ namespace Eigen
 							{
 								arr[under] = 1;
 							}
-							alias[under] = under;
+							alias[under] = (_Size)under;
 						}
 					}
 				}
@@ -304,7 +304,7 @@ namespace Eigen
 
 						if (bitcnt + bitsize < 32)
 						{
-							rx = psrl(rx, bitsize);
+							rx = psrl<-1>(rx, bitsize);
 							bitcnt += bitsize;
 						}
 						else
@@ -417,7 +417,7 @@ namespace Eigen
 					auto rx = randbits(std::forward<Rng>(rng));
 					auto albit = rx & alias_table.get_bitmask();
 					uint32_t alx = (uint32_t)(rx >> (sizeof(rx) * 8 - 31));
-					if (alx < alias_table.get_prob()[albit]) return albit;
+					if (alx < alias_table.get_prob()[albit]) return (_Scalar)albit;
 					return alias_table.get_alias()[albit];
 				}
 			}
@@ -451,7 +451,7 @@ namespace Eigen
 				{
 					auto rx = randbits.template packetOp<PacketType>(std::forward<Rng>(rng));
 					auto albit = pand(rx, pset1<PacketType>(alias_table.get_bitmask()));
-					auto c = pcmplt(psrl(rx, 1), pgather(alias_table.get_prob(), albit));
+					auto c = pcmplt(psrl<1>(rx), pgather(alias_table.get_prob(), albit));
 					ret = pblendv(c, albit, pgather(alias_table.get_alias(), albit));
 				}
 
@@ -673,6 +673,8 @@ namespace Eigen
 				}
 			}
 
+#ifdef EIGEN_VECTORIZE_NEON
+#else
 			template<typename Packet, typename Rng>
 			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
@@ -681,7 +683,7 @@ namespace Eigen
 				if (!cdf.empty())
 				{
 					auto ret = pset1<Packet>(cdf.size());
-#ifdef EIGEN_VECTORIZE_AVX
+	#ifdef EIGEN_VECTORIZE_AVX
 					auto rx = ur.template packetOp<Packet4d>(std::forward<Rng>(rng));
 					for (auto& p : cdf)
 					{
@@ -689,7 +691,7 @@ namespace Eigen
 						auto r = combine_low32(c);
 						ret = padd(ret, r);
 					}
-#else
+	#else
 					auto rx1 = ur.template packetOp<DPacket>(rng),
 						rx2 = ur.template packetOp<DPacket>(rng);
 					for (auto& p : cdf)
@@ -697,25 +699,26 @@ namespace Eigen
 						auto pp = pset1<decltype(rx1)>(p);
 						ret = padd(ret, combine_low32(reinterpret_to_int(pcmplt(rx1, pp)), reinterpret_to_int(pcmplt(rx2, pp))));
 					}
-#endif
+	#endif
 					return ret;
 				}
 				else
 				{
-#ifdef EIGEN_VECTORIZE_AVX
+	#ifdef EIGEN_VECTORIZE_AVX
 					using RUtils = RawbitsMaker<Packet, Rng>;
 					auto albit = pand(RUtils{}.rawbits(rng), pset1<Packet>(alias_table.get_bitmask()));
 					auto c = reinterpret_to_int(pcmplt(ur.template packetOp<Packet4d>(rng), pgather(alias_table.get_prob(), _mm256_castsi128_si256(albit))));
 					return pblendv(combine_low32(c), albit, pgather(alias_table.get_alias(), albit));
-#else
+	#else
 					using RUtils = RawbitsMaker<Packet, Rng>;
 					auto albit = pand(RUtils{}.rawbits(rng), pset1<Packet>(alias_table.get_bitmask()));
 					auto c1 = reinterpret_to_int(pcmplt(ur.template packetOp<DPacket>(rng), pgather(alias_table.get_prob(), albit)));
 					auto c2 = reinterpret_to_int(pcmplt(ur.template packetOp<DPacket>(rng), pgather(alias_table.get_prob(), albit, true)));
 					return pblendv(combine_low32(c1, c2), albit, pgather(alias_table.get_alias(), albit));
-#endif
+	#endif
 				}
 			}
+#endif
 		};
 
 		template<typename> class BinomialGen;
@@ -852,7 +855,7 @@ namespace Eigen
 
 			PoissonGen<_Scalar> poisson;
 			_Scalar trials;
-			double p, small_p, g1, sqrt_v, log_small_p, log_small_q;
+			double p = 0, small_p = 0, g1 = 0, sqrt_v = 0, log_small_p = 0, log_small_q = 0;
 
 		public:
 			using Scalar = _Scalar;
@@ -1503,6 +1506,17 @@ namespace Eigen
 			};
 		}
 	}
+
+#ifdef EIGEN_VECTORIZE_NEON
+	namespace internal
+	{
+		template<typename _Scalar, typename Urng, bool _mutable>
+		struct functor_traits<scalar_rng_adaptor<Rand::DiscreteGen<_Scalar, double>, _Scalar, Urng, _mutable> >
+		{
+			enum { Cost = HugeCost, PacketAccess = 0, IsRepeatable = false };
+		};
+	}
+#endif
 }
 
 #endif

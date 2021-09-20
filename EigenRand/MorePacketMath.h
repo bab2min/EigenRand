@@ -73,6 +73,21 @@ namespace Eigen
 		EIGEN_STRONG_INLINE Packet pcmpeq(const Packet& a, const Packet& b);
 
 		template<typename Packet>
+		struct BitShifter {};
+
+		template<int b, typename Packet>
+		EIGEN_STRONG_INLINE Packet psll(const Packet& a);
+
+		template<int _b, typename Packet>
+		EIGEN_STRONG_INLINE Packet psrl(const Packet& a, int b = _b);
+
+		template<int b, typename Packet>
+		EIGEN_STRONG_INLINE Packet psll64(const Packet& a);
+
+		template<int b, typename Packet>
+		EIGEN_STRONG_INLINE Packet psrl64(const Packet& a);
+
+		/*template<typename Packet>
 		EIGEN_STRONG_INLINE Packet psll(const Packet& a, int b);
 
 		template<typename Packet>
@@ -82,7 +97,7 @@ namespace Eigen
 		EIGEN_STRONG_INLINE Packet psll64(const Packet& a, int b);
 
 		template<typename Packet>
-		EIGEN_STRONG_INLINE Packet psrl64(const Packet& a, int b);
+		EIGEN_STRONG_INLINE Packet psrl64(const Packet& a, int b);*/
 
 		template<typename Packet>
 		EIGEN_STRONG_INLINE int pmovemask(const Packet& a);
@@ -109,7 +124,7 @@ namespace Eigen
 			);
 		}
 
-		template<>
+		/*template<>
 		EIGEN_STRONG_INLINE uint64_t psll64<uint64_t>(const uint64_t& a, int b)
 		{
 			return a << b;
@@ -119,7 +134,7 @@ namespace Eigen
 		EIGEN_STRONG_INLINE uint64_t psrl64<uint64_t>(const uint64_t& a, int b)
 		{
 			return a >> b;
-		}
+		}*/
 
 		// approximation : lgamma(z) ~= (z+2.5)ln(z+3) - z - 3 + 0.5 ln (2pi) + 1/12/(z + 3) - ln (z(z+1)(z+2))
 		template<typename Packet>
@@ -140,6 +155,9 @@ namespace Eigen
 
 		template<typename Packet>
 		EIGEN_STRONG_INLINE Packet pcmple(const Packet& a, const Packet& b);
+
+		template<typename Packet>
+		EIGEN_STRONG_INLINE Packet pbitnot(const Packet& a);
 
 		template<typename PacketIf, typename Packet>
 		EIGEN_STRONG_INLINE Packet pblendv(const PacketIf& ifPacket, const Packet& thenPacket, const Packet& elsePacket);
@@ -277,7 +295,7 @@ namespace Eigen
 
 			/* get the swap sign flag for the sine */
 			emm0 = pand(emm2, pset1<IntPacket>(4));
-			emm0 = psll(emm0, 29);
+			emm0 = psll<29>(emm0);
 			Packet swap_sign_bit_sin = reinterpret_to_float(emm0);
 
 			/* get the polynom selection mask for the sine*/
@@ -300,7 +318,7 @@ namespace Eigen
 
 			emm4 = psub(emm4, pset1<IntPacket>(2));
 			emm4 = pandnot(emm4, pset1<IntPacket>(4));
-			emm4 = psll(emm4, 29);
+			emm4 = psll<29>(emm4);
 			Packet sign_bit_cos = reinterpret_to_float(emm4);
 			sign_bit_sin = pxor(sign_bit_sin, swap_sign_bit_sin);
 
@@ -375,7 +393,7 @@ namespace Eigen
 
 			/* get the swap sign flag for the sine */
 			emm0 = pand(emm2, pseti64<IntPacket>(4));
-			emm0 = psll64(emm0, 61);
+			emm0 = psll64<61>(emm0);
 			Packet swap_sign_bit_sin = reinterpret_to_double(emm0);
 
 			/* get the polynom selection mask for the sine*/
@@ -398,7 +416,7 @@ namespace Eigen
 
 			emm4 = psub64(emm4, pseti64<IntPacket>(2));
 			emm4 = pandnot(emm4, pseti64<IntPacket>(4));
-			emm4 = psll64(emm4, 61);
+			emm4 = psll64<61>(emm4);
 			Packet sign_bit_cos = reinterpret_to_double(emm4);
 			sign_bit_sin = pxor(sign_bit_sin, swap_sign_bit_sin);
 
@@ -471,7 +489,7 @@ namespace Eigen
 
 			/* get the swap sign flag for the sine */
 			emm0 = pand(emm2, pseti64<IntPacket>(4));
-			emm0 = psll64(emm0, 61);
+			emm0 = psll64<61>(emm0);
 			Packet swap_sign_bit_sin = reinterpret_to_double(emm0);
 
 			/* get the polynom selection mask for the sine*/
@@ -545,5 +563,34 @@ namespace Eigen
 #include "arch/NEON/MorePacketMath.h"
 #endif
 
-#endif
+namespace Eigen
+{
+	namespace internal
+	{
+		template<int b, typename Packet>
+		EIGEN_STRONG_INLINE Packet psll(const Packet& a)
+		{
+			return BitShifter<Packet>{}.template sll<b>(a);
+		}
 
+		template<int _b, typename Packet>
+		EIGEN_STRONG_INLINE Packet psrl(const Packet& a, int b)
+		{
+			return BitShifter<Packet>{}.template srl<_b>(a, b);
+		}
+
+		template<int b, typename Packet>
+		EIGEN_STRONG_INLINE Packet psll64(const Packet& a)
+		{
+			return BitShifter<Packet>{}.template sll64<b>(a);
+		}
+
+		template<int b, typename Packet>
+		EIGEN_STRONG_INLINE Packet psrl64(const Packet& a)
+		{
+			return BitShifter<Packet>{}.template srl64<b>(a);
+		}
+	}
+}
+
+#endif
