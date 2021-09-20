@@ -65,8 +65,9 @@ namespace Eigen
 				PacketType val = pset1<PacketType>(1), pne_mean = pexp(pnegate(mean));
 				if (pmovemask(pcmplt(pset1<PacketType>(12), mean)) == 0)
 				{
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						val = pmul(val, ur.template packetOp<PacketType>(rng));
 						auto c = reinterpret_to_int(pcmplt(pne_mean, val));
 						if (pmovemask(c) == 0) break;
@@ -81,8 +82,9 @@ namespace Eigen
 						psqrt_tmean = psqrt(pmul(pset1<PacketType>(2), mean)),
 						plog_mean = plog(mean),
 						pg1 = psub(pmul(mean, plog_mean), plgamma_approx(padd(mean, pset1<PacketType>(1))));
-					while (1)
+					for (int _i = 0; ; ++_i)
 					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
 						PacketType fres, yx, psin, pcos;
 						psincos(pmul(ppi, ur.template packetOp<PacketType>(rng)), psin, pcos);
 						yx = pdiv(psin, pcos);

@@ -56,13 +56,13 @@ namespace Eigen
 		{
 			static_assert(
 				Rand::IsScalarRandomEngine<
-					typename std::remove_reference<Rng>::type
+				typename std::remove_reference<Rng>::type
 				>::value ||
 				Rand::IsPacketRandomEngine<
-					typename std::remove_reference<Rng>::type
-				>::value, 
+				typename std::remove_reference<Rng>::type
+				>::value,
 				"Rng must satisfy RandomNumberEngine"
-			);
+				);
 
 			Gen gen;
 			Rng rng;
@@ -96,13 +96,13 @@ namespace Eigen
 		{
 			static_assert(
 				Rand::IsScalarRandomEngine<
-					typename std::remove_reference<Rng>::type
+				typename std::remove_reference<Rng>::type
 				>::value ||
 				Rand::IsPacketRandomEngine<
-					typename std::remove_reference<Rng>::type
-				>::value, 
+				typename std::remove_reference<Rng>::type
+				>::value,
 				"Rng must satisfy RandomNumberEngine"
-			);
+				);
 
 			mutable Gen gen;
 			Rng rng;
@@ -163,5 +163,11 @@ namespace Eigen
 		}
 	}
 }
+
+#if defined(DEBUG) || defined(_DEBUG)
+	#define EIGENRAND_CHECK_INFINITY_LOOP() do { assert(_i < 100); } while(0)
+#else
+	#define EIGENRAND_CHECK_INFINITY_LOOP() 
+#endif
 
 #endif
