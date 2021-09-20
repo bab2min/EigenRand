@@ -635,6 +635,7 @@ int main(int argc, char** argv)
 
 	for (size_t i = 0; i < repeat; ++i)
 	{
+		std::cout << "Repeat " << i << " ..." << std::endl;
 		for (auto& p : test_eigenrand_cont<std::mt19937_64>(size, step, 42 * i))
 		{
 			err[p.first + "\t:EigenRand"] += p.second;
@@ -647,7 +648,7 @@ int main(int argc, char** argv)
 			klSq[p.first + "\t:EigenRand"] += p.second * p.second;
 		}
 
-#if defined(EIGEN_VECTORIZE_SSE2) || defined(EIGEN_VECTORIZE_AVX)
+#if defined(EIGEN_VECTORIZE_SSE2) || defined(EIGEN_VECTORIZE_AVX) || defined(EIGEN_VECTORIZE_NEON)
 		for (auto& p : test_eigenrand_cont<Eigen::Rand::Vmt19937_64>(size, step, 42 * i))
 		{
 			err[p.first + "\t:ERand+Vrng"] += p.second;
@@ -660,6 +661,7 @@ int main(int argc, char** argv)
 			klSq[p.first + "\t:ERand+Vrng"] += p.second * p.second;
 		}
 #endif
+#ifndef SKIP_REFERENCE
 		for (auto& p : test_cpp11_cont(size, step, 42 * i))
 		{
 			err[p.first + "\t:C++11"] += p.second;
@@ -677,6 +679,7 @@ int main(int argc, char** argv)
 			err[p.first + "\t:Old"] += p.second;
 			errSq[p.first + "\t:Old"] += p.second * p.second;
 		}
+#endif
 	}
 
 	std::cout << "[Earth Mover's Distance] Mean (Stdev)" << std::endl;
