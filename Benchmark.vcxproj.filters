@@ -84,6 +84,24 @@
     <ClInclude Include="EigenRand\arch\NEON\MorePacketMath.h">
       <Filter>EigenRand\arch\NEON</Filter>
     </ClInclude>
+    <ClInclude Include="EigenRand\arch\AVX\RandUtils.h">
+      <Filter>EigenRand\arch\AVX</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\arch\SSE\RandUtils.h">
+      <Filter>EigenRand\arch\SSE</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\arch\NEON\RandUtils.h">
+      <Filter>EigenRand\arch\NEON</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\arch\AVX\PacketFilter.h">
+      <Filter>EigenRand\arch\AVX</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\arch\SSE\PacketFilter.h">
+      <Filter>EigenRand\arch\SSE</Filter>
+    </ClInclude>
+    <ClInclude Include="EigenRand\arch\NEON\PacketFilter.h">
+      <Filter>EigenRand\arch\NEON</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
