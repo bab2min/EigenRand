@@ -146,29 +146,39 @@ namespace Eigen
 		}
 
 		template<>
-		EIGEN_STRONG_INLINE Packet4i psll<Packet4i>(const Packet4i& a, int b)
+		struct BitShifter<Packet4i>
 		{
-			return _mm_slli_epi32(a, b);
-		}
+			template<int b>
+			EIGEN_STRONG_INLINE Packet4i sll(const Packet4i& a)
+			{
+				return _mm_slli_epi32(a, b);
+			}
 
-		template<>
-		EIGEN_STRONG_INLINE Packet4i psrl<Packet4i>(const Packet4i& a, int b)
-		{
-			return _mm_srli_epi32(a, b);
-		}
+			template<int b>
+			EIGEN_STRONG_INLINE Packet4i srl(const Packet4i& a, int _b = b)
+			{
+				if (b >= 0)
+				{
+					return _mm_srli_epi32(a, b);
+				}
+				else
+				{
+					return _mm_srli_epi32(a, _b);
+				}
+			}
 
+			template<int b>
+			EIGEN_STRONG_INLINE Packet4i sll64(const Packet4i& a)
+			{
+				return _mm_slli_epi64(a, b);
+			}
 
-		template<>
-		EIGEN_STRONG_INLINE Packet4i psll64<Packet4i>(const Packet4i& a, int b)
-		{
-			return _mm_slli_epi64(a, b);
-		}
-
-		template<>
-		EIGEN_STRONG_INLINE Packet4i psrl64<Packet4i>(const Packet4i& a, int b)
-		{
-			return _mm_srli_epi64(a, b);
-		}
+			template<int b>
+			EIGEN_STRONG_INLINE Packet4i srl64(const Packet4i& a)
+			{
+				return _mm_srli_epi64(a, b);
+			}
+		};
 
 		template<>
 		EIGEN_STRONG_INLINE Packet4i pcmplt<Packet4i>(const Packet4i& a, const Packet4i& b)
