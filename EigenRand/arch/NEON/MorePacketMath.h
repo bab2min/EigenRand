@@ -116,7 +116,7 @@ namespace Eigen
 			{
 				if (b > 0)
 				{
-					return vreinterpretq_s32_u32(vshrq_n_u32(vreinterpretq_u32_s32(a), b));
+					return vreinterpretq_s32_u32(vshrq_n_u32(vreinterpretq_u32_s32(a), b > 0 ? b : 1));
 				}
 				else
 				{
