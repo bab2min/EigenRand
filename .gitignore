@@ -266,3 +266,4 @@ doxygen/docs
 /RelSSE2
 /build/
 *.out
+ARM64/
