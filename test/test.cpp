@@ -3,11 +3,14 @@
 #include <EigenRand/EigenRand>
 #include <cmath>
 
+#ifdef EIGEN_VECTORIZE_NEON
+
 TEST(MorePacketMath, log)
 {
-	Eigen::ArrayXf x(8);
-	x << 0, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0;
-	Eigen::ArrayXf y = x.log();
+	Eigen::ArrayXf x(8), y(8);
+	x << -1, 0, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0;
+	y.writePacket<0>(0, Eigen::internal::plog(x.packet<0>(0)));
+	y.writePacket<0>(4, Eigen::internal::plog(x.packet<0>(4)));
 	std::cout << y.transpose() << std::endl;
 	for (int i = 0; i < x.size(); ++i)
 	{
@@ -24,9 +27,10 @@ TEST(MorePacketMath, log)
 
 TEST(MorePacketMath, sin)
 {
-	Eigen::ArrayXf x(8);
-	x << 0, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0;
-	Eigen::ArrayXf y = x.sin();
+	Eigen::ArrayXf x(8), y(8);
+	x << -1, 0, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0;
+	y.writePacket<0>(0, Eigen::internal::psin(x.packet<0>(0)));
+	y.writePacket<0>(4, Eigen::internal::psin(x.packet<0>(4)));
 	std::cout << y.transpose() << std::endl;
 	for (int i = 0; i < x.size(); ++i)
 	{
@@ -41,11 +45,47 @@ TEST(MorePacketMath, sin)
 	}
 }
 
+TEST(MorePacketMath, sincos)
+{
+	Eigen::ArrayXf x(8), y(8), z(8);
+	x << -1, 0, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0;
+	Eigen::internal::Packet4f s, c;
+	Eigen::internal::psincos(x.packet<0>(0), s, c);
+	y.writePacket<0>(0, s);
+	z.writePacket<0>(0, c);
+	Eigen::internal::psincos(x.packet<0>(4), s, c);
+	y.writePacket<0>(4, s);
+	z.writePacket<0>(4, c);
+	std::cout << y.transpose() << std::endl;
+	std::cout << z.transpose() << std::endl;
+	for (int i = 0; i < x.size(); ++i)
+	{
+		if (std::isnan(std::sin(x[i])))
+		{
+			EXPECT_TRUE(std::isnan(y[i]));
+		}
+		else
+		{
+			EXPECT_FLOAT_EQ(std::sin(x[i]), y[i]);
+		}
+
+		if (std::isnan(std::cos(x[i])))
+		{
+			EXPECT_TRUE(std::isnan(z[i]));
+		}
+		else
+		{
+			EXPECT_FLOAT_EQ(std::cos(x[i]), z[i]);
+		}
+	}
+}
+
 TEST(MorePacketMath, sqrt)
 {
-	Eigen::ArrayXf x(8);
-	x << 0, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0;
-	Eigen::ArrayXf y = x.sqrt();
+	Eigen::ArrayXf x(8), y(8);
+	x << -1, 0, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0;
+	y.writePacket<0>(0, Eigen::internal::psqrt(x.packet<0>(0)));
+	y.writePacket<0>(4, Eigen::internal::psqrt(x.packet<0>(4)));
 	std::cout << y.transpose() << std::endl;
 	for (int i = 0; i < x.size(); ++i)
 	{
@@ -60,6 +100,8 @@ TEST(MorePacketMath, sqrt)
 	}
 }
 
+#endif
+
 template <class T>
 class ContinuousDistTest : public testing::Test
 {
@@ -72,7 +114,7 @@ TYPED_TEST_CASE(ContinuousDistTest, ETypes);
 TYPED_TEST(ContinuousDistTest, balanced)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::balanced<Matrix>(8, 8, gen);
@@ -86,7 +128,7 @@ TYPED_TEST(ContinuousDistTest, balanced)
 TYPED_TEST(ContinuousDistTest, balanced2)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::balanced<Matrix>(8, 8, gen, 0.5, 2);
@@ -100,7 +142,7 @@ TYPED_TEST(ContinuousDistTest, balanced2)
 TYPED_TEST(ContinuousDistTest, uniformReal)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::uniformReal<Matrix>(8, 8, gen);
@@ -113,7 +155,7 @@ TYPED_TEST(ContinuousDistTest, uniformReal)
 TYPED_TEST(ContinuousDistTest, stdNormal)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::normal<Matrix>(8, 8, gen);
@@ -127,7 +169,7 @@ TYPED_TEST(ContinuousDistTest, stdNormal)
 TYPED_TEST(ContinuousDistTest, normal)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::normal<Matrix>(8, 8, gen, 1, 2);
@@ -141,7 +183,7 @@ TYPED_TEST(ContinuousDistTest, normal)
 TYPED_TEST(ContinuousDistTest, exponential)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::exponential<Matrix>(8, 8, gen, 2);
@@ -155,7 +197,7 @@ TYPED_TEST(ContinuousDistTest, exponential)
 TYPED_TEST(ContinuousDistTest, lognormal)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::lognormal<Matrix>(8, 8, gen, 1, 2);
@@ -169,7 +211,7 @@ TYPED_TEST(ContinuousDistTest, lognormal)
 TYPED_TEST(ContinuousDistTest, beta)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::beta<Matrix>(8, 8, gen, 1, 2);
@@ -183,7 +225,7 @@ TYPED_TEST(ContinuousDistTest, beta)
 TYPED_TEST(ContinuousDistTest, cauchy)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::cauchy<Matrix>(8, 8, gen, 1, 2);
@@ -197,7 +239,7 @@ TYPED_TEST(ContinuousDistTest, cauchy)
 TYPED_TEST(ContinuousDistTest, studentT)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::studentT<Matrix>(8, 8, gen, 5);
@@ -211,7 +253,7 @@ TYPED_TEST(ContinuousDistTest, studentT)
 TYPED_TEST(ContinuousDistTest, gamma)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::gamma<Matrix>(8, 8, gen, 1, 2);
@@ -225,7 +267,7 @@ TYPED_TEST(ContinuousDistTest, gamma)
 TYPED_TEST(ContinuousDistTest, weibull)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::weibull<Matrix>(8, 8, gen, 1, 2);
@@ -239,7 +281,7 @@ TYPED_TEST(ContinuousDistTest, weibull)
 TYPED_TEST(ContinuousDistTest, extremeValueLike)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::extremeValue<Matrix>(8, 8, gen, 1, 2);
@@ -253,7 +295,7 @@ TYPED_TEST(ContinuousDistTest, extremeValueLike)
 TYPED_TEST(ContinuousDistTest, chiSquared)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::chiSquared<Matrix>(8, 8, gen, 7);
@@ -267,7 +309,7 @@ TYPED_TEST(ContinuousDistTest, chiSquared)
 TYPED_TEST(ContinuousDistTest, fisherF1)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::fisherF<Matrix>(8, 8, gen, 1, 1);
@@ -281,7 +323,7 @@ TYPED_TEST(ContinuousDistTest, fisherF1)
 TYPED_TEST(ContinuousDistTest, fisherF2)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::fisherF<Matrix>(8, 8, gen, 5, 5);
@@ -302,7 +344,7 @@ TYPED_TEST_CASE(DiscreteDistTest, testing::Types<int32_t>);
 TYPED_TEST(DiscreteDistTest, uniformInt)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::uniformInt<Matrix>(8, 8, gen, 0, 9);
@@ -316,7 +358,7 @@ TYPED_TEST(DiscreteDistTest, uniformInt)
 TYPED_TEST(DiscreteDistTest, discrete)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::discrete<Matrix>(8, 8, gen, { 1, 2, 3, 4, 5, 6 });
@@ -330,7 +372,7 @@ TYPED_TEST(DiscreteDistTest, discrete)
 TYPED_TEST(DiscreteDistTest, poisson)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::poisson<Matrix>(8, 8, gen, 1);
@@ -344,7 +386,7 @@ TYPED_TEST(DiscreteDistTest, poisson)
 TYPED_TEST(DiscreteDistTest, binomial)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::binomial<Matrix>(8, 8, gen, 10, 0.5);
@@ -358,7 +400,7 @@ TYPED_TEST(DiscreteDistTest, binomial)
 TYPED_TEST(DiscreteDistTest, negativeBinomial)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::negativeBinomial<Matrix>(8, 8, gen, 10, 0.5);
@@ -372,7 +414,7 @@ TYPED_TEST(DiscreteDistTest, negativeBinomial)
 TYPED_TEST(DiscreteDistTest, geometric)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
-	Eigen::Rand::Vmt19937_64 gen{ 42 };
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
 	Matrix mat;
 
 	mat = Eigen::Rand::geometric<Matrix>(8, 8, gen, 0.25);
