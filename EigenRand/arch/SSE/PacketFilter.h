@@ -25,7 +25,7 @@ namespace Eigen
 			{
 				std::array<std::array<uint8_t, 16>, 7> idx;
 				std::array<internal::Packet4f, 4> selector;
-				std::array<uint8_t, 64> cnt;
+				std::array<uint8_t, 16> cnt;
 
 				static uint8_t make_compress(int mask, int offset = 0)
 				{

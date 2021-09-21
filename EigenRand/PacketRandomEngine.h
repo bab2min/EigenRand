@@ -569,7 +569,7 @@ namespace Eigen
 
 #ifdef EIGEN_VECTORIZE_AVX2
 		using Vmt19937_64 = Pmt19937_64<internal::Packet8i>;
-#elif defined(EIGEN_VECTORIZE_AVX) || defined(EIGEN_VECTORIZE_SSE2)
+#elif defined(EIGEN_VECTORIZE_AVX) || defined(EIGEN_VECTORIZE_SSE2) || defined(EIGEN_VECTORIZE_NEON)
 		using Vmt19937_64 = Pmt19937_64<internal::Packet4i>;
 #else
 		/**
@@ -582,12 +582,16 @@ namespace Eigen
 		 */
 		using Vmt19937_64 = std::mt19937_64;
 #endif
+		template<typename UIntType = uint64_t>
+		using P8_mt19937 = ParallelRandomEngineAdaptor<UIntType, Vmt19937_64, 8>;
+
 		/**
 		 * @brief a vectorized mt19937_64 which generates 8 integers of 64bit simultaneously.
 		 * It always yields the same value regardless of SIMD ISA.
 		 */
-		template<typename UIntType = uint64_t>
-		using P8_mt19937_64 = ParallelRandomEngineAdaptor<UIntType, Vmt19937_64, 8>;
+		using P8_mt19937_64 = P8_mt19937<uint64_t>;
+
+		using P8_mt19937_64_32 = P8_mt19937<uint32_t>;
 	}
 }
 

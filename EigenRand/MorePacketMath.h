@@ -14,6 +14,8 @@
 
 #include <Eigen/Dense>
 
+#define EIGENRAND_PRINT_PACKET(p) do { using _MTy = typename std::remove_const<typename std::remove_reference<decltype(p)>::type>::type; typename std::conditional<Eigen::internal::IsFloatPacket<_MTy>::value, float, typename std::conditional<Eigen::internal::IsDoublePacket<_MTy>::value, double, int>::type>::type f[4]; Eigen::internal::pstore(f, p); std::cout << #p " " << f[0] << " " << f[1] << " " << f[2] << " " << f[3] << std::endl; } while(0)
+
 namespace Eigen
 {
 	namespace internal
@@ -317,7 +319,11 @@ namespace Eigen
 			x = padd(x, xmm3);
 
 			emm4 = psub(emm4, pset1<IntPacket>(2));
+#ifdef EIGEN_VECTORIZE_NEON
+			emm4 = pand(pbitnot(emm4), pset1<IntPacket>(4));
+#else
 			emm4 = pandnot(emm4, pset1<IntPacket>(4));
+#endif
 			emm4 = psll<29>(emm4);
 			Packet sign_bit_cos = reinterpret_to_float(emm4);
 			sign_bit_sin = pxor(sign_bit_sin, swap_sign_bit_sin);
@@ -351,7 +357,11 @@ namespace Eigen
 			/* select the correct result from the two polynoms */
 			xmm3 = poly_mask;
 			Packet ysin2 = pand(xmm3, y2);
+#ifdef EIGEN_VECTORIZE_NEON
+			Packet ysin1 = pblendv(xmm3, pset1<Packet>(0), y);
+#else
 			Packet ysin1 = pandnot(xmm3, y);
+#endif
 			y2 = psub(y2, ysin2);
 			y = psub(y, ysin1);
 
