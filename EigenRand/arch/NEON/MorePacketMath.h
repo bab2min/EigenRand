@@ -256,6 +256,12 @@ namespace Eigen
 		}
 
 		template<>
+		EIGEN_STRONG_INLINE Packet4i pseti64<Packet4i>(uint64_t a)
+		{
+			return vreinterpretq_s32_u64(vdupq_n_u64(a));
+		}
+
+		template<>
 		EIGEN_STRONG_INLINE Packet4i pcmpeq64<Packet4i>(const Packet4i& a, const Packet4i& b)
 		{
 			return vreinterpretq_s32_u64(vceqq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b)));
@@ -303,7 +309,7 @@ namespace Eigen
 
 
 			Packet4i emm0;
-
+			
 			Packet4f invalid_mask = pbitnot(pcmple(pset1<Packet4f>(0), x)); // not greater equal is true if x is NaN
 			Packet4f iszero_mask = pcmpeq(x, pset1<Packet4f>(0));
 
@@ -351,8 +357,7 @@ namespace Eigen
 			x = padd(x, y);
 			x = padd(x, y2);
 			// negative arg will be NAN, 0 will be -INF
-			return por(pandnot(iszero_mask, por(x, invalid_mask)),
-				pand(iszero_mask, p4f_minus_inf));
+			return pblendv(iszero_mask, p4f_minus_inf, por(x, invalid_mask));
 		}
 
 		template<>
@@ -454,9 +459,7 @@ namespace Eigen
 			y2 = padd(y2, x);
 
 			/* select the correct result from the two polynoms */
-			y2 = pand(poly_mask, y2);
-			y = pandnot(poly_mask, y);
-			y = por(y, y2);
+			y = pblendv(poly_mask, y2, y);
 			/* update the sign */
 			return pxor(y, sign_bit);
 		}
