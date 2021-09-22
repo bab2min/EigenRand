@@ -49,12 +49,6 @@ add_executable( "${PROJECT_NAME}-accuracy"
 )
 
 if(EIGENRAND_BUILD_TEST)
-  include(ExternalProject)
-  ExternalProject_Add(gtest
-    URL https://github.com/google/googletest/archive/release-1.8.1.zip
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/gtest
-    INSTALL_COMMAND ""
-  )
-  ExternalProject_Get_Property(gtest source_dir binary_dir)
+  add_subdirectory( googletest )
   add_subdirectory( test )
 endif()
