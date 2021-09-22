@@ -8,11 +8,11 @@ add_executable(EigenRand-test test.cpp)
 # If used often, could be made a macro.
 
 add_dependencies(EigenRand-test gtest)
-include_directories(${source_dir}/googletest/include)
-target_link_libraries(EigenRand-test ${binary_dir}/googlemock/gtest/libgtest_main.a)
-target_link_libraries(EigenRand-test ${binary_dir}/googlemock/gtest/libgtest.a)
-target_link_libraries(EigenRand-test -Wl,--whole-archive -lpthread -Wl,--no-whole-archive)
-
+include_directories(googletest/include)
+target_link_libraries(EigenRand-test gtest_main gtest)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  target_link_libraries(EigenRand-test -Wl,--whole-archive -lpthread -Wl,--no-whole-archive)
+endif()
 ##################################
 # Just make the test runnable with
 #   $ make test
