@@ -20,29 +20,74 @@ jobs:
     - name: Install dependencies
       run: |
         git clone https://gitlab.com/libeigen/eigen
-        cd eigen
+        pushd eigen
         git checkout tags/${{ matrix.eigenversion }}
-        cd ..
+        popd
         mv eigen include
-    - name: Build Bench
+        git clone https://github.com/google/googletest
+        pushd googletest
+        git checkout v1.8.x
+        popd
+    - name: Build
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark.cpp -o bench.out
+        export EIGEN_PATH=`pwd`/include
+        mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
+        make
+    - name: Test
+      run: |
+        ./build/test/EigenRand-test
     - name: Run Bench
       run: |
         cat /proc/cpuinfo
-        ./bench.out
-    - name: Build BenchMv
-      run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark_mv.cpp -o benchmv.out
+        ./build/EigenRand-benchmark
     - name: Run BenchMv
       run: |
-        ./benchmv.out
-    - name: Build Accuracy
-      run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/accuracy.cpp -o accuracy.out
+        ./build/EigenRand-benchmark-mv
     - name: Run Accuracy
       run: |
-        ./accuracy.out
+        ./build/EigenRand-accuracy
+
+  build-arm64:
+    name: Build for Arm64-Centos7
+    runs-on: ubuntu-18.04
+    strategy:
+      max-parallel: 4
+      matrix:
+        arch: [DEIGEN_DONT_VECTORIZE, march=native]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9]
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - uses: bab2min/run-on-arch-action@use-custom-image
+      id: runcmd
+      with:
+        image: quay.io/pypa/manylinux2014_aarch64
+        githubToken: ${{ github.token }}
+        setup: |
+          mkdir -p "${PWD}/artifacts"
+        dockerRunArgs: |
+          --volume "${PWD}/artifacts:/artifacts"
+        run: |
+          git clone https://gitlab.com/libeigen/eigen
+          pushd eigen
+          git checkout tags/${{ matrix.eigenversion }}
+          popd
+          git clone https://github.com/google/googletest
+          pushd googletest
+          git checkout v1.8.x
+          popd
+          mv eigen include
+          export EIGEN_PATH=`pwd`/include
+          mkdir build && cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
+          make
+          ./test/EigenRand-test
+          ./EigenRand-benchmark
+          ./EigenRand-benchmark-mv
+          ./EigenRand-accuracy
 
   build_macos:
     name: Build for macOS
@@ -59,27 +104,31 @@ jobs:
         wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
         tar -zxvf eigen-${{ matrix.eigenversion }}.tar.gz
         mv eigen-${{ matrix.eigenversion }} include
-    - name: Build Bench
+        git clone https://github.com/google/googletest
+        pushd googletest
+        git checkout v1.8.x
+        popd
+    - name: Build
       run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark.cpp -o bench.out
+        export EIGEN_PATH=`pwd`/include
+        mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
+        make
+    - name: Test
+      run: |
+        ./build/test/EigenRand-test
     - name: Run Bench
       continue-on-error: true
       run: |
         sysctl -a | grep machdep.cpu
-        ./bench.out
-    - name: Build BenchMv
-      run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/benchmark_mv.cpp -o benchmv.out
+        ./build/EigenRand-benchmark
     - name: Run BenchMv
       continue-on-error: true
       run: |
-        ./benchmv.out
-    - name: Build Accuracy
-      run: |
-        g++ -std=c++11 -g -O3 -${{ matrix.arch }} -DNDEBUG -I./ -I./include -Wno-ignored-attributes benchmark/accuracy.cpp -o accuracy.out
+        ./build/EigenRand-benchmark-mv
     - name: Run Accuracy
       run: |
-        ./accuracy.out
+        ./build/EigenRand-accuracy
 
   build_windows:
     name: Build for Windows
@@ -96,26 +145,33 @@ jobs:
         Invoke-WebRequest -OutFile eigen.tar.gz https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
         tar -zxvf eigen.tar.gz
         mv eigen-${{ matrix.eigenversion }} include
-    - uses: ilammy/msvc-dev-cmd@v1
-    - name: Build Bench
+        echo "EIGEN_PATH=$(Get-Location)\include" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+        git clone https://github.com/google/googletest
+        pushd googletest
+        git checkout v1.8.x
+        popd
+    - name: Build
+      uses: lukka/run-cmake@v3
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeBuildType: Release
+        buildWithCMake: true
+        cmakeAppendedArgs: -G"Visual Studio 16 2019" -Ax64 -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} /I${{ env.EIGEN_PATH }}"
+        buildWithCMakeArgs: --config Release
+        buildDirectory: build
+    - name: Test
       run: |
-        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:bench.exe .\benchmark\benchmark.cpp
+        .\build\test\Release\EigenRand-test.exe
     - name: Run Bench
       run: |
         bash -c "cat /proc/cpuinfo"
-        .\bench.exe
-    - name: Build BenchMv
-      run: |
-        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:benchmv.exe .\benchmark\benchmark_mv.cpp
+        .\build\Release\EigenRand-benchmark.exe
     - name: Run BenchMv
       run: |
-        .\benchmv.exe
-    - name: Build Accuracy
-      run: |
-        cl.exe /O2 ${{ matrix.arch }} /I.\ /I.\include /D "NDEBUG" /Fe:accuracy.exe .\benchmark\accuracy.cpp
+        .\build\Release\EigenRand-benchmark-mv.exe
     - name: Run Accuracy
       run: |
-        .\accuracy.exe
+        .\build\Release\EigenRand-accuracy.exe
 
   reference:
     name: Reference
