@@ -1,0 +1,48 @@
+name: Pull Request Test (non-x64)
+
+on: 
+  pull_request:
+    branches: 
+      - main
+
+jobs:
+  build-arm64:
+    name: Build for Arm64-Centos7
+    runs-on: ubuntu-18.04
+    strategy:
+      max-parallel: 4
+      matrix:
+        arch: [DEIGEN_DONT_VECTORIZE, march=native]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9]
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - uses: bab2min/run-on-arch-action@use-custom-image
+      id: runcmd
+      with:
+        image: quay.io/pypa/manylinux2014_aarch64
+        githubToken: ${{ github.token }}
+        setup: |
+          mkdir -p "${PWD}/artifacts"
+        dockerRunArgs: |
+          --volume "${PWD}/artifacts:/artifacts"
+        run: |
+          git clone https://gitlab.com/libeigen/eigen
+          pushd eigen
+          git checkout tags/${{ matrix.eigenversion }}
+          popd
+          git clone https://github.com/google/googletest
+          pushd googletest
+          git checkout v1.8.x
+          popd
+          mv eigen include
+          export EIGEN_PATH=`pwd`/include
+          mkdir build && cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
+          make
+          ./test/EigenRand-test
+          ./EigenRand-benchmark 1000 3
+          ./EigenRand-benchmark-mv 10000 3
+          ./EigenRand-accuracy 256
