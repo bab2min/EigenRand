@@ -156,7 +156,7 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeBuildType: Release
         buildWithCMake: true
-        cmakeAppendedArgs: -G"Visual Studio 16 2019" -Ax64 -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} /I${{ env.EIGEN_PATH }}"
+        cmakeAppendedArgs: -G"Visual Studio 16 2019" -Ax64 -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }} /I${{ env.EIGEN_PATH }}"
         buildWithCMakeArgs: --config Release
         buildDirectory: build
     - name: Test
