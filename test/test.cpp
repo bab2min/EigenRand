@@ -425,7 +425,6 @@ TYPED_TEST(DiscreteDistTest, geometric)
 	std::cout << mat << std::endl;
 }
 
-
 TEST(Issue, 29)
 {
 	typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> CMatrix;
