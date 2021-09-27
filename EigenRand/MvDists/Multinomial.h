@@ -147,6 +147,8 @@ namespace Eigen
 		template<typename _Scalar, Index Dim = -1>
 		class DirichletGen : public MvVecGenBase<DirichletGen<_Scalar, Dim>, _Scalar, Dim>
 		{
+			static_assert(std::is_floating_point<_Scalar>::value, "`DirichletGen` needs floating point types.");
+
 			Matrix<_Scalar, Dim, 1> alpha;
 			std::vector<GammaGen<_Scalar>> gammas;
 		public:

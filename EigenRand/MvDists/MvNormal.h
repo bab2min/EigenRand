@@ -56,6 +56,8 @@ namespace Eigen
 		template<typename _Scalar, Index Dim = -1>
 		class MvNormalGen : public MvVecGenBase<MvNormalGen<_Scalar, Dim>, _Scalar, Dim>
 		{
+			static_assert(std::is_floating_point<_Scalar>::value, "`MvNormalGen` needs floating point types.");
+
 			Matrix<_Scalar, Dim, 1> mean;
 			Matrix<_Scalar, Dim, Dim> lt;
 			StdNormalGen<_Scalar> stdnorm;
@@ -170,6 +172,8 @@ namespace Eigen
 		template<typename _Scalar, Index Dim>
 		class WishartGen : public MvMatGenBase<WishartGen<_Scalar, Dim>, _Scalar, Dim>
 		{
+			static_assert(std::is_floating_point<_Scalar>::value, "`WishartGen` needs floating point types.");
+
 			Index df;
 			Matrix<_Scalar, Dim, Dim> chol;
 			StdNormalGen<_Scalar> stdnorm;
@@ -330,6 +334,8 @@ namespace Eigen
 		template<typename _Scalar, Index Dim>
 		class InvWishartGen : public MvMatGenBase<InvWishartGen<_Scalar, Dim>, _Scalar, Dim>
 		{
+			static_assert(std::is_floating_point<_Scalar>::value, "`InvWishartGen` needs floating point types.");
+
 			Index df;
 			Matrix<_Scalar, Dim, Dim> chol;
 			StdNormalGen<_Scalar> stdnorm;
