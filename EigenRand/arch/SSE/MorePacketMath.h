@@ -387,7 +387,10 @@ namespace Eigen
 		}
 
 		EIGEN_STRONG_INLINE __m128i double_to_int64(__m128d x) {
+			int _mm_rounding = _MM_GET_ROUNDING_MODE();
+			_MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
 			x = _mm_add_pd(x, _mm_set1_pd(0x0018000000000000));
+			_MM_SET_ROUNDING_MODE(_mm_rounding);
 			return _mm_sub_epi64(
 				_mm_castpd_si128(x),
 				_mm_castpd_si128(_mm_set1_pd(0x0018000000000000))
@@ -411,7 +414,7 @@ namespace Eigen
 		{
 			return _psin(x);
 		}
-
+#ifdef EIGENRAND_EIGEN_33_MODE
 		template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
 			Packet2d plog<Packet2d>(const Packet2d& _x)
 		{
@@ -491,6 +494,7 @@ namespace Eigen
 			// negative arg will be NAN, 0 will be -INF
 			return pblendv(iszero_mask, minus_inf, _mm_or_pd(x, invalid_mask));
 		}
+	#endif
 	}
 }
 

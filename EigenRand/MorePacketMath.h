@@ -319,11 +319,11 @@ namespace Eigen
 			x = padd(x, xmm3);
 
 			emm4 = psub(emm4, pset1<IntPacket>(2));
-#ifdef EIGEN_VECTORIZE_NEON
-			emm4 = pand(pbitnot(emm4), pset1<IntPacket>(4));
-#else
+	#if defined(EIGEN_VECTORIZE_NEON) || defined(EIGENRAND_EIGEN_34_MODE)
+			emm4 = pandnot(pset1<IntPacket>(4), emm4);
+	#else
 			emm4 = pandnot(emm4, pset1<IntPacket>(4));
-#endif
+	#endif
 			emm4 = psll<29>(emm4);
 			Packet sign_bit_cos = reinterpret_to_float(emm4);
 			sign_bit_sin = pxor(sign_bit_sin, swap_sign_bit_sin);
@@ -357,11 +357,11 @@ namespace Eigen
 			/* select the correct result from the two polynoms */
 			xmm3 = poly_mask;
 			Packet ysin2 = pand(xmm3, y2);
-#ifdef EIGEN_VECTORIZE_NEON
-			Packet ysin1 = pblendv(xmm3, pset1<Packet>(0), y);
-#else
+	#if defined(EIGEN_VECTORIZE_NEON) || defined(EIGENRAND_EIGEN_34_MODE)
+			Packet ysin1 = pandnot(y, xmm3);
+	#else
 			Packet ysin1 = pandnot(xmm3, y);
-#endif
+	#endif
 			y2 = psub(y2, ysin2);
 			y = psub(y, ysin1);
 
@@ -425,7 +425,11 @@ namespace Eigen
 			x = padd(x, xmm3);
 
 			emm4 = psub64(emm4, pseti64<IntPacket>(2));
+	#if defined(EIGEN_VECTORIZE_NEON) || defined(EIGENRAND_EIGEN_34_MODE)
+			emm4 = pandnot(pseti64<IntPacket>(4), emm4);
+	#else
 			emm4 = pandnot(emm4, pseti64<IntPacket>(4));
+	#endif
 			emm4 = psll64<61>(emm4);
 			Packet sign_bit_cos = reinterpret_to_double(emm4);
 			sign_bit_sin = pxor(sign_bit_sin, swap_sign_bit_sin);
@@ -459,7 +463,11 @@ namespace Eigen
 			/* select the correct result from the two polynoms */
 			xmm3 = poly_mask;
 			Packet ysin2 = pand(xmm3, y2);
+	#if defined(EIGEN_VECTORIZE_NEON) || defined(EIGENRAND_EIGEN_34_MODE)
+			Packet ysin1 = pandnot(y, xmm3);
+	#else
 			Packet ysin1 = pandnot(xmm3, y);
+	#endif
 			y2 = psub(y2, ysin2);
 			y = psub(y, ysin1);
 
@@ -551,7 +559,11 @@ namespace Eigen
 			/* select the correct result from the two polynoms */
 			xmm3 = poly_mask;
 			Packet ysin2 = pand(xmm3, y2);
+	#if defined(EIGEN_VECTORIZE_NEON) || defined(EIGENRAND_EIGEN_34_MODE)
+			Packet ysin1 = pandnot(y, xmm3);
+	#else
 			Packet ysin1 = pandnot(xmm3, y);
+	#endif
 
 			xmm1 = padd(ysin1, ysin2);
 
