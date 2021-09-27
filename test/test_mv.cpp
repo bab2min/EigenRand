@@ -120,8 +120,8 @@ TYPED_TEST(MvDistTest, wishart)
     auto mean2 = calcMatMean(samples);
     auto var2 = calcMatVar(samples);
 
-    EXPECT_SIMILAR_MATRIX(mean, mean2, 2.5);
-    EXPECT_SIMILAR_MATRIX(var, var2, 2.5);
+    EXPECT_SIMILAR_MATRIX(mean, mean2, 5);
+    EXPECT_SIMILAR_MATRIX(var, var2, 5);
 }
 
 TYPED_TEST(MvDistTest, invWishart)
@@ -149,8 +149,8 @@ TYPED_TEST(MvDistTest, invWishart)
     auto mean2 = calcMatMean(samples);
     auto var2 = calcMatVar(samples);
 
-    EXPECT_SIMILAR_MATRIX(mean, mean2, 2.5);
-    EXPECT_SIMILAR_MATRIX(var, var2, 2.5);
+    EXPECT_SIMILAR_MATRIX(mean, mean2, 5);
+    EXPECT_SIMILAR_MATRIX(var, var2, 5);
 }
 
 TEST(MvDistTest, multinomial)
