@@ -1,6 +1,9 @@
 ################
 # Define a test
-add_executable(EigenRand-test test.cpp)
+file(GLOB TEST_SRC
+    "*.cpp"
+)
+add_executable(EigenRand-test ${TEST_SRC})
 
 ######################################
 # Configure the test to use GoogleTest
