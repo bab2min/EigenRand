@@ -15,6 +15,7 @@
 #include <arm_neon.h>
 
 // device func of casting for Eigen ~3.3.9
+#ifdef EIGENRAND_EIGEN_33_MODE
 namespace Eigen
 {
 	namespace internal
@@ -33,6 +34,7 @@ namespace Eigen
 
 	}
 }
+#endif
 
 namespace Eigen
 {
@@ -277,6 +279,7 @@ namespace Eigen
 			return vreinterpretq_s32_u64(vld1q_u64(u));
 		}
 
+	#ifdef EIGENRAND_EIGEN_33_MODE
 		template<>
 		EIGEN_STRONG_INLINE Packet4f plog<Packet4f>(const Packet4f& _x)
 		{
@@ -463,6 +466,7 @@ namespace Eigen
 			/* update the sign */
 			return pxor(y, sign_bit);
 		}
+	#endif
 	}
 }
 
