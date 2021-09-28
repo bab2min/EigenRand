@@ -16,12 +16,35 @@ You can get 5~10 times speed by just replacing old Eigen's Random or unvectoriza
 * 5~10 times faster than non-vectorized functions
 * Header-only (like Eigen)
 * Can be easily integrated with Eigen's expressions
-* Currently supports only x86 and x86-64 architecture
+* Currently supports only x86, x86-64(up to AVX2), and ARM64 NEON (experimental) architecture.
 
 ## Requirement
 
-* Eigen 3.3.4 ~ 3.3.9
+* Eigen 3.3.4 ~ 3.4.0
 * C++11-compatible compilers
+
+## Build for Test & Benchmark
+You can build a test binary to verify if EigenRand is working well.
+First, make sure you have Eigen 3.3.4~3.4.0 installed in your compiler include folder. Also make sure you have cmake 3.9 or higher installed.
+After then, you can build it following:
+```console
+$ git clone https://github.com/bab2min/EigenRand
+$ cd EigenRand
+$ git clone https://github.com/google/googletest
+$ pushd googletest && git checkout v1.8.x && popd
+$ mkdir build && cd build
+$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ make
+$ ./test/EigenRand-test # Binary for unit test
+$ ./EigenRand-accuracy # Binary for accuracy test of univariate random distributions
+$ ./EigenRand-benchmark # Binary for performance test of univariate random distributions
+$ ./EigenRand-benchmark-mv # Binary for performance test of multivariate random distributions
+```
+
+You can specify additional compiler arguments including target machine options (e.g. -mavx2, -march) like:
+```console
+$ cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-march=native" ..
+```
 
 ## Documentation
 
@@ -74,7 +97,8 @@ https://bab2min.github.io/eigenrand/
 
 |  | Description | Equivalent to |
 |:---:|:---:|:---:|
-| `Eigen::Rand::Vmt19937_64` | a vectorized version of Mersenne Twister algorithm. It generates two 64bit random integers simultaneously with SSE2 and four integers with AVX2. | `std::mt19937_64` |
+| `Eigen::Rand::Vmt19937_64` | a vectorized version of Mersenne Twister algorithm. It generates two 64bit random integers simultaneously with SSE2 & NEON and four integers with AVX2. | `std::mt19937_64` |
+| `Eigen::Rand::P8_mt19937_64` | a vectorized version of Mersenne Twister algorithm. Since it generates eight 64bit random integers simultaneously, the random values are the same regardless of architecture. | |
 
 ## Performance
 The following charts show the relative speed-up of EigenRand compared to references(equivalent functions of C++ std or Eigen).
@@ -318,6 +342,19 @@ It shows the average of 20 times.
 | Mersenne Twister(int32) | 5.0 | 3.4 | 3.4 | 3.3 |
 | Mersenne Twister(int64) | 5.1 | 3.9 | 3.9 | 3.3 |
 
+### ARM64 NEON (Cortex-A73)
+Currently, Support for ARM64 NEON is experimental and the result may be sub-optimal.
+Also keep in mind that NEON does not support vectorization of double type. 
+So if you use double type generators, they would fallback into scalar computations.
+
+![Perf_no_vect](/doxygen/images/perf_neon_v0.3.90.png)
+
+The following charts are about multivariate distributions.
+![Perf_no_vect](/doxygen/images/perf_mv_part1_neon_v0.3.90.png)
+![Perf_no_vect](/doxygen/images/perf_mv_part2_neon_v0.3.90.png)
+
+Cases filled with orange are generators that are slower than reference functions.
+
 ## Accuracy
 Since vectorized mathematical functions may have a loss of precision, I measured how well the generated random number fits its actual distribution.
 32768 samples were generated and Earth Mover's Distance between samples and its actual distribution was calculated for each distribution.
@@ -347,6 +384,11 @@ The results of EigenRand and C++ std appear to be equivalent within the margin o
 MIT License
 
 ## History
+
+### 0.4.0 alpha (2021-09-28)
+* Now EigenRand supports ARM & ARM64 NEON architecture experimentally. Please report issues about ARM & ARM64 NEON.
+* Now EigenRand has compatibility to `Eigen 3.4.0`.
+
 ### 0.3.5 (2021-07-16)
 * Now `UniformRealGen` generates accurate double values.
 * Fixed a bug where non-vectorized double-type `NormalGen` would get stuck in an infinite loop.
