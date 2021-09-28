@@ -1,10 +1,12 @@
-name: Pull Request Test
+name: Benchmark Release
 
-on: 
-  pull_request:
-    branches: 
-      - main
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - '!v*.*.*d'
 
+jobs:
 jobs:
   build_linux:
     name: Build for linux
@@ -12,7 +14,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx, mavx2]
+        arch: [DEIGEN_DONT_VECTORIZE, msse2, mavx, mavx2]
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
         os: [ubuntu-18.04]
     steps:        
@@ -34,9 +36,13 @@ jobs:
         mkdir build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
         make
-    - name: Test
+    - name: Run Bench
       run: |
-        ./build/test/EigenRand-test
+        cat /proc/cpuinfo
+        ./build/EigenRand-benchmark
+    - name: Run BenchMv
+      run: |
+        ./build/EigenRand-benchmark-mv
     - name: Run Accuracy
       run: |
         ./build/EigenRand-accuracy
@@ -47,7 +53,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx]
+        arch: [DEIGEN_DONT_VECTORIZE, msse2, mavx]
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
     steps:
     - uses: actions/checkout@v1
@@ -66,9 +72,15 @@ jobs:
         mkdir build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
         make
-    - name: Test
+    - name: Run Bench
+      continue-on-error: true
       run: |
-        ./build/test/EigenRand-test
+        sysctl -a | grep machdep.cpu
+        ./build/EigenRand-benchmark
+    - name: Run BenchMv
+      continue-on-error: true
+      run: |
+        ./build/EigenRand-benchmark-mv
     - name: Run Accuracy
       run: |
         ./build/EigenRand-accuracy
@@ -102,28 +114,53 @@ jobs:
         cmakeAppendedArgs: -G"Visual Studio 16 2019" -Ax64 -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }} /I${{ env.EIGEN_PATH }}"
         buildWithCMakeArgs: --config Release
         buildDirectory: build
-    - name: Test
+    - name: Run Bench
       run: |
-        .\build\test\Release\EigenRand-test.exe
+        bash -c "cat /proc/cpuinfo"
+        .\build\Release\EigenRand-benchmark.exe
+    - name: Run BenchMv
+      run: |
+        .\build\Release\EigenRand-benchmark-mv.exe
     - name: Run Accuracy
       run: |
         .\build\Release\EigenRand-accuracy.exe
 
-  reference:
-    name: Reference
-    runs-on: ${{ matrix.os }}
+  build-arm64:
+    name: Build for Arm64-Centos7
+    runs-on: ubuntu-18.04
     strategy:
       max-parallel: 4
       matrix:
-        os: [ubuntu-18.04, macOS-latest, windows-latest]
-    steps:        
+        arch: [DEIGEN_DONT_VECTORIZE, march=native]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
+
+    steps:
     - uses: actions/checkout@v1
-    - name: Set up Python3
-      uses: actions/setup-python@v1
       with:
-        python-version: 3.6
-        architecture: x64
-    - name: Test Reference
-      run: |
-        pip install scipy
-        python benchmark/comp_scipy.py
+        submodules: true
+    - uses: bab2min/run-on-arch-action@use-custom-image
+      id: runcmd
+      with:
+        image: quay.io/pypa/manylinux2014_aarch64
+        githubToken: ${{ github.token }}
+        setup: |
+          mkdir -p "${PWD}/artifacts"
+        dockerRunArgs: |
+          --volume "${PWD}/artifacts:/artifacts"
+        run: |
+          git clone https://gitlab.com/libeigen/eigen
+          pushd eigen
+          git checkout tags/${{ matrix.eigenversion }}
+          popd
+          git clone https://github.com/google/googletest
+          pushd googletest
+          git checkout v1.8.x
+          popd
+          mv eigen include
+          export EIGEN_PATH=`pwd`/include
+          mkdir build && cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
+          make
+          ./EigenRand-benchmark 1000 3
+          ./EigenRand-benchmark-mv 10000 3
+          ./EigenRand-accuracy 256

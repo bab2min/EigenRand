@@ -43,6 +43,4 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
           make
           ./test/EigenRand-test
-          ./EigenRand-benchmark 1000 3
-          ./EigenRand-benchmark-mv 10000 3
           ./EigenRand-accuracy 256
