@@ -396,6 +396,11 @@ namespace Eigen
 			}
 		};
 
+		/**
+		 * @brief Generator of reals in a range `[a, b)`
+		 * 
+		 * @tparam _Scalar any real type
+		 */
 		template<typename _Scalar>
 		class UniformRealGen : public GenBase<UniformRealGen<_Scalar>, _Scalar>
 		{
