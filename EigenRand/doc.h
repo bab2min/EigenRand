@@ -12,7 +12,7 @@
  You can get 5~10 times speed by just replacing old Eigen's Random 
  or unvectorizable c++11 random number generators with EigenRand.
  
- EigenRand currently supports only x86-64 architecture (SSE, AVX, AVX2).
+ EigenRand currently supports only x86-64 architecture (SSE, AVX, AVX2) and ARM64 NEON (experimental).
 
  EigenRand is distributed under the MIT License.
 
@@ -29,7 +29,7 @@
 
  You can install EigenRand by just downloading the source codes from [the repository](https://github.com/bab2min/EigenRand/releases). 
  Since EigenRand is a header-only library like Eigen, none of binaries needs to be installed. 
- All you need is [Eigen 3.3.4](http://eigen.tuxfamily.org/index.php?title=Main_Page) or later and C++11 compiler.
+ All you need is [Eigen 3.3.4 ~ 3.4.0](http://eigen.tuxfamily.org/index.php?title=Main_Page) and C++11 compiler.
 
  @section getting_started_2 Simple Random Matrix Generators
  @code
@@ -43,7 +43,7 @@
  {
    // Initialize random number generator with seed=42 for following codes.
    // Or you can use C++11 RNG such as std::mt19937 or std::ranlux48.
-   Rand::Vmt19937_64 urng{ 42 };
+   Rand::P8_mt19937_64 urng{ 42 };
 
    // this will generate 4x4 real matrix with range [-1, 1]
    MatrixXf mat = Rand::balanced<MatrixXf>(4, 4, urng);
@@ -69,7 +69,7 @@
 
  int main()
  {
-   Rand::Vmt19937_64 urng{ 42 };
+   Rand::P8_mt19937_64 urng{ 42 };
 
    MatrixXf mat{ 10, 10 };
    // this will generate a random matrix in MatrixXf type with the shape (10, 10)
@@ -98,7 +98,7 @@
 
  int main()
  {
-   Rand::Vmt19937_64 urng{ 42 };
+   Rand::P8_mt19937_64 urng{ 42 };
    // constructs generator for normal distribution with mean=1.0, stdev=2.0
    Rand::NormalGen<float> norm_gen{ 1.0, 2.0 };
    
@@ -126,7 +126,7 @@
 
  int main()
  {
-   Rand::Vmt19937_64 urng{ 42 };
+   Rand::P8_mt19937_64 urng{ 42 };
 
    Vector4f mean{ 0, 1, 2, 3 };
    Matrix4f cov;
@@ -182,7 +182,7 @@
 | `Eigen::Rand::lognormal` | `Eigen::Rand::LognormalGen` | float, double | generates real values on a [lognormal distribution](https://en.wikipedia.org/wiki/Lognormal_distribution). | `std::lognormal_distribution` |
 | `Eigen::Rand::normal` | `Eigen::Rand::StdNormalGen`, `Eigen::Rand::NormalGen` | float, double | generates real values on a [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution). | `std::normal_distribution` |
 | `Eigen::Rand::studentT` | `Eigen::Rand::StudentTGen` | float, double | generates real values on the [Student's t distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution). | `std::student_t_distribution` |
-| `Eigen::Rand::uniformReal` | `Eigen::Rand::UniformRealGen` | float, double | generates real values in the `[-1, 0)` range. | `std::generate_canonical` |
+| `Eigen::Rand::uniformReal` | `Eigen::Rand::StdUniformRealGen`, `Eigen::Rand::UniformRealGen` | float, double | generates real values in the `[-1, 0)` range. | `std::generate_canonical` |
 | `Eigen::Rand::weibull` | `Eigen::Rand::WeibullGen` | float, double | generates real values on the [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution). | `std::weibull_distribution` |
 
  @section list_of_supported_distribution_2 Random Distributions for Integer Types
@@ -200,7 +200,7 @@
  @section list_of_distribution_3 Multivariate Random Distributions
 | Generator | Description | Equivalent to |
 |:---:|:---:|:---:|
-| `Eigen::Rand::MultinomialGen` | generates real vectors on a [multinomial distribution](https://en.wikipedia.org/wiki/Multinomial_distribution) | [scipy.stats.multinomial in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multinomial.html#scipy.stats.multinomial) |
+| `Eigen::Rand::MultinomialGen` | generates integer vectors on a [multinomial distribution](https://en.wikipedia.org/wiki/Multinomial_distribution) | [scipy.stats.multinomial in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multinomial.html#scipy.stats.multinomial) |
 | `Eigen::Rand::DirichletGen` | generates real vectors on a [Dirichlet distribution](https://en.wikipedia.org/wiki/Dirichlet_distribution) | [scipy.stats.dirichlet in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.dirichlet.html#scipy.stats.dirichlet) |
 | `Eigen::Rand::MvNormalGen` | generates real vectors on a [multivariate normal distribution](https://en.wikipedia.org/wiki/Multivariate_normal_distribution) | [scipy.stats.multivariate_normal in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multivariate_normal.html#scipy.stats.multivariate_normal) |
 | `Eigen::Rand::WishartGen` | generates real matrices on a [Wishart distribution](https://en.wikipedia.org/wiki/Wishart_distribution) | [scipy.stats.wishart in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wishart.html#scipy.stats.wishart) |
@@ -211,10 +211,12 @@
 |  | Description | Equivalent to |
 |:---:|:---:|:---:|
 | `Eigen::Rand::Vmt19937_64` | a vectorized version of Mersenne Twister algorithm. It generates two 64bit random integers simultaneously with SSE2 and four integers with AVX2. | `std::mt19937_64` |
-
+| `Eigen::Rand::P8_mt19937_64` | a vectorized version of Mersenne Twister algorithm. Since it generates eight 64bit random integers simultaneously, the random values are the same regardless of architecture. | |
  * 
  * @page performance Performance
  * The following charts show the relative speed-up of EigenRand compared to Reference(C++ std or Eigen functions). Detailed results are below the charts.
+
+ @section performance_1 Overview of Results at x86-64 Architecture
 
  \image html perf_no_vect.png
 
@@ -230,7 +232,17 @@
 
  * The following result is a measure of the time in seconds it takes to generate 1M random numbers. It shows the average of 20 times.
 
- @section performance_1 Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Ubuntu 16.04, gcc7.5)
+ @section performance_2 Overview of Results at ARM64 NEON (experimental)
+
+ \image html perf_neon_v0.3.90.png
+
+ \image html perf_mv_part1_neon_v0.3.90.png
+
+ \image html perf_mv_part2_neon_v0.3.90.png
+
+ * The following result is a measure of the time in seconds it takes to generate 1M random numbers. It shows the average of 20 times.
+
+ @section performance_3 Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz (Ubuntu 16.04, gcc7.5)
 
 |  | C++ std (or Eigen) | EigenRand (No Vect.) | EigenRand (SSE2) | EigenRand (SSSE3) | EigenRand (AVX) | EigenRand (AVX2) |
 |---|---:|---:|---:|---:|---:|---:|
@@ -289,7 +301,7 @@
 | `Wishart(4)` | 71.19 | 5.28 | 2.70 | 2.93 | 2.04 | 1.94 |
 | `Wishart(50)` | 1185.26 | 1360.49 | 492.91 | 517.44 | 359.03 | 324.60 |
 
- @section performance_2 AMD Ryzen 7 3700x CPU @ 3.60GHz (Windows 10, MSVC2017)
+ @section performance_4 AMD Ryzen 7 3700x CPU @ 3.60GHz (Windows 10, MSVC2017)
 
 |  | C++ std (or Eigen) | EigenRand (SSE2) | EigenRand (AVX) | EigenRand (AVX2) |
 |---|---:|---:|---:|---:|
