@@ -7,7 +7,6 @@ on:
       - '!v*.*.*d'
 
 jobs:
-jobs:
   build_linux:
     name: Build for linux
     runs-on: ${{ matrix.os }}
