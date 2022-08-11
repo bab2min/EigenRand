@@ -435,6 +435,28 @@ TEST(Issue, 29)
 	CMatrix X = uniformReal<CMatrix>(5, 3, gen_eigen);
 }
 
+TEST(Issue, 39)
+{
+	{
+		Eigen::Vector<double, 4> mu1;
+		Eigen::Matrix<double, 4, 4> cov1;
+		Eigen::Matrix<double, 4, -1> samples;
+		Eigen::Rand::MvNormalGen<double, 4> gen_init{ mu1, cov1 };
+		std::random_device rd;
+		std::mt19937 genn(rd());
+		samples = gen_init.generate(genn, 10);
+	}
+
+	{
+		Eigen::Vector<double, 3> mu1;
+		Eigen::Matrix<double, 3, 3> cov1;
+		Eigen::Matrix<double, 3, -1> samples;
+		Eigen::Rand::MvNormalGen<double, 3> gen_init{ mu1, cov1 };
+		std::random_device rd;
+		std::mt19937 genn(rd());
+		samples = gen_init.generate(genn, 10);
+	}
+}
 
 TEST(Issue, 42)
 {
