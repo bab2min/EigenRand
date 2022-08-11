@@ -434,3 +434,19 @@ TEST(Issue, 29)
 	Vmt19937_64 gen_eigen;
 	CMatrix X = uniformReal<CMatrix>(5, 3, gen_eigen);
 }
+
+
+TEST(Issue, 42)
+{
+	Eigen::Rand::P8_mt19937_64 generator{ 42 };
+
+	Eigen::VectorXi p;
+	p.resize(2);
+
+	for (int i = 0; i < 100; i++) 
+	{
+		p = Eigen::Rand::uniformIntLike(p, generator, -1, 1);
+		EXPECT_GE(p.minCoeff(), -1);
+		EXPECT_LE(p.maxCoeff(), 1);
+	}
+}
