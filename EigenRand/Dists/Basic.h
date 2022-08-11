@@ -373,18 +373,52 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
-			template<typename Rng>
+			template<typename Rng, 
+				typename std::enable_if<sizeof(Scalar) <= sizeof(typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type), int>::type = 0
+			>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
 				using namespace Eigen::internal;
 				return BitScalar<_Scalar>{}.to_ur(ExtractFirstUint<_Scalar>{}(std::forward<Rng>(rng)()));
 			}
 
-			template<typename Rng>
+			template<typename Rng,
+				typename std::enable_if<sizeof(typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type) < sizeof(Scalar), int>::type = 0
+			>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				using RngResult = typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type;
+				RngResult arr[sizeof(Scalar) / sizeof(RngResult)];
+				for (size_t i = 0; i < sizeof(Scalar) / sizeof(RngResult); ++i)
+				{
+					arr[i] = rng();
+				}
+				return BitScalar<_Scalar>{}.to_ur(*(Scalar*)arr);
+			}
+
+			template<typename Rng,
+				typename std::enable_if<sizeof(Scalar) <= sizeof(typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type), int>::type = 0
+			>
 			EIGEN_STRONG_INLINE const _Scalar nzur_scalar(Rng&& rng)
 			{
 				using namespace Eigen::internal;
 				return BitScalar<_Scalar>{}.to_nzur(ExtractFirstUint<_Scalar>{}(std::forward<Rng>(rng)()));
+			}
+
+			template<typename Rng,
+				typename std::enable_if<sizeof(typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type) < sizeof(Scalar), int > ::type = 0
+			>
+			EIGEN_STRONG_INLINE const _Scalar nzur_scalar(Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				using RngResult = typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type;
+				RngResult arr[sizeof(Scalar) / sizeof(RngResult)];
+				for (size_t i = 0; i < sizeof(Scalar) / sizeof(RngResult); ++i)
+				{
+					arr[i] = rng();
+				}
+				return BitScalar<_Scalar>{}.to_nzur(*(Scalar*)arr);
 			}
 
 			template<typename Packet, typename Rng>
