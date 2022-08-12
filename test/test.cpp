@@ -438,7 +438,7 @@ TEST(Issue, 29)
 TEST(Issue, 39)
 {
 	{
-		Eigen::Vector<double, 4> mu1;
+		Eigen::Matrix<double, 4, 1> mu1;
 		Eigen::Matrix<double, 4, 4> cov1;
 		Eigen::Matrix<double, 4, -1> samples;
 		Eigen::Rand::MvNormalGen<double, 4> gen_init{ mu1, cov1 };
@@ -448,7 +448,7 @@ TEST(Issue, 39)
 	}
 
 	{
-		Eigen::Vector<double, 3> mu1;
+		Eigen::Matrix<double, 3, 1> mu1;
 		Eigen::Matrix<double, 3, 3> cov1;
 		Eigen::Matrix<double, 3, -1> samples;
 		Eigen::Rand::MvNormalGen<double, 3> gen_init{ mu1, cov1 };
