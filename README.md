@@ -385,6 +385,10 @@ MIT License
 
 ## History
 
+### 0.4.1 (2022-08-13)
+* Fixed a bug where double-type generation with std::mt19937 fails compilation.
+* Fixed a bug where `UniformIntGen` in scalar mode generates numbers in the wrong range.
+
 ### 0.4.0 alpha (2021-09-28)
 * Now EigenRand supports ARM & ARM64 NEON architecture experimentally. Please report issues about ARM & ARM64 NEON.
 * Now EigenRand has compatibility to `Eigen 3.4.0`.

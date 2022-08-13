@@ -2,8 +2,8 @@
  * @file MorePacketMath.h
  * @author bab2min (bab2min@gmail.com)
  * @brief
- * @version 0.3.5
- * @date 2021-07-16
+ * @version 0.4.1
+ * @date 2022-08-13
  *
  * @copyright Copyright (c) 2020-2021
  *
