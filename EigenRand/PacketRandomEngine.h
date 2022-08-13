@@ -269,7 +269,7 @@ namespace Eigen
 			 *
 			 * @return uint64_t
 			 */
-			uint64_t min() const
+			static constexpr uint64_t min()
 			{
 				return 0;
 			}
@@ -279,7 +279,7 @@ namespace Eigen
 			 *
 			 * @return uint64_t
 			 */
-			uint64_t max() const
+			static constexpr uint64_t max()
 			{
 				return _wMask;
 			}

@@ -377,12 +377,11 @@ namespace Eigen
 			template<class Rng>
 			struct RngBitSize
 			{
-				using _result_type = typename Rng::result_type;
-				static constexpr _result_type _min = Rng::min();
-				static constexpr _result_type _max = Rng::max();
+				static constexpr size_t _min = Rng::min();
+				static constexpr size_t _max = Rng::max();
 
 				static constexpr bool _fullbit_rng = _min == 0 && (_max & (_max + 1)) == 0;
-				static constexpr size_t value = _fullbit_rng ? BitWidth<_max>::value : 0;
+				static constexpr size_t value = IsPacketRandomEngine<Rng>::value ? sizeof(typename Rng::result_type) * 8 : (_fullbit_rng ? BitWidth<_max>::value : 0);
 			};
 		}
 
