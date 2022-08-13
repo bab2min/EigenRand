@@ -360,6 +360,32 @@ namespace Eigen
 			}
 		};
 
+		namespace detail
+		{
+			template<size_t v>
+			struct BitWidth
+			{
+				static constexpr size_t value = BitWidth<v / 2>::value + 1;
+			};
+
+			template<>
+			struct BitWidth<0>
+			{
+				static constexpr size_t value = 0;
+			};
+
+			template<class Rng>
+			struct RngBitSize
+			{
+				using _result_type = typename Rng::result_type;
+				static constexpr _result_type _min = Rng::min();
+				static constexpr _result_type _max = Rng::max();
+
+				static constexpr bool _fullbit_rng = _min == 0 && (_max & (_max + 1)) == 0;
+				static constexpr size_t value = _fullbit_rng ? BitWidth<_max>::value : 0;
+			};
+		}
+
 		/**
 		 * @brief Generator of reals in a range `[0, 1)`
 		 * 
@@ -374,7 +400,7 @@ namespace Eigen
 			using Scalar = _Scalar;
 
 			template<typename Rng, 
-				typename std::enable_if<sizeof(Scalar) <= sizeof(typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type), int>::type = 0
+				typename std::enable_if<sizeof(Scalar) * 8 <= detail::RngBitSize<typename std::remove_const<typename std::remove_reference<Rng>::type>::type>::value, int>::type = 0
 			>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
@@ -383,18 +409,21 @@ namespace Eigen
 			}
 
 			template<typename Rng,
-				typename std::enable_if<sizeof(typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type) < sizeof(Scalar), int>::type = 0
+				typename std::enable_if<detail::RngBitSize<typename std::remove_const<typename std::remove_reference<Rng>::type>::type>::value < sizeof(Scalar) * 8, int>::type = 0
 			>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
+				using RRng = typename std::remove_const<typename std::remove_reference<Rng>::type>::type;
+				static_assert(detail::RngBitSize<RRng>::value > 0,
+					"BaseRng must be a kind of mersenne_twister_engine.");
+				using ResultType = typename std::conditional<detail::RngBitSize<RRng>::value == 32, uint32_t, uint64_t>::type;
 				using namespace Eigen::internal;
-				using RngResult = typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type;
-				RngResult arr[sizeof(Scalar) / sizeof(RngResult)];
-				for (size_t i = 0; i < sizeof(Scalar) / sizeof(RngResult); ++i)
+				ResultType arr[sizeof(Scalar) / sizeof(ResultType)];
+				for (size_t i = 0; i < sizeof(Scalar) / sizeof(ResultType); ++i)
 				{
 					arr[i] = rng();
 				}
-				return BitScalar<_Scalar>{}.to_ur(*(Scalar*)arr);
+				return BitScalar<_Scalar>{}.to_ur(*(uint64_t*)arr);
 			}
 
 			template<typename Rng,

@@ -55,7 +55,7 @@ namespace Eigen
 		struct scalar_rng_adaptor
 		{
 			static_assert(
-				Rand::IsScalarRandomEngine<
+				Rand::IsScalarFullBitRandomEngine<
 				typename std::remove_reference<Rng>::type
 				>::value ||
 				Rand::IsPacketRandomEngine<
@@ -95,7 +95,7 @@ namespace Eigen
 		struct scalar_rng_adaptor<Gen, _Scalar, Rng, true>
 		{
 			static_assert(
-				Rand::IsScalarRandomEngine<
+				Rand::IsScalarFullBitRandomEngine<
 				typename std::remove_reference<Rng>::type
 				>::value ||
 				Rand::IsPacketRandomEngine<

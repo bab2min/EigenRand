@@ -25,10 +25,16 @@ namespace Eigen
 		namespace detail
 		{
 			template<typename T>
-			auto test_integral_result_type(int)->std::integral_constant<bool, std::is_integral<typename T::result_type>::value>;
+			auto test_integral_result_type(int)->std::integral_constant<bool, std::is_integral<typename T::result_type>::value && !(T::min() == 0 && (T::max() & T::max() + 1) == 0)>;
 
 			template<typename T>
 			auto test_integral_result_type(...)->std::false_type;
+
+			template<typename T>
+			auto test_integral_fullbit_result_type(int)->std::integral_constant<bool, std::is_integral<typename T::result_type>::value&& T::min() == 0 && (T::max() & T::max() + 1) == 0>;
+
+			template<typename T>
+			auto test_integral_fullbit_result_type(...)->std::false_type;
 
 			template<typename T>
 			auto test_intpacket_result_type(int)->std::integral_constant<bool, internal::IsIntPacket<typename T::result_type>::value>;
@@ -43,20 +49,26 @@ namespace Eigen
 		};
 
 		template<typename Ty>
+		struct IsScalarFullBitRandomEngine : decltype(detail::test_integral_fullbit_result_type<Ty>(0))
+		{
+		};
+
+		template<typename Ty>
 		struct IsPacketRandomEngine : decltype(detail::test_intpacket_result_type<Ty>(0))
 		{
 		};
 
 		enum class RandomEngineType
 		{
-			none, scalar, packet
+			none, scalar, scalar_fullbit, packet
 		};
 
 		template<typename Ty>
 		struct GetRandomEngineType : std::integral_constant <
 			RandomEngineType,
 			IsPacketRandomEngine<Ty>::value ? RandomEngineType::packet :
-			(IsScalarRandomEngine<Ty>::value ? RandomEngineType::scalar : RandomEngineType::none)
+			IsScalarFullBitRandomEngine<Ty>::value ? RandomEngineType::scalar_fullbit :
+			IsScalarRandomEngine<Ty>::value ? RandomEngineType::scalar : RandomEngineType::none
 		>
 		{
 		};
@@ -418,6 +430,7 @@ namespace Eigen
 		class ParallelRandomEngineAdaptor
 		{
 			static_assert(GetRandomEngineType<BaseRng>::value != RandomEngineType::none, "BaseRng must be a kind of Random Engine.");
+			static_assert(GetRandomEngineType<BaseRng>::value != RandomEngineType::scalar, "BaseRng must be a kind of mersenne_twister_engine.");
 		public:
 			using result_type = UIntType;
 
@@ -547,7 +560,7 @@ namespace Eigen
 			IsPacketRandomEngine<typename std::remove_reference<Rng>::type>::value,
 			PacketRandomEngineAdaptor<UIntType, typename std::remove_reference<Rng>::type>,
 			typename std::conditional<
-			IsScalarRandomEngine<typename std::remove_reference<Rng>::type>::value,
+			IsScalarFullBitRandomEngine<typename std::remove_reference<Rng>::type>::value,
 			RandomEngineWrapper<typename std::remove_reference<Rng>::type>,
 			void
 			>::type
@@ -564,6 +577,8 @@ namespace Eigen
 		template<typename UIntType, typename Rng>
 		UniversalRandomEngine<UIntType, Rng> makeUniversalRng(Rng&& rng)
 		{
+			static_assert(IsPacketRandomEngine<typename std::remove_reference<Rng>::type>::value || IsScalarFullBitRandomEngine<typename std::remove_reference<Rng>::type>::value,
+				"`Rng` must be a kind of RandomPacketEngine like std::mersenne_twister_engine");
 			return { std::forward<Rng>(rng) };
 		}
 
