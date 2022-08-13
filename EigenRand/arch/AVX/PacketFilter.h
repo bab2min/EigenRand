@@ -2,8 +2,8 @@
  * @file PacketFilter.h
  * @author bab2min (bab2min@gmail.com)
  * @brief
- * @version 0.4.0
- * @date 2021-09-17
+ * @version 0.4.1
+ * @date 2022-08-13
  *
  * @copyright Copyright (c) 2020-2021
  *
