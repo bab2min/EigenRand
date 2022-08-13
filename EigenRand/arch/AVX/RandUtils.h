@@ -57,7 +57,7 @@ namespace Eigen
 		};
 
 		template<typename Rng, typename RngResult>
-		struct RawbitsMaker<Packet8i, Rng, RngResult, Rand::RandomEngineType::scalar>
+		struct RawbitsMaker<Packet8i, Rng, RngResult, Rand::RandomEngineType::scalar_fullbit>
 		{
 			EIGEN_STRONG_INLINE Packet8i rawbits(Rng& rng)
 			{

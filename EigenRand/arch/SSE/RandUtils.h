@@ -19,7 +19,7 @@ namespace Eigen
 	namespace internal
 	{
 		template<typename Rng, typename RngResult>
-		struct RawbitsMaker<Packet4i, Rng, RngResult, Rand::RandomEngineType::scalar>
+		struct RawbitsMaker<Packet4i, Rng, RngResult, Rand::RandomEngineType::scalar_fullbit>
 		{
 			EIGEN_STRONG_INLINE Packet4i rawbits(Rng& rng)
 			{

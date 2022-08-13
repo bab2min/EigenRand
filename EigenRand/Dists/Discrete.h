@@ -264,7 +264,7 @@ namespace Eigen
 					{
 						EIGENRAND_CHECK_INFINITY_LOOP();
 						_Scalar cands = (_Scalar)(rx & bitmask);
-						if (cands <= pdiff) return cands;
+						if (cands <= pdiff) return cands + pmin;
 						if (bitcnt + bitsize < 32)
 						{
 							rx >>= bitsize;

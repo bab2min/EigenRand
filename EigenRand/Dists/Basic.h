@@ -360,6 +360,31 @@ namespace Eigen
 			}
 		};
 
+		namespace detail
+		{
+			template<size_t v>
+			struct BitWidth
+			{
+				static constexpr size_t value = BitWidth<v / 2>::value + 1;
+			};
+
+			template<>
+			struct BitWidth<0>
+			{
+				static constexpr size_t value = 0;
+			};
+
+			template<class Rng>
+			struct RngBitSize
+			{
+				static constexpr size_t _min = Rng::min();
+				static constexpr size_t _max = Rng::max();
+
+				static constexpr bool _fullbit_rng = _min == 0 && (_max & (_max + 1)) == 0;
+				static constexpr size_t value = IsPacketRandomEngine<Rng>::value ? sizeof(typename Rng::result_type) * 8 : (_fullbit_rng ? BitWidth<_max>::value : 0);
+			};
+		}
+
 		/**
 		 * @brief Generator of reals in a range `[0, 1)`
 		 * 
@@ -373,18 +398,55 @@ namespace Eigen
 		public:
 			using Scalar = _Scalar;
 
-			template<typename Rng>
+			template<typename Rng, 
+				typename std::enable_if<sizeof(Scalar) * 8 <= detail::RngBitSize<typename std::remove_const<typename std::remove_reference<Rng>::type>::type>::value, int>::type = 0
+			>
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
 				using namespace Eigen::internal;
 				return BitScalar<_Scalar>{}.to_ur(ExtractFirstUint<_Scalar>{}(std::forward<Rng>(rng)()));
 			}
 
-			template<typename Rng>
+			template<typename Rng,
+				typename std::enable_if<detail::RngBitSize<typename std::remove_const<typename std::remove_reference<Rng>::type>::type>::value < sizeof(Scalar) * 8, int>::type = 0
+			>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
+			{
+				using RRng = typename std::remove_const<typename std::remove_reference<Rng>::type>::type;
+				static_assert(detail::RngBitSize<RRng>::value > 0,
+					"BaseRng must be a kind of mersenne_twister_engine.");
+				using ResultType = typename std::conditional<detail::RngBitSize<RRng>::value == 32, uint32_t, uint64_t>::type;
+				using namespace Eigen::internal;
+				ResultType arr[sizeof(Scalar) / sizeof(ResultType)];
+				for (size_t i = 0; i < sizeof(Scalar) / sizeof(ResultType); ++i)
+				{
+					arr[i] = rng();
+				}
+				return BitScalar<_Scalar>{}.to_ur(*(uint64_t*)arr);
+			}
+
+			template<typename Rng,
+				typename std::enable_if<sizeof(Scalar) <= sizeof(typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type), int>::type = 0
+			>
 			EIGEN_STRONG_INLINE const _Scalar nzur_scalar(Rng&& rng)
 			{
 				using namespace Eigen::internal;
 				return BitScalar<_Scalar>{}.to_nzur(ExtractFirstUint<_Scalar>{}(std::forward<Rng>(rng)()));
+			}
+
+			template<typename Rng,
+				typename std::enable_if<sizeof(typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type) < sizeof(Scalar), int > ::type = 0
+			>
+			EIGEN_STRONG_INLINE const _Scalar nzur_scalar(Rng&& rng)
+			{
+				using namespace Eigen::internal;
+				using RngResult = typename std::remove_const<typename std::remove_reference<Rng>::type>::type::result_type;
+				RngResult arr[sizeof(Scalar) / sizeof(RngResult)];
+				for (size_t i = 0; i < sizeof(Scalar) / sizeof(RngResult); ++i)
+				{
+					arr[i] = rng();
+				}
+				return BitScalar<_Scalar>{}.to_nzur(*(Scalar*)arr);
 			}
 
 			template<typename Packet, typename Rng>

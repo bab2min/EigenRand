@@ -48,7 +48,7 @@ jobs:
 
   build_macos:
     name: Build for macOS
-    runs-on: macOS-latest
+    runs-on: macOS-10.15
     strategy:
       max-parallel: 4
       matrix:
@@ -86,7 +86,7 @@ jobs:
 
   build_windows:
     name: Build for Windows
-    runs-on: windows-latest
+    runs-on: windows-2019
     strategy:
       max-parallel: 4
       matrix:

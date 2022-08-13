@@ -434,3 +434,45 @@ TEST(Issue, 29)
 	Vmt19937_64 gen_eigen;
 	CMatrix X = uniformReal<CMatrix>(5, 3, gen_eigen);
 }
+
+TEST(Issue, 39)
+{
+	{
+		Eigen::Matrix<double, 4, 1> mu1;
+		mu1.setZero();
+		Eigen::Matrix<double, 4, 4> cov1;
+		cov1.setIdentity();
+		Eigen::Matrix<double, 4, -1> samples;
+		Eigen::Rand::MvNormalGen<double, 4> gen_init{ mu1, cov1 };
+		std::random_device rd;
+		std::mt19937 genn(rd());
+		samples = gen_init.generate(genn, 10);
+	}
+
+	{
+		Eigen::Matrix<double, 3, 1> mu1;
+		mu1.setZero();
+		Eigen::Matrix<double, 3, 3> cov1;
+		cov1.setIdentity();
+		Eigen::Matrix<double, 3, -1> samples;
+		Eigen::Rand::MvNormalGen<double, 3> gen_init{ mu1, cov1 };
+		std::random_device rd;
+		std::mt19937 genn(rd());
+		samples = gen_init.generate(genn, 10);
+	}
+}
+
+TEST(Issue, 42)
+{
+	Eigen::Rand::P8_mt19937_64 generator{ 42 };
+
+	Eigen::VectorXi p;
+	p.resize(2);
+
+	for (int i = 0; i < 100; i++) 
+	{
+		p = Eigen::Rand::uniformIntLike(p, generator, -1, 1);
+		EXPECT_GE(p.minCoeff(), -1);
+		EXPECT_LE(p.maxCoeff(), 1);
+	}
+}
