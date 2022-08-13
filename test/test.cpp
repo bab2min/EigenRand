@@ -439,7 +439,9 @@ TEST(Issue, 39)
 {
 	{
 		Eigen::Matrix<double, 4, 1> mu1;
+		mu1.setZero();
 		Eigen::Matrix<double, 4, 4> cov1;
+		cov1.setIdentity();
 		Eigen::Matrix<double, 4, -1> samples;
 		Eigen::Rand::MvNormalGen<double, 4> gen_init{ mu1, cov1 };
 		std::random_device rd;
@@ -449,7 +451,9 @@ TEST(Issue, 39)
 
 	{
 		Eigen::Matrix<double, 3, 1> mu1;
+		mu1.setZero();
 		Eigen::Matrix<double, 3, 3> cov1;
+		cov1.setIdentity();
 		Eigen::Matrix<double, 3, -1> samples;
 		Eigen::Rand::MvNormalGen<double, 3> gen_init{ mu1, cov1 };
 		std::random_device rd;
