@@ -139,6 +139,23 @@ TYPED_TEST(ContinuousDistTest, balanced2)
 	std::cout << mat << std::endl;
 }
 
+TYPED_TEST(ContinuousDistTest, balancedV)
+{
+	using Array = Eigen::Array<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	Array a{ 10, 1 }, b{ 10, 1 }, c{ 10, 1 };
+	a << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+	b << 10, 12, 14, 16, 18, 20, 22, 24, 26, 28;
+
+	c = Eigen::Rand::balanced(gen, a, b);
+	EXPECT_TRUE((a <= c).all() && (c <= b).all());
+	c = Eigen::Rand::balanced(gen, a, 11);
+	EXPECT_TRUE((a <= c).all() && (c <= 11).all());
+	c = Eigen::Rand::balanced(gen, 5, b);
+	EXPECT_TRUE((5 <= c).all() && (c <= b).all());
+	std::cout << c << std::endl;
+}
+
 TYPED_TEST(ContinuousDistTest, uniformReal)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
@@ -150,6 +167,47 @@ TYPED_TEST(ContinuousDistTest, uniformReal)
 	mat = Eigen::Rand::uniformReal<Matrix>(5, 5, gen);
 	mat = Eigen::Rand::uniformReal<Matrix>(5, 3, gen);
 	std::cout << mat << std::endl;
+}
+
+TYPED_TEST(ContinuousDistTest, uniformRealV)
+{
+	using Array = Eigen::Array<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	Array a{ 10, 1 }, b{ 10, 1 }, c{ 10, 1 };
+	a << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+	b << 10, 12, 14, 16, 18, 20, 22, 24, 26, 28;
+
+	c = Eigen::Rand::uniformReal(gen, a, b);
+	EXPECT_TRUE((a <= c).all() && (c < b).all());
+	c = Eigen::Rand::uniformReal(gen, a, 11);
+	EXPECT_TRUE((a <= c).all() && (c < 11).all());
+	c = Eigen::Rand::uniformReal(gen, 5, b);
+	EXPECT_TRUE((5 <= c).all() && (c < b).all());
+	std::cout << c << std::endl;
+}
+
+TYPED_TEST(ContinuousDistTest, bernoulli)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	Matrix mat;
+
+	mat = Eigen::Rand::bernoulli<Matrix>(8, 8, gen);
+	mat = Eigen::Rand::bernoulli<Matrix>(3, 3, gen);
+	mat = Eigen::Rand::bernoulli<Matrix>(5, 5, gen);
+	mat = Eigen::Rand::bernoulli<Matrix>(5, 3, gen);
+	std::cout << mat << std::endl;
+}
+
+TEST(ContinuousDistTest, bernoulliV)
+{
+	using Array = Eigen::Array<float, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	Array a{ 10, 1 }, c{ 10, 1 };
+	a << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.;
+
+	c = Eigen::Rand::bernoulli(gen, a);
+	std::cout << c << std::endl;
 }
 
 TYPED_TEST(ContinuousDistTest, stdNormal)
