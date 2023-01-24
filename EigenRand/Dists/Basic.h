@@ -850,7 +850,7 @@ namespace Eigen
 		 * @tparam Urng
 		 * @param urng c++11-style random number generator
 		 * @param a,b left and right boundary
-		 * @return a random matrix expression with a shape (`a.rows()`, `a.cols()`)
+		 * @return a random matrix expression with the same shape as `a` and `b`
 		 * @note `a` and `b` should have the same shape and scalar type.
 		 * 
 		 *
@@ -862,7 +862,8 @@ namespace Eigen
 		{
 			static_assert(std::is_same<typename Lhs::Scalar, typename Rhs::Scalar>::value, "`Lhs::Scalar` must be equal to `Rhs::Scalar`");
 			return {
-				a, b, { std::forward<Urng>(urng), BalancedVGen<typename Lhs::Scalar>{} }
+				static_cast<const Lhs&>(a), static_cast<const Rhs&>(b), 
+				{ std::forward<Urng>(urng), BalancedVGen<typename Lhs::Scalar>{} }
 			};
 		}
 
@@ -877,7 +878,7 @@ namespace Eigen
 			balanced(Urng&& urng, const ArrayBase<Lhs>& a, typename Lhs::Scalar b)
 		{
 			return {
-				a, { a.rows(), a.cols(), internal::scalar_constant_op<typename Lhs::Scalar>{ b } }, 
+				static_cast<const Lhs&>(a), { a.rows(), a.cols(), internal::scalar_constant_op<typename Lhs::Scalar>{ b } },
 				{ std::forward<Urng>(urng), BalancedVGen<typename Lhs::Scalar>{} }
 			};
 		}
@@ -893,7 +894,7 @@ namespace Eigen
 			balanced(Urng&& urng, typename Rhs::Scalar a, const ArrayBase<Rhs>& b)
 		{
 			return {
-				{ b.rows(), b.cols(), internal::scalar_constant_op<typename Rhs::Scalar>{ a } }, b,
+				{ b.rows(), b.cols(), internal::scalar_constant_op<typename Rhs::Scalar>{ a } }, static_cast<const Rhs&>(b),
 				{ std::forward<Urng>(urng), BalancedVGen<typename Rhs::Scalar>{} }
 			};
 		}
@@ -1001,7 +1002,7 @@ namespace Eigen
 		 * @tparam Urng
 		 * @param urng c++11-style random number generator
 		 * @param a,b left and right boundary
-		 * @return a random matrix expression with a shape (`a.rows()`, `a.cols()`)
+		 * @return a random matrix expression with the same shape as `a` and `b`
 		 * @note `a` and `b` should have the same shape and scalar type.
 		 *
 		 *
@@ -1013,7 +1014,8 @@ namespace Eigen
 		{
 			static_assert(std::is_same<typename Lhs::Scalar, typename Rhs::Scalar>::value, "`Lhs::Scalar` must be equal to `Rhs::Scalar`");
 			return {
-				a, b, { std::forward<Urng>(urng), UniformRealVGen<typename Lhs::Scalar>{} }
+				static_cast<const Lhs&>(a), static_cast<const Rhs&>(b), 
+				{ std::forward<Urng>(urng), UniformRealVGen<typename Lhs::Scalar>{} }
 			};
 		}
 
@@ -1028,7 +1030,7 @@ namespace Eigen
 			uniformReal(Urng&& urng, const ArrayBase<Lhs>& a, typename Lhs::Scalar b)
 		{
 			return {
-				a, { a.rows(), a.cols(), internal::scalar_constant_op<typename Lhs::Scalar>{ b } },
+				static_cast<const Lhs&>(a), { a.rows(), a.cols(), internal::scalar_constant_op<typename Lhs::Scalar>{ b } },
 				{ std::forward<Urng>(urng), UniformRealVGen<typename Lhs::Scalar>{} }
 			};
 		}
@@ -1045,7 +1047,7 @@ namespace Eigen
 			uniformReal(Urng&& urng, typename Rhs::Scalar a, const ArrayBase<Rhs>& b)
 		{
 			return {
-				{ b.rows(), b.cols(), internal::scalar_constant_op<typename Rhs::Scalar>{ a } }, b,
+				{ b.rows(), b.cols(), internal::scalar_constant_op<typename Rhs::Scalar>{ a } }, static_cast<const Rhs&>(b),
 				{ std::forward<Urng>(urng), UniformRealVGen<typename Rhs::Scalar>{} }
 			};
 		}
@@ -1105,14 +1107,14 @@ namespace Eigen
 		 * @tparam Urng
 		 * @param urng c++11-style random number generator
 		 * @param p a probability of generating 1
-		 * @return a random matrix expression with a shape (`p.rows()`, `p.cols()`)
+		 * @return a random matrix expression with the same shape as `p`
 		 */
 		template<typename Lhs, typename Urng>
 		inline const BernoulliVType<Lhs, Urng>
 			bernoulli(Urng&& urng, const ArrayBase<Lhs>& p)
 		{
 			return BernoulliVType<Lhs, Urng>{
-				p, { std::forward<Urng>(urng), BernoulliVGen<typename Lhs::Scalar>{} }
+				static_cast<const Lhs&>(p), { std::forward<Urng>(urng), BernoulliVGen<typename Lhs::Scalar>{} }
 			};
 		}
 	}

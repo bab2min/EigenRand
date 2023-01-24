@@ -296,10 +296,10 @@ namespace Eigen
 				return gen(rng, a, b);
 			}
 
-			template<typename Packet>
-			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a, const Packet& b) const
+			template<typename PacketA, typename PacketB>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const PacketA packetOp(const PacketA& a, const PacketB& b) const
 			{
-				return gen.template packetOp<Packet>(rng, a, b);
+				return gen.packetOp(rng, a, b);
 			}
 		};
 
