@@ -177,6 +177,18 @@ namespace Eigen
 		}
 
 		template<>
+		EIGEN_STRONG_INLINE Packet8i pnegate<Packet8i>(const Packet8i& a)
+		{
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm256_sub_epi32(pset1<Packet8i>(0), a);
+#else
+			Packet4i a1, a2;
+			split_two(a, a1, a2);
+			return combine_two(_mm_sub_epi32(pset1<Packet4i>(0), a1), _mm_sub_epi32(pset1<Packet4i>(0), a2));
+#endif
+		}
+
+		template<>
 		struct BitShifter<Packet8i>
 		{
 			template<int b>

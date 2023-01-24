@@ -998,16 +998,21 @@ namespace Eigen
 		};
 
 		template<typename _Scalar>
-		class BinomialVGen : public BinaryGenBase<BinomialVGen<_Scalar>, _Scalar, _Scalar, float>
+		class BinomialVGen
 		{
 			static_assert(std::is_same<_Scalar, int32_t>::value, "binomial needs integral types.");
+		};
+
+		template<>
+		class BinomialVGen<int32_t> : public BinaryGenBase<BinomialVGen<int32_t>, int32_t, int32_t, float>
+		{
 			StdUniformRealGen<float> ur;
 
 		public:
-			using Scalar = _Scalar;
+			using Scalar = int32_t;
 
 			template<typename Rng>
-			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar trials, float p)
+			EIGEN_STRONG_INLINE const Scalar operator() (Rng&& rng, Scalar trials, float p)
 			{
 				using namespace Eigen::internal;
 				
@@ -1018,26 +1023,24 @@ namespace Eigen
 				float log_small_p = std::log(small_p);
 				float log_small_q = std::log(1 - small_p);
 
+				Scalar res = 0;
 				if (mean < 1.)
 				{
 					float ne_mean = std::exp(-mean);
-					_Scalar res = 0;
 					float val = 1;
 					for (; ; ++res)
 					{
 						val *= ur(rng);
 						if (val <= ne_mean) break;
 					}
-					return res;
 				}
 
-				_Scalar res;
 				for (int _i = 0; ; ++_i)
 				{
 					EIGENRAND_CHECK_INFINITY_LOOP();
 					double ys;
 					ys = std::tan(constant::pi * ur(rng));
-					res = (_Scalar)(sqrt_v * ys + mean);
+					res = (Scalar)(sqrt_v * ys + mean);
 					if (0 <= res && res <= trials && ur(rng) <= 1.2 * sqrt_v
 						* (1.0 + ys * ys)
 						* std::exp(g1 - std::lgamma(res + 1)
@@ -1115,6 +1118,130 @@ namespace Eigen
 					reinterpret_to_int(pcmp_eq(p, psmall_p)), 
 					pcast<FPacket, Packet>(valid_res), 
 					psub(trials, pcast<FPacket, Packet>(valid_res))
+				);
+			}
+		};
+
+		template<>
+		class BinomialVGen<float> : public BinaryGenBase<BinomialVGen<float>, float, float, float>
+		{
+			StdUniformRealGen<float> ur;
+
+		public:
+			using Scalar = float;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const Scalar operator() (Rng&& rng, Scalar _trials, float p)
+			{
+				using namespace Eigen::internal;
+
+				auto trials = reinterpret_cast<int32_t&>(_trials);
+
+				float small_p = std::min(p, 1 - p);
+				float mean = trials * small_p;
+				float g1 = std::lgamma(trials + 1);
+				float sqrt_v = std::sqrt(2 * mean * (1 - small_p));
+				float log_small_p = std::log(small_p);
+				float log_small_q = std::log(1 - small_p);
+
+				int32_t res = 0;
+				if (mean < 1.)
+				{
+					float ne_mean = std::exp(-mean);
+					float val = 1;
+					for (; ; ++res)
+					{
+						val *= ur(rng);
+						if (val <= ne_mean) break;
+					}
+				}
+
+				for (int _i = 0; ; ++_i)
+				{
+					EIGENRAND_CHECK_INFINITY_LOOP();
+					double ys;
+					ys = std::tan(constant::pi * ur(rng));
+					res = (int32_t)(sqrt_v * ys + mean);
+					if (0 <= res && res <= trials && ur(rng) <= 1.2 * sqrt_v
+						* (1.0 + ys * ys)
+						* std::exp(g1 - std::lgamma(res + 1)
+							- std::lgamma(trials - res + 1.0)
+							+ res * log_small_p
+							+ (trials - res) * log_small_q)
+						)
+					{
+						break;
+					}
+				}
+				res = p == small_p ? res : trials - res;
+				return reinterpret_cast<Scalar&>(res);
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& _trials, const Packet& p)
+			{
+				using namespace Eigen::internal;
+				using IPacket = decltype(reinterpret_to_int(std::declval<Packet>()));
+				IPacket valid = pset1<IPacket>(0);
+				Packet valid_res;
+
+				const auto trials = reinterpret_to_int(_trials);
+				const auto psmall_p = pmin(p, psub(pset1<Packet>(1), p));
+				const auto ptrials = pcast<IPacket, Packet>(trials);
+				const auto pmean = pmul(ptrials, psmall_p);
+				const auto pg1 = plgamma_approx(padd(ptrials, pset1<Packet>(1)));
+				const auto psqrt_v = psqrt(pmul(pmul(pset1<Packet>(2), pmean), psub(pset1<Packet>(1), psmall_p)));
+				const auto plog_small_p = plog(psmall_p);
+				const auto plog_small_q = plog(psub(pset1<Packet>(1), psmall_p));
+				const auto ppi = pset1<Packet>(constant::pi);
+				valid = reinterpret_to_int(pcmp_lt(pmean, pset1<Packet>(1)));
+				if (predux_any(reinterpret_to_float(valid)))
+				{
+					Packet res = pset1<Packet>(0);
+					Packet val = pset1<Packet>(1), pne_mean = pexp(pnegate(pmean));
+					for (int _i = 0; ; ++_i)
+					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
+						val = pmul(val, ur.template packetOp<Packet>(rng));
+						auto c = pand(reinterpret_to_int(pcmp_lt(pne_mean, val)), valid);
+						if (!predux_any(reinterpret_to_float(c))) break;
+						res = padd(res, pcast<IPacket, Packet>(pnegate(c)));
+					}
+					valid_res = res;
+				}
+
+				for (int _i = 0; ; ++_i)
+				{
+					EIGENRAND_CHECK_INFINITY_LOOP();
+					Packet fres, ys, psin, pcos;
+					psincos(pmul(ppi, ur.template packetOp<Packet>(rng)), psin, pcos);
+					ys = pdiv(psin, pcos);
+					fres = ptruncate(padd(pmul(psqrt_v, ys), pmean));
+
+					auto p1 = pmul(pmul(pset1<Packet>(1.2), psqrt_v), padd(pset1<Packet>(1), pmul(ys, ys)));
+					auto p2 = pexp(
+						padd(padd(psub(
+							psub(pg1, plgamma_approx(padd(fres, pset1<Packet>(1)))),
+							plgamma_approx(psub(padd(ptrials, pset1<Packet>(1)), fres))
+						), pmul(fres, plog_small_p)), pmul(psub(ptrials, fres), plog_small_q))
+					);
+
+					auto c1 = pand(pcmple(pset1<Packet>(0), fres), pcmple(fres, ptrials));
+					auto c2 = pcmple(ur.template packetOp<Packet>(rng), pmul(p1, p2));
+
+					auto fvalid = pand(c1, c2);
+					valid_res = pblendv(pandnot(fvalid, reinterpret_to_float(valid)), fres, valid_res);
+					valid = por(reinterpret_to_int(fvalid), valid);
+
+					if (!predux_any(pnot(reinterpret_to_float(valid))))
+					{
+						break;
+					}
+				}
+				return pblendv(
+					pcmp_eq(p, psmall_p),
+					reinterpret_to_float(pcast<Packet, IPacket>(valid_res)),
+					reinterpret_to_float(psub(trials, pcast<Packet, IPacket>(valid_res)))
 				);
 			}
 		};
@@ -1643,6 +1770,27 @@ namespace Eigen
 				{ trials.rows(), trials.cols(), internal::scalar_constant_op<float>{p} },
 				{ std::forward<Urng>(urng), BinomialVGen<typename Lhs::Scalar>{} }
 			};
+		}
+
+		namespace impl
+		{
+			template<typename Lhs, typename Urng>
+			using BinomialVType = CwiseBinaryOp<
+				internal::scalar_binary_rng_adaptor<BinomialVGen<typename Lhs::Scalar>, typename Lhs::Scalar, typename Lhs::Scalar, typename Lhs::Scalar, Urng, true>,
+				const Lhs, CwiseNullaryOp<internal::scalar_constant_op<float>, const Lhs>
+			>;
+
+			template<typename Lhs, typename Urng>
+			inline const BinomialVType<Lhs, Urng>
+				binomial(Urng&& urng, const ArrayBase<Lhs>& trials, float p)
+			{
+				static_assert(std::is_same<typename Lhs::Scalar, float>::value, "Lhs must have float scalar type.");
+				return {
+					static_cast<const Lhs&>(trials),
+					{ trials.rows(), trials.cols(), internal::scalar_constant_op<float>{p} },
+					{ std::forward<Urng>(urng), BinomialVGen<typename Lhs::Scalar>{} }
+				};
+			}
 		}
 
 		template<typename Rhs, typename Urng>

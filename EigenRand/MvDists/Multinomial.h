@@ -28,7 +28,7 @@ namespace Eigen
 			static_assert(std::is_same<_Scalar, int32_t>::value, "`MultinomialGen` needs integral types.");
 			_Scalar trials;
 			Matrix<double, Dim, 1> probs;
-			DiscreteGen<_Scalar> discrete;
+			DiscreteGen<_Scalar, int32_t> discrete;
 		public:
 			/**
 			 * @brief Construct a new multinomial generator
@@ -64,22 +64,24 @@ namespace Eigen
 				Matrix<_Scalar, Dim, -1> ret(dim, samples);
 				if (trials < std::max(30 * (dim - 1), (Index)100))
 				{
-					for (Index j = 0; j < samples; ++j)
+					for (Index s = 0; s < samples; ++s)
 					{
-						ret.col(j) = generate(urng);
+						ret.col(s) = generate(urng);
 					}
 				}
 				else
 				{
-					Array<_Scalar, 1, -1> r_trials{ samples }, t;
+					Array<_Scalar, 1, -1> r_trials{ samples }, t{ samples };
+					Map<const Array<float, -1, 1>> fr_trials{ reinterpret_cast<float*>(r_trials.data()), samples };
+					Map<Array<float, -1, 1>> ft{ reinterpret_cast<float*>(t.data()), samples };
 					r_trials.setConstant(trials);
-					t = binomial(urng, r_trials, probs[0]);
+					ft = impl::binomial(urng, fr_trials, probs[0]);
 					r_trials -= t;
 					ret.row(0) = t.matrix();
 					double rest_p = 1 - probs[0];
 					for (Index i = 1; i < dim - 1; ++i)
 					{
-						t = binomial(urng, r_trials, probs[i] / rest_p);
+						ft = impl::binomial(urng, fr_trials, probs[i] / rest_p);
 						r_trials -= t;
 						ret.row(i) = t.matrix();
 						rest_p -= probs[i];
@@ -98,10 +100,21 @@ namespace Eigen
 				//if (trials < std::max(30 * (dim - 1), (Index)100))
 				{
 					ret.setZero();
-					auto d = discrete.template generate<Matrix<_Scalar, -1, 1>>(trials, 1, urng).eval();
-					for (Index i = 0; i < trials; ++i)
+					auto d = discrete.template generate<Matrix<_Scalar, 16, 1>>(16, 1, urng);
+					Matrix<_Scalar, 16, 1> buf;
+					Index i;
+					for (i = 0; i < (trials & ~15); i += 16)
 					{
-						ret[d[i]] += 1;
+						buf = d;
+						for (Index j = 0; j < 16; ++j)
+						{
+							ret[buf[j]] += 1;
+						}
+					}
+					buf.middleRows(0, trials - i) = d.middleRows(0, trials - i);
+					for (Index j = 0; j < trials - i; ++j)
+					{
+						ret[buf[j]] += 1;
 					}
 				}
 				/*else
