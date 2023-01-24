@@ -118,12 +118,12 @@ namespace Eigen {
                 eigen_assert(aLhs.rows() == aRhs.rows() && aLhs.cols() == aRhs.cols());
         }
 
-        EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+        EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr
             Index rows() const EIGEN_NOEXCEPT {
             // return the fixed size type if available to enable compile time optimizations
             return internal::traits<typename internal::remove_all<LhsNested>::type>::RowsAtCompileTime == Dynamic ? m_rhs.rows() : m_lhs.rows();
         }
-        EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+        EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr
             Index cols() const EIGEN_NOEXCEPT {
             // return the fixed size type if available to enable compile time optimizations
             return internal::traits<typename internal::remove_all<LhsNested>::type>::ColsAtCompileTime == Dynamic ? m_rhs.cols() : m_lhs.cols();
