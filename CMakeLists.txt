@@ -44,6 +44,14 @@ add_executable( "${PROJECT_NAME}-benchmark-mv"
   benchmark/benchmark_mv.cpp
 )
 
+add_executable( "${PROJECT_NAME}-benchmark-disc"
+  benchmark/benchmark_disc.cpp
+)
+
+add_executable( "${PROJECT_NAME}-benchmark-vop"
+  benchmark/benchmark_vectorize_over_params.cpp
+)
+
 add_executable( "${PROJECT_NAME}-accuracy"
   benchmark/accuracy.cpp
 )
