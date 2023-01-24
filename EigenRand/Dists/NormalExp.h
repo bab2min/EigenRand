@@ -132,6 +132,33 @@ namespace Eigen
 			}
 		};
 
+		template<typename _Scalar>
+		class NormalVGen : public BinaryGenBase<NormalVGen<_Scalar>, _Scalar, _Scalar, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "normalDist needs floating point types.");
+			StdNormalGen<_Scalar> stdnorm;
+
+		public:
+			using Scalar = _Scalar;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar mean, _Scalar stdev)
+			{
+				using namespace Eigen::internal;
+				return stdnorm(std::forward<Rng>(rng)) * stdev + mean;
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& mean, const Packet& stdev)
+			{
+				using namespace Eigen::internal;
+				return padd(pmul(
+					stdnorm.template packetOp<Packet>(std::forward<Rng>(rng)),
+					stdev
+				), mean);
+			}
+		};
+
 		/**
 		 * @brief Generator of reals on a lognormal distribution
 		 * 
@@ -175,6 +202,30 @@ namespace Eigen
 			{
 				using namespace Eigen::internal;
 				return pexp(norm.template packetOp<Packet>(std::forward<Rng>(rng)));
+			}
+		};
+
+		template<typename _Scalar>
+		class LognormalVGen : public BinaryGenBase<LognormalVGen<_Scalar>, _Scalar, _Scalar, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "lognormalDist needs floating point types.");
+			NormalVGen<_Scalar> norm;
+
+		public:
+			using Scalar = _Scalar;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar mean, _Scalar stdev)
+			{
+				using namespace Eigen::internal;
+				return std::exp(norm(std::forward<Rng>(rng), mean, stdev));
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& mean, const Packet& stdev)
+			{
+				using namespace Eigen::internal;
+				return pexp(norm.template packetOp<Packet>(std::forward<Rng>(rng), mean, stdev));
 			}
 		};
 
@@ -246,6 +297,51 @@ namespace Eigen
 			}
 		};
 
+		template<typename _Scalar>
+		class StudentTVGen : public UnaryGenBase<StudentTVGen<_Scalar>, _Scalar, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "studentT needs floating point types.");
+			StdUniformRealGen<_Scalar> ur;
+
+		public:
+			using Scalar = _Scalar;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar n)
+			{
+				using namespace Eigen::internal;
+				_Scalar v1, v2, sx;
+				for (int _i = 0; ; ++_i)
+				{
+					EIGENRAND_CHECK_INFINITY_LOOP();
+					v1 = 2 * ur(rng) - 1;
+					v2 = 2 * ur(rng) - 1;
+					sx = v1 * v1 + v2 * v2;
+					if (sx && sx < 1) break;
+				}
+
+				_Scalar fx = std::sqrt(n * (std::pow(sx, -2 / n) - 1) / sx);
+				return fx * v1;
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& n)
+			{
+				using namespace Eigen::internal;
+				Packet u1 = ur.template packetOp<Packet>(rng),
+					u2 = ur.template packetOp<Packet>(rng);
+
+				u1 = psub(pset1<Packet>(1), u1);
+				auto radius = psqrt(pmul(n,
+					psub(pexp(pmul(plog(u1), pdiv(pset1<Packet>(-2), n))), pset1<Packet>(1))
+				));
+				auto theta = pmul(pset1<Packet>(2 * constant::pi), u2);
+				//Packet sintheta, costheta;
+				//psincos(theta, sintheta, costheta);
+				return pmul(radius, psin(theta));
+			}
+		};
+
 		template<typename> class GammaGen;
 
 		/**
@@ -294,6 +390,32 @@ namespace Eigen
 				return pnegate(pdiv(plog(
 					psub(pset1<Packet>(1), ur.template packetOp<Packet>(std::forward<Rng>(rng)))
 				), pset1<Packet>(lambda)));
+			}
+		};
+
+		template<typename _Scalar>
+		class ExponentialVGen : public UnaryGenBase<ExponentialVGen<_Scalar>, _Scalar, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "expDist needs floating point types.");
+			StdUniformRealGen<_Scalar> ur;
+
+		public:
+			using Scalar = _Scalar;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar lambda)
+			{
+				using namespace Eigen::internal;
+				return -std::log(1 - ur(std::forward<Rng>(rng))) / lambda;
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& lambda)
+			{
+				using namespace Eigen::internal;
+				return pnegate(pdiv(plog(
+					psub(pset1<Packet>(1), ur.template packetOp<Packet>(std::forward<Rng>(rng)))
+				), lambda));
 			}
 		};
 
@@ -527,6 +649,32 @@ namespace Eigen
 			}
 		};
 
+		template<typename _Scalar>
+		class WeibullVGen : public BinaryGenBase<WeibullGen<_Scalar>, _Scalar, _Scalar, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "weilbullDist needs floating point types.");
+			StdUniformRealGen<_Scalar> ur;
+
+		public:
+			using Scalar = _Scalar;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar a, _Scalar b)
+			{
+				using namespace Eigen::internal;
+				return std::pow(-std::log(1 - ur(std::forward<Rng>(rng))), 1 / a) * b;
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& a, const Packet& b)
+			{
+				using namespace Eigen::internal;
+				return pmul(pexp(pmul(plog(pnegate(plog(
+					psub(pset1<Packet>(1), ur.template packetOp<Packet>(std::forward<Rng>(rng)))
+				))), pdiv(pset1<Packet>(1), a))), b);
+			}
+		};
+
 		/**
 		 * @brief Generator of reals on an extreme value distribution
 		 * 
@@ -573,6 +721,33 @@ namespace Eigen
 				using RUtils = RandUtils<Packet, Rng>;
 				return psub(pset1<Packet>(a),
 					pmul(plog(pnegate(plog(RUtils{}.nonzero_uniform_real(std::forward<Rng>(rng))))), pset1<Packet>(b))
+				);
+			}
+		};
+
+		template<typename _Scalar>
+		class ExtremeValueVGen : public BinaryGenBase<ExtremeValueVGen<_Scalar>, _Scalar, _Scalar, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "extremeValueDist needs floating point types.");
+			StdUniformRealGen<_Scalar> ur;
+
+		public:
+			using Scalar = _Scalar;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar a, _Scalar b)
+			{
+				using namespace Eigen::internal;
+				return (a - b * std::log(-std::log(ur.nzur_scalar(std::forward<Rng>(rng)))));
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& a, const Packet& b)
+			{
+				using namespace Eigen::internal;
+				using RUtils = RandUtils<Packet, Rng>;
+				return psub(a,
+					pmul(plog(pnegate(plog(RUtils{}.nonzero_uniform_real(std::forward<Rng>(rng))))), b)
 				);
 			}
 		};
@@ -668,6 +843,36 @@ namespace Eigen
 				), s, c);
 				return padd(pset1<Packet>(a),
 					pmul(pset1<Packet>(b), pdiv(s, c))
+				);
+			}
+		};
+
+		template<typename _Scalar>
+		class CauchyVGen : public BinaryGenBase<CauchyVGen<_Scalar>, _Scalar, _Scalar, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "cauchyDist needs floating point types.");
+			StdUniformRealGen<_Scalar> ur;
+
+		public:
+			using Scalar = _Scalar;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar a, _Scalar b)
+			{
+				using namespace Eigen::internal;
+				return a + b * std::tan(constant::pi * (ur(std::forward<Rng>(rng)) - 0.5));
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& a, const Packet& b)
+			{
+				using namespace Eigen::internal;
+				Packet s, c;
+				psincos(pmul(pset1<Packet>(constant::pi),
+					psub(ur.template packetOp<Packet>(std::forward<Rng>(rng)), pset1<Packet>(0.5))
+				), s, c);
+				return padd(a,
+					pmul(b, pdiv(s, c))
 				);
 			}
 		};
@@ -904,6 +1109,69 @@ namespace Eigen
 			};
 		}
 
+		template<typename Lhs, typename Rhs, typename Urng>
+		using CauchyVVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<CauchyVGen<typename Lhs::Scalar>, typename Lhs::Scalar, typename Lhs::Scalar, typename Rhs::Scalar, Urng, true>, 
+			const Lhs, const Rhs
+		>;
+
+		/**
+		 * @brief generates reals on the Cauchy distribution.
+		 *
+		 * @tparam Lhs, Rhs
+		 * @tparam Urng
+		 * @param urng c++11-style random number generator
+		 * @param a a location parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression with the same shape as `a` and `b`
+		 * @note `a` and `b` should have the same shape and scalar type.
+		 *
+		 * @see Eigen::Rand::CauchyGen
+		 */
+		template<typename Lhs, typename Rhs, typename Urng>
+		inline const CauchyVVType<Lhs, Rhs, Urng>
+			cauchy(Urng&& urng, const ArrayBase<Lhs>& a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				static_cast<const Lhs&>(a), static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), CauchyVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using CauchyVSType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<CauchyVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			const Derived, CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>
+		>;
+
+		template<typename Lhs, typename Urng>
+		inline const CauchyVSType<Lhs, Urng>
+			cauchy(Urng&& urng, const ArrayBase<Lhs>& a, typename Lhs::Scalar b)
+		{
+			return {
+				static_cast<const Lhs&>(a),
+				{ a.rows(), a.cols(), internal::scalar_constant_op<typename Lhs::Scalar>{ b } },
+				{ std::forward<Urng>(urng), CauchyVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using CauchySVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<CauchyVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>, const Derived
+		>;
+
+		template<typename Rhs, typename Urng>
+		inline const CauchySVType<Rhs, Urng>
+			cauchy(Urng&& urng, typename Rhs::Scalar a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				{ b.rows(), b.cols(), internal::scalar_constant_op<typename Rhs::Scalar>{ a } },
+				static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), CauchyVGen<typename Rhs::Scalar>{} }
+			};
+		}
+
 		template<typename Derived, typename Urng>
 		using NormalType = CwiseNullaryOp<internal::scalar_rng_adaptor<StdNormalGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
 
@@ -996,6 +1264,69 @@ namespace Eigen
 			};
 		}
 
+		template<typename Lhs, typename Rhs, typename Urng>
+		using NormalVVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<NormalVGen<typename Lhs::Scalar>, typename Lhs::Scalar, typename Lhs::Scalar, typename Rhs::Scalar, Urng, true>,
+			const Lhs, const Rhs
+		>;
+
+		/**
+		 * @brief generates reals on a normal distribution with arbitrary `mean` and `stdev`.
+		 *
+		 * @tparam Lhs, Rhs
+		 * @tparam Urng
+		 * @param urng c++11-style random number generator
+		 * @param mean a mean value of the distribution
+		 * @param stdev a standard deviation value of the distribution
+		 * @return a random matrix expression with the same shape as `mean` and `stdev`
+		 * @note `mean` and `stdev` should have the same shape and scalar type.
+		 *
+		 * @see Eigen::Rand::NormalGen
+		 */
+		template<typename Lhs, typename Rhs, typename Urng>
+		inline const NormalVVType<Lhs, Rhs, Urng>
+			normal(Urng&& urng, const ArrayBase<Lhs>& a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				static_cast<const Lhs&>(a), static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), NormalVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using NormalVSType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<NormalVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			const Derived, CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>
+		>;
+
+		template<typename Lhs, typename Urng>
+		inline const NormalVSType<Lhs, Urng>
+			normal(Urng&& urng, const ArrayBase<Lhs>& a, typename Lhs::Scalar b)
+		{
+			return {
+				static_cast<const Lhs&>(a),
+				{ a.rows(), a.cols(), internal::scalar_constant_op<typename Lhs::Scalar>{ b } },
+				{ std::forward<Urng>(urng), NormalVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using NormalSVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<NormalVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>, const Derived
+		>;
+
+		template<typename Rhs, typename Urng>
+		inline const NormalSVType<Rhs, Urng>
+			normal(Urng&& urng, typename Rhs::Scalar a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				{ b.rows(), b.cols(), internal::scalar_constant_op<typename Rhs::Scalar>{ a } },
+				static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), NormalVGen<typename Rhs::Scalar>{} }
+			};
+		}
+
 		template<typename Derived, typename Urng>
 		using LognormalType = CwiseNullaryOp<internal::scalar_rng_adaptor<LognormalGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
 
@@ -1041,6 +1372,68 @@ namespace Eigen
 		{
 			return {
 				o.rows(), o.cols(), { std::forward<Urng>(urng), LognormalGen<typename Derived::Scalar>{mean, stdev} }
+			};
+		}
+
+		template<typename Lhs, typename Rhs, typename Urng>
+		using LognormalVVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<LognormalVGen<typename Lhs::Scalar>, typename Lhs::Scalar, typename Lhs::Scalar, typename Rhs::Scalar, Urng, true>,
+			const Lhs, const Rhs
+		>;
+		/**
+		 * @brief generates reals on a lognormal distribution with arbitrary `mean` and `stdev`.
+		 *
+		 * @tparam Lhs, Rhs
+		 * @tparam Urng
+		 * @param urng c++11-style random number generator
+		 * @param mean a mean value of the distribution
+		 * @param stdev a standard deviation value of the distribution
+		 * @return a random matrix expression with the same shape as `mean` and `stdev`
+		 * @note `mean` and `stdev` should have the same shape and scalar type.
+		 *
+		 * @see Eigen::Rand::LognormalGen
+		 */
+		template<typename Lhs, typename Rhs, typename Urng>
+		inline const LognormalVVType<Lhs, Rhs, Urng>
+			lognormal(Urng&& urng, const ArrayBase<Lhs>& a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				static_cast<const Lhs&>(a), static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), LognormalVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using LognormalVSType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<LognormalVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			const Derived, CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>
+		>;
+
+		template<typename Lhs, typename Urng>
+		inline const LognormalVSType<Lhs, Urng>
+			lognormal(Urng&& urng, const ArrayBase<Lhs>& a, typename Lhs::Scalar b)
+		{
+			return {
+				static_cast<const Lhs&>(a),
+				{ a.rows(), a.cols(), internal::scalar_constant_op<typename Lhs::Scalar>{ b } },
+				{ std::forward<Urng>(urng), LognormalVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using LognormalSVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<LognormalVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>, const Derived
+		>;
+
+		template<typename Rhs, typename Urng>
+		inline const LognormalSVType<Rhs, Urng>
+			lognormal(Urng&& urng, typename Rhs::Scalar a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				{ b.rows(), b.cols(), internal::scalar_constant_op<typename Rhs::Scalar>{ a } },
+				static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), LognormalVGen<typename Rhs::Scalar>{} }
 			};
 		}
 
@@ -1090,6 +1483,32 @@ namespace Eigen
 			};
 		}
 
+		template<typename Lhs, typename Urng>
+		using StudentTVType = CwiseUnaryOp<
+			internal::scalar_unary_rng_adaptor<StudentTVGen<typename Lhs::Scalar>, typename Lhs::Scalar, typename Lhs::Scalar, Urng, true>,
+			const Lhs
+		>;
+		/**
+		 * @brief generates reals on the Student's t distribution with arbirtrary degress of freedom.
+		 *
+		 * @tparam Lhs
+		 * @tparam Urng
+		 * @param urng c++11-style random number generator
+		 * @param n degrees of freedom
+		 * @return a random matrix expression with the same shape as `n`
+		 *
+		 * @see Eigen::Rand::StudentTGen
+		 */
+		template<typename Lhs, typename Urng>
+		inline const StudentTVType<Lhs, Urng>
+			studentT(Urng&& urng, const ArrayBase<Lhs>& a)
+		{
+			return {
+				static_cast<const Lhs&>(a), 
+				{ std::forward<Urng>(urng), StudentTVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
 		template<typename Derived, typename Urng>
 		using ExponentialType = CwiseNullaryOp<internal::scalar_rng_adaptor<ExponentialGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
 
@@ -1133,6 +1552,32 @@ namespace Eigen
 		{
 			return {
 				o.rows(), o.cols(), { std::forward<Urng>(urng), ExponentialGen<typename Derived::Scalar>{lambda} }
+			};
+		}
+
+		template<typename Lhs, typename Urng>
+		using ExponentialVType = CwiseUnaryOp<
+			internal::scalar_unary_rng_adaptor<ExponentialVGen<typename Lhs::Scalar>, typename Lhs::Scalar, typename Lhs::Scalar, Urng, true>,
+			const Lhs
+		>;
+		/**
+		 * @brief generates reals on an exponential distribution with arbitrary scale parameter.
+		 *
+		 * @tparam Lhs, Rhs
+		 * @tparam Urng
+		 * @param urng c++11-style random number generator
+		 * @param lambda a scale parameter of the distribution
+		 * @return a random matrix expression with the same shape as `lambda`
+		 *
+		 * @see Eigen::Rand::ExponentialGen
+		 */
+		template<typename Lhs, typename Urng>
+		inline const ExponentialVType<Lhs, Urng>
+			exponential(Urng&& urng, const ArrayBase<Lhs>& a)
+		{
+			return {
+				static_cast<const Lhs&>(a),
+				{ std::forward<Urng>(urng), ExponentialVGen<typename Lhs::Scalar>{} }
 			};
 		}
 
@@ -1232,6 +1677,69 @@ namespace Eigen
 			};
 		}
 
+		template<typename Lhs, typename Rhs, typename Urng>
+		using WeibullVVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<WeibullVGen<typename Lhs::Scalar>, typename Lhs::Scalar, typename Lhs::Scalar, typename Rhs::Scalar, Urng, true>,
+			const Lhs, const Rhs
+		>;
+
+		/**
+		 * @brief generates reals on a Weibull distribution with arbitrary shape and scale parameter.
+		 *
+		 * @tparam Lhs, Rhs
+		 * @tparam Urng
+		 * @param urng c++11-style random number generator
+		 * @param a a shape parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression with the same shape as `a` and `b`
+		 * @note `a` and `b` should have the same shape and scalar type.
+		 *
+		 * @see Eigen::Rand::WeibullGen
+		 */
+		template<typename Lhs, typename Rhs, typename Urng>
+		inline const WeibullVVType<Lhs, Rhs, Urng>
+			weibull(Urng&& urng, const ArrayBase<Lhs>& a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				static_cast<const Lhs&>(a), static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), WeibullVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using WeibullVSType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<WeibullVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			const Derived, CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>
+		>;
+
+		template<typename Lhs, typename Urng>
+		inline const WeibullVSType<Lhs, Urng>
+			weibull(Urng&& urng, const ArrayBase<Lhs>& a, typename Lhs::Scalar b)
+		{
+			return {
+				static_cast<const Lhs&>(a),
+				{ a.rows(), a.cols(), internal::scalar_constant_op<typename Lhs::Scalar>{ b } },
+				{ std::forward<Urng>(urng), WeibullVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using WeibullSVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<WeibullVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>, const Derived
+		>;
+
+		template<typename Rhs, typename Urng>
+		inline const WeibullSVType<Rhs, Urng>
+			weibull(Urng&& urng, typename Rhs::Scalar a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				{ b.rows(), b.cols(), internal::scalar_constant_op<typename Rhs::Scalar>{ a } },
+				static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), WeibullVGen<typename Rhs::Scalar>{} }
+			};
+		}
+
 		template<typename Derived, typename Urng>
 		using ExtremeValueType = CwiseNullaryOp<internal::scalar_rng_adaptor<ExtremeValueGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
 
@@ -1279,6 +1787,70 @@ namespace Eigen
 		{
 			return {
 				o.rows(), o.cols(), { std::forward<Urng>(urng), ExtremeValueGen<typename Derived::Scalar>{a, b} }
+			};
+		}
+
+		template<typename Lhs, typename Rhs, typename Urng>
+		using ExtremeValueVVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<ExtremeValueVGen<typename Lhs::Scalar>, typename Lhs::Scalar, typename Lhs::Scalar, typename Rhs::Scalar, Urng, true>,
+			const Lhs, const Rhs
+		>;
+
+		/**
+		 * @brief generates reals on an extreme value distribution
+		 * (a.k.a Gumbel Type I, log-Weibull, Fisher-Tippett Type I) with arbitrary shape and scale parameter.
+		 *
+		 * @tparam Lhs, Rhs
+		 * @tparam Urng
+		 * @param urng c++11-style random number generator
+		 * @param a a location parameter of the distribution
+		 * @param b a scale parameter of the distribution
+		 * @return a random matrix expression with the same shape as `a` and `b`
+		 * @note `a` and `b` should have the same shape and scalar type.
+		 *
+		 * @see Eigen::Rand::WeibullGen
+		 */
+		template<typename Lhs, typename Rhs, typename Urng>
+		inline const ExtremeValueVVType<Lhs, Rhs, Urng>
+			extremeValue(Urng&& urng, const ArrayBase<Lhs>& a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				static_cast<const Lhs&>(a), static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), ExtremeValueVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using ExtremeValueVSType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<ExtremeValueVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			const Derived, CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>
+		>;
+
+		template<typename Lhs, typename Urng>
+		inline const ExtremeValueVSType<Lhs, Urng>
+			extremeValue(Urng&& urng, const ArrayBase<Lhs>& a, typename Lhs::Scalar b)
+		{
+			return {
+				static_cast<const Lhs&>(a),
+				{ a.rows(), a.cols(), internal::scalar_constant_op<typename Lhs::Scalar>{ b } },
+				{ std::forward<Urng>(urng), ExtremeValueVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using ExtremeValueSVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<ExtremeValueVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>, const Derived
+		>;
+
+		template<typename Rhs, typename Urng>
+		inline const ExtremeValueSVType<Rhs, Urng>
+			extremeValue(Urng&& urng, typename Rhs::Scalar a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				{ b.rows(), b.cols(), internal::scalar_constant_op<typename Rhs::Scalar>{ a } },
+				static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), ExtremeValueVGen<typename Rhs::Scalar>{} }
 			};
 		}
 

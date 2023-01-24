@@ -238,6 +238,20 @@ TYPED_TEST(ContinuousDistTest, normal)
 	std::cout << mat << std::endl;
 }
 
+TYPED_TEST(ContinuousDistTest, normalV)
+{
+	using Array = Eigen::Array<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	Array a{ 10, 1 }, b{ 10, 1 }, c{ 10, 1 };
+	a << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+	b << 10, 12, 14, 16, 18, 20, 22, 24, 26, 28;
+
+	c = Eigen::Rand::normal(gen, a, b);
+	c = Eigen::Rand::normal(gen, a, 1);
+	c = Eigen::Rand::normal(gen, 0, b);
+	std::cout << c << std::endl;
+}
+
 TYPED_TEST(ContinuousDistTest, exponential)
 {
 	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
@@ -453,6 +467,30 @@ TYPED_TEST(DiscreteDistTest, binomial)
 	mat = Eigen::Rand::binomial<Matrix>(5, 3, gen, 10, 0.5);
 	mat = Eigen::Rand::binomial<Matrix>(1, 3, gen, 10, 0.5);
 	std::cout << mat << std::endl;
+}
+
+TEST(DiscreteDistTest, binomialV)
+{
+	using Array = Eigen::Array<int32_t, -1, 1>;
+	using FArray = Eigen::Array<float, -1, 1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	Array a{ 10 };
+	FArray b{ 10 };
+	
+	a.setLinSpaced(5, 50);
+	b.setLinSpaced(0.1, 1.0);
+
+	auto c = Eigen::Rand::binomial(gen, a.replicate(1, 1000).eval(), 0.5).eval();
+	c = Eigen::Rand::binomial(gen, 50, b.replicate(1, 1000).eval()).eval();
+	c = Eigen::Rand::binomial(gen, a.replicate(1, 1000).eval(), b.replicate(1, 1000).eval()).eval();
+	std::cout << c.leftCols(10) << std::endl;
+	auto fc = c.template cast<float>().eval();
+	auto mean = fc.rowwise().mean().eval();
+	auto stdev = (fc.square().rowwise().mean() - mean.square()).sqrt().eval();
+	for (int i = 0; i < mean.size(); ++i)
+	{
+		std::cout << mean[i] << " (" << stdev[i] << ")" << std::endl;
+	}
 }
 
 TYPED_TEST(DiscreteDistTest, negativeBinomial)

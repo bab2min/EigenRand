@@ -476,7 +476,7 @@ namespace Eigen
 		class DiscreteGen<_Scalar, float> : public GenBase<DiscreteGen<_Scalar, float>, _Scalar>
 		{
 			static_assert(std::is_same<_Scalar, int32_t>::value, "discreteDist needs integral types.");
-			UniformRealGen<float> ur;
+			StdUniformRealGen<float> ur;
 			std::vector<float> cdf;
 			AliasMethod<float, _Scalar> alias_table;
 
@@ -593,7 +593,7 @@ namespace Eigen
 		class DiscreteGen<_Scalar, double> : public GenBase<DiscreteGen<_Scalar, double>, _Scalar>
 		{
 			static_assert(std::is_same<_Scalar, int32_t>::value, "discreteDist needs integral types.");
-			UniformRealGen<double> ur;
+			StdUniformRealGen<double> ur;
 			std::vector<double> cdf;
 			AliasMethod<double, _Scalar> alias_table;
 
@@ -736,7 +736,7 @@ namespace Eigen
 			friend BinomialGen<_Scalar>;
 			static_assert(std::is_same<_Scalar, int32_t>::value, "poisson needs integral types.");
 			int cache_rest_cnt = 0;
-			UniformRealGen<float> ur;
+			StdUniformRealGen<float> ur;
 
 		protected:
 			double mean, ne_mean, sqrt_tmean, log_mean, g1;
@@ -997,6 +997,128 @@ namespace Eigen
 			}
 		};
 
+		template<typename _Scalar>
+		class BinomialVGen : public BinaryGenBase<BinomialVGen<_Scalar>, _Scalar, _Scalar, float>
+		{
+			static_assert(std::is_same<_Scalar, int32_t>::value, "binomial needs integral types.");
+			StdUniformRealGen<float> ur;
+
+		public:
+			using Scalar = _Scalar;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar trials, float p)
+			{
+				using namespace Eigen::internal;
+				
+				float small_p = std::min(p, 1 - p);
+				float mean = trials * small_p;
+				float g1 = std::lgamma(trials + 1);
+				float sqrt_v = std::sqrt(2 * mean * (1 - small_p));
+				float log_small_p = std::log(small_p);
+				float log_small_q = std::log(1 - small_p);
+
+				if (mean < 1.)
+				{
+					float ne_mean = std::exp(-mean);
+					_Scalar res = 0;
+					float val = 1;
+					for (; ; ++res)
+					{
+						val *= ur(rng);
+						if (val <= ne_mean) break;
+					}
+					return res;
+				}
+
+				_Scalar res;
+				for (int _i = 0; ; ++_i)
+				{
+					EIGENRAND_CHECK_INFINITY_LOOP();
+					double ys;
+					ys = std::tan(constant::pi * ur(rng));
+					res = (_Scalar)(sqrt_v * ys + mean);
+					if (0 <= res && res <= trials && ur(rng) <= 1.2 * sqrt_v
+						* (1.0 + ys * ys)
+						* std::exp(g1 - std::lgamma(res + 1)
+							- std::lgamma(trials - res + 1.0)
+							+ res * log_small_p
+							+ (trials - res) * log_small_q)
+						)
+					{
+						break;
+					}
+				}
+				return p == small_p ? res : trials - res;
+			}
+
+			template<typename Packet, typename FPacket, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& trials, const FPacket& p)
+			{
+				using namespace Eigen::internal;
+				Packet valid = pset1<Packet>(0);
+				FPacket valid_res;
+
+				const auto psmall_p = pmin(p, psub(pset1<FPacket>(1), p));
+				const auto ptrials = pcast<Packet, FPacket>(trials);
+				const auto pmean = pmul(ptrials, psmall_p);
+				const auto pg1 = plgamma_approx(padd(ptrials, pset1<FPacket>(1)));
+				const auto psqrt_v = psqrt(pmul(pmul(pset1<FPacket>(2), pmean), psub(pset1<FPacket>(1), psmall_p)));
+				const auto plog_small_p = plog(psmall_p);
+				const auto plog_small_q = plog(psub(pset1<FPacket>(1), psmall_p));
+				const auto ppi = pset1<FPacket>(constant::pi);
+				valid = reinterpret_to_int(pcmp_lt(pmean, pset1<FPacket>(1)));
+				if (predux_any(valid))
+				{
+					Packet res = pset1<Packet>(0);
+					FPacket val = pset1<FPacket>(1), pne_mean = pexp(pnegate(pmean));
+					for (int _i = 0; ; ++_i)
+					{
+						EIGENRAND_CHECK_INFINITY_LOOP();
+						val = pmul(val, ur.template packetOp<FPacket>(rng));
+						auto c = pand(reinterpret_to_int(pcmp_lt(pne_mean, val)), valid);
+						if (!predux_any(c)) break;
+						res = padd(res, pnegate(c));
+					}
+					valid_res = pcast<Packet, FPacket>(res);
+				}
+
+				for (int _i = 0; ; ++_i)
+				{
+					EIGENRAND_CHECK_INFINITY_LOOP();
+					FPacket fres, ys, psin, pcos;
+					psincos(pmul(ppi, ur.template packetOp<FPacket>(rng)), psin, pcos);
+					ys = pdiv(psin, pcos);
+					fres = ptruncate(padd(pmul(psqrt_v, ys), pmean));
+
+					auto p1 = pmul(pmul(pset1<FPacket>(1.2), psqrt_v), padd(pset1<FPacket>(1), pmul(ys, ys)));
+					auto p2 = pexp(
+						padd(padd(psub(
+							psub(pg1, plgamma_approx(padd(fres, pset1<FPacket>(1)))),
+							plgamma_approx(psub(padd(ptrials, pset1<FPacket>(1)), fres))
+						), pmul(fres, plog_small_p)), pmul(psub(ptrials, fres), plog_small_q))
+					);
+
+					auto c1 = pand(pcmple(pset1<FPacket>(0), fres), pcmple(fres, ptrials));
+					auto c2 = pcmple(ur.template packetOp<FPacket>(rng), pmul(p1, p2));
+
+					auto fvalid = pand(c1, c2);
+					valid_res = pblendv(pandnot(fvalid, reinterpret_to_float(valid)), fres, valid_res);
+					valid = por(reinterpret_to_int(fvalid), valid);
+
+					if (!predux_any(pnot(valid)))
+					{
+						break;
+					}
+				}
+				return pblendv(
+					reinterpret_to_int(pcmp_eq(p, psmall_p)), 
+					pcast<FPacket, Packet>(valid_res), 
+					psub(trials, pcast<FPacket, Packet>(valid_res))
+				);
+			}
+		};
+
 		/**
 		 * @brief Generator of integers on a geometric distribution
 		 * 
@@ -1006,7 +1128,7 @@ namespace Eigen
 		class GeometricGen : public GenBase<GeometricGen<_Scalar>, _Scalar>
 		{
 			static_assert(std::is_same<_Scalar, int32_t>::value, "geomtric needs integral types.");
-			UniformRealGen<float> ur;
+			StdUniformRealGen<float> ur;
 			double p, rlog_q;
 
 		public:
@@ -1464,6 +1586,79 @@ namespace Eigen
 		{
 			return {
 				o.rows(), o.cols(), { std::forward<Urng>(urng), BinomialGen<typename Derived::Scalar>{trials, p} }
+			};
+		}
+
+
+		template<typename Lhs, typename Rhs, typename Urng>
+		using BinomialVVType = CwiseHeteroBinaryOp<
+			internal::scalar_binary_rng_adaptor<BinomialVGen<typename Lhs::Scalar>, typename Lhs::Scalar, typename Lhs::Scalar, typename Rhs::Scalar, Urng, true>, 
+			const Lhs, const Rhs
+		>;
+
+		/**
+		 * @brief generates reals on the binomial distribution.
+		 *
+		 * @tparam Lhs, Rhs
+		 * @tparam Urng
+		 * @param urng c++11-style random number generator
+		 * @param trials the number of trials
+		 * @param p probability of a trial generating true
+		 * @return a random matrix expression with the shape as `trials` and `p`
+		 * @note `trials` and `p` should have the same shape.
+		 *
+		 * @see Eigen::Rand::BinomialGen
+		 */
+		template<typename Lhs, typename Rhs, typename Urng>
+		inline const BinomialVVType<Lhs, Rhs, Urng>
+			binomial(Urng&& urng, const ArrayBase<Lhs>& trials, const ArrayBase<Rhs>& p)
+		{
+			return {
+				static_cast<const Lhs&>(trials), static_cast<const Rhs&>(p),
+				{ std::forward<Urng>(urng), BinomialVGen<typename Lhs::Scalar>{} }
+			};
+		}
+		
+		namespace impl{
+			template<class Derived, class NewType> struct CastType 
+			{ 
+				using type = typename internal::eval<
+					typename internal::cast_return_type<Derived, const CwiseUnaryOp<internal::scalar_cast_op<typename Derived::Scalar, NewType>, const Derived> >::type
+				>::type; 
+			};
+		}
+
+		template<typename Lhs, typename Urng>
+		using BinomialVSType = CwiseHeteroBinaryOp<
+			internal::scalar_binary_rng_adaptor<BinomialVGen<typename Lhs::Scalar>, typename Lhs::Scalar, typename Lhs::Scalar, float, Urng, true>,
+			const Lhs, CwiseNullaryOp<internal::scalar_constant_op<float>, const typename impl::CastType<Lhs, float>::type>
+		>;
+
+		template<typename Lhs, typename Urng>
+		inline const BinomialVSType<Lhs, Urng>
+			binomial(Urng&& urng, const ArrayBase<Lhs>& trials, float p)
+		{
+			return {
+				static_cast<const Lhs&>(trials),
+				{ trials.rows(), trials.cols(), internal::scalar_constant_op<float>{p} },
+				{ std::forward<Urng>(urng), BinomialVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Rhs, typename Urng>
+		using BinomialSVType = CwiseHeteroBinaryOp<
+			internal::scalar_binary_rng_adaptor<BinomialVGen<int32_t>, int32_t, int32_t, typename Rhs::Scalar, Urng, true>,
+			CwiseNullaryOp<internal::scalar_constant_op<int32_t>, const typename impl::CastType<Rhs, int32_t>::type>, const Rhs
+		>;
+
+		template<typename Rhs, typename Urng>
+		inline const BinomialSVType<Rhs, Urng>
+			binomial(Urng&& urng, int32_t trials, const ArrayBase<Rhs>& p)
+		{
+			return {
+				{ p.rows(), p.cols(), internal::scalar_constant_op<int32_t>{trials} },
+				static_cast<const Rhs&>(p),
+				{ std::forward<Urng>(urng), BinomialVGen<int32_t>{} }
 			};
 		}
 
