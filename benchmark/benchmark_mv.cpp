@@ -8,80 +8,10 @@
 #include <random>
 
 #include <EigenRand/EigenRand>
-
-class BenchmarkHelper
-{
-	std::map<std::string, double>& timing;
-	std::map<std::string, std::pair<Eigen::MatrixXd, Eigen::MatrixXd> >& mean_var;
-public:
-
-	template<bool _matrix, typename _Ty>
-	class ScopeMeasure
-	{
-		BenchmarkHelper& bh;
-		std::string name;
-		Eigen::MatrixBase<_Ty>& results;
-		std::chrono::high_resolution_clock::time_point start;
-	public:
-		ScopeMeasure(BenchmarkHelper& _bh, 
-			const std::string& _name,
-			Eigen::MatrixBase<_Ty>& _results) :
-			bh{ _bh }, name{ _name }, results{ _results },
-			start{ std::chrono::high_resolution_clock::now() }
-		{
-		}
-
-		~ScopeMeasure()
-		{
-			if (!name.empty())
-			{
-				bh.timing[name] = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - start).count();
-
-				if (_matrix)
-				{
-					Eigen::Index dim = results.rows(), cnt = results.cols() / dim;
-					Eigen::MatrixXd sum(dim, dim), sqsum(dim, dim);
-					sum.setZero();
-					sqsum.setZero();
-					for (Eigen::Index i = 0; i < cnt; ++i)
-					{
-						auto t = results.middleCols(dim * i, dim).template cast<double>().array();
-						sum += t.matrix();
-						sqsum += (t * t).matrix();
-					}
-					sum /= cnt;
-					sqsum /= cnt;
-					sqsum = sqsum.array() - (sum.array() * sum.array());
-					bh.mean_var[name] = std::make_pair(std::move(sum), std::move(sqsum));
-				}
-				else
-				{
-					Eigen::MatrixXd zc = results.template cast<double>();
-					Eigen::VectorXd mean = zc.rowwise().mean();
-					zc.colwise() -= mean;
-					Eigen::MatrixXd cov = zc * zc.transpose();
-					cov /= results.cols();
-					bh.mean_var[name] = std::make_pair(std::move(mean), std::move(cov));
-				}
-			}
-		}
-	};
-
-	BenchmarkHelper(std::map<std::string, double>& _timing,
-		std::map<std::string, std::pair<Eigen::MatrixXd, Eigen::MatrixXd>>& _mean_var)
-		: timing{ _timing }, mean_var{ _mean_var }
-	{
-	}
-
-	template<bool _matrix, typename _Ty>
-	ScopeMeasure<_matrix, _Ty> measure(const std::string& name, Eigen::MatrixBase<_Ty>& results)
-	{
-		return ScopeMeasure<_matrix, _Ty>(*this, name, results);
-	}
-};
+#include "utils.hpp"
 
 template<typename Scalar, typename GenTy, typename Rng>
-void test_single_and_batch(size_t size, BenchmarkHelper& bh, const std::string& suffix, GenTy&& gen, Rng& urng)
+void test_single_and_batch(size_t size, MatrixBenchmarkHelper& bh, const std::string& suffix, GenTy&& gen, Rng& urng)
 {
 	Eigen::Matrix<Scalar, -1, -1> xf;
 	xf.resize(gen.dims(), size);
@@ -101,7 +31,7 @@ void test_single_and_batch(size_t size, BenchmarkHelper& bh, const std::string& 
 
 
 template<typename Scalar, typename GenTy, typename Rng>
-void test_single_and_batch_matrix(size_t size, BenchmarkHelper& bh, const std::string& suffix, GenTy&& gen, Rng& urng)
+void test_single_and_batch_matrix(size_t size, MatrixBenchmarkHelper& bh, const std::string& suffix, GenTy&& gen, Rng& urng)
 {
 	Eigen::Matrix<Scalar, -1, -1> xf;
 	xf.resize(gen.dims(), size * gen.dims());
@@ -123,7 +53,7 @@ template<typename Rng>
 std::map<std::string, double> test_eigenrand(size_t size, const std::string& suffix, std::map<std::string, std::pair<Eigen::MatrixXd, Eigen::MatrixXd> >& results)
 {
 	std::map<std::string, double> ret;
-	BenchmarkHelper bh{ ret, results };
+	MatrixBenchmarkHelper bh{ ret, results };
 	Rng urng;
 
 	{
@@ -148,13 +78,25 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 	{
 		Eigen::Vector4f w{ 1, 2, 3, 4 };
 		test_single_and_batch<int32_t>(size, bh, "Multinomial/4/float t=20" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(20, w), urng);
+		test_single_and_batch<int32_t>(size, bh, "Multinomial/4/float t=150" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(150, w), urng);
 		test_single_and_batch<int32_t>(size, bh, "Multinomial/4/float t=1000" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(1000, w), urng);
+		test_single_and_batch<int32_t>(size, bh, "Multinomial/4/float t=5000" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(5000, w), urng);
+	}
+	
+	{
+		Eigen::VectorXf w = Eigen::VectorXf::LinSpaced(20, 0.1, 2.0);
+		test_single_and_batch<int32_t>(size, bh, "Multinomial/20/float t=20" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(20, w), urng);
+		test_single_and_batch<int32_t>(size, bh, "Multinomial/20/float t=150" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(150, w), urng);
+		test_single_and_batch<int32_t>(size, bh, "Multinomial/20/float t=1000" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(1000, w), urng);
+		test_single_and_batch<int32_t>(size, bh, "Multinomial/20/float t=5000" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(5000, w), urng);
 	}
 
 	{
 		Eigen::VectorXf w = Eigen::VectorXf::LinSpaced(100, 0.1, 10.0);
 		test_single_and_batch<int32_t>(size, bh, "Multinomial/100/float t=20" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(20, w), urng);
+		test_single_and_batch<int32_t>(size, bh, "Multinomial/100/float t=150" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(150, w), urng);
 		test_single_and_batch<int32_t>(size, bh, "Multinomial/100/float t=1000" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(1000, w), urng);
+		test_single_and_batch<int32_t>(size, bh, "Multinomial/100/float t=5000" + suffix, Eigen::Rand::makeMultinomialGen<int32_t>(5000, w), urng);
 	}
 
 	{
@@ -210,6 +152,7 @@ int main(int argc, char** argv)
 	if (argc > 1) size = std::stoi(argv[1]);
 	if (argc > 2) repeat = std::stoi(argv[2]);
 
+	std::cout << "SIMD arch: " << Eigen::SimdInstructionSetsInUse() << std::endl;
 	std::cout << "[Benchmark] Generating Random Matrix " << size << " samples "
 		<< repeat << " times" << std::endl;
 
