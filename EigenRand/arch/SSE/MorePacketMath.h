@@ -146,6 +146,12 @@ namespace Eigen
 		}
 
 		template<>
+		EIGEN_STRONG_INLINE Packet4f pcmpeq<Packet4f>(const Packet4f& a, const Packet4f& b)
+		{
+			return _mm_cmpeq_ps(a, b);
+		}
+
+		template<>
 		struct BitShifter<Packet4i>
 		{
 			template<int b>
@@ -414,7 +420,29 @@ namespace Eigen
 		{
 			return _psin(x);
 		}
+
+		template<> EIGEN_STRONG_INLINE bool predux_all(const Packet4f& x)
+		{
+			return _mm_movemask_ps(x) == 0x0F;
+		}
+
+		template<> EIGEN_STRONG_INLINE bool predux_all(const Packet4i& x)
+		{
+			return predux_all(_mm_castsi128_ps(x));
+		}
+
 #ifdef EIGENRAND_EIGEN_33_MODE
+
+		template<> EIGEN_STRONG_INLINE bool predux_any(const Packet4f& x)
+		{
+			return !!_mm_movemask_ps(x);
+		}
+
+		template<> EIGEN_STRONG_INLINE bool predux_any(const Packet4i& x)
+		{
+			return predux_any(_mm_castsi128_ps(x));
+		}
+
 		template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
 			Packet2d plog<Packet2d>(const Packet2d& _x)
 		{
@@ -494,7 +522,7 @@ namespace Eigen
 			// negative arg will be NAN, 0 will be -INF
 			return pblendv(iszero_mask, minus_inf, _mm_or_pd(x, invalid_mask));
 		}
-	#endif
+#endif
 	}
 }
 

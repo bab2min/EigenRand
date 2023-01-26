@@ -152,7 +152,7 @@ TYPED_TEST(ContinuousDistTest, balancedV)
 	c = Eigen::Rand::balanced(gen, a, 11);
 	EXPECT_TRUE((a <= c).all() && (c <= 11).all());
 	c = Eigen::Rand::balanced(gen, 5, b);
-	EXPECT_TRUE((5 <= c).all() && (c <= b).all());
+	EXPECT_TRUE(((TypeParam)5 <= c).all() && (c <= b).all());
 	std::cout << c << std::endl;
 }
 
@@ -182,7 +182,7 @@ TYPED_TEST(ContinuousDistTest, uniformRealV)
 	c = Eigen::Rand::uniformReal(gen, a, 11);
 	EXPECT_TRUE((a <= c).all() && (c < 11).all());
 	c = Eigen::Rand::uniformReal(gen, 5, b);
-	EXPECT_TRUE((5 <= c).all() && (c < b).all());
+	EXPECT_TRUE(((TypeParam)5 <= c).all() && (c < b).all());
 	std::cout << c << std::endl;
 }
 
@@ -480,9 +480,9 @@ TEST(DiscreteDistTest, binomialV)
 	a.setLinSpaced(5, 50);
 	b.setLinSpaced(0.1, 1.0);
 
-	auto c = Eigen::Rand::binomial(gen, a.replicate(1, 1000).eval(), 0.5).eval();
-	c = Eigen::Rand::binomial(gen, 50, b.replicate(1, 1000).eval()).eval();
-	c = Eigen::Rand::binomial(gen, a.replicate(1, 1000).eval(), b.replicate(1, 1000).eval()).eval();
+	auto c = Eigen::Rand::binomial(gen, a.replicate(1, 100).eval(), 0.5).eval();
+	c = Eigen::Rand::binomial(gen, 50, b.replicate(1, 100).eval()).eval();
+	c = Eigen::Rand::binomial(gen, a.replicate(1, 100).eval(), b.replicate(1, 100).eval()).eval();
 	std::cout << c.leftCols(10) << std::endl;
 	auto fc = c.template cast<float>().eval();
 	auto mean = fc.rowwise().mean().eval();

@@ -177,6 +177,12 @@ namespace Eigen
 		}
 
 		template<>
+		EIGEN_STRONG_INLINE Packet8f pcmpeq<Packet8f>(const Packet8f& a, const Packet8f& b)
+		{
+			return _mm256_cmp_ps(a, b, _CMP_EQ_OQ);
+		}
+
+		template<>
 		EIGEN_STRONG_INLINE Packet8i pnegate<Packet8i>(const Packet8i& a)
 		{
 #ifdef EIGEN_VECTORIZE_AVX2
@@ -313,7 +319,28 @@ namespace Eigen
 			return reinterpret_to_int((Packet8f)_mm256_xor_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
 	#endif
 		}
+
+		template<> EIGEN_STRONG_INLINE bool predux_any(const Packet8f& x)
+		{
+			return !!_mm256_movemask_ps(x);
+		}
+
+		template<> EIGEN_STRONG_INLINE bool predux_any(const Packet8i& x)
+		{
+			return predux_any(_mm256_castsi256_ps(x));
+		}
 #endif
+
+		template<> EIGEN_STRONG_INLINE bool predux_all(const Packet8f& x)
+		{
+			return _mm256_movemask_ps(x) == 0xFF;
+		}
+
+		template<> EIGEN_STRONG_INLINE bool predux_all(const Packet8i& x)
+		{
+			return predux_all(_mm256_castsi256_ps(x));
+		}
+
 		template<>
 		EIGEN_STRONG_INLINE Packet8i pcmplt<Packet8i>(const Packet8i& a, const Packet8i& b)
 		{

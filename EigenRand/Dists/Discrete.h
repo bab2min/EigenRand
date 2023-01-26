@@ -1024,7 +1024,16 @@ namespace Eigen
 				float log_small_q = std::log(1 - small_p);
 
 				Scalar res = 0;
-				if (mean < 1.)
+				if (trials < 25)
+				{
+					res = 0;
+					for (int i = 0; i < trials; ++i)
+					{
+						if (ur(rng) < p) ++res;
+					}
+					return res;
+				}
+				else if (mean < 1.)
 				{
 					float ne_mean = std::exp(-mean);
 					float val = 1;
@@ -1034,22 +1043,24 @@ namespace Eigen
 						if (val <= ne_mean) break;
 					}
 				}
-
-				for (int _i = 0; ; ++_i)
+				else
 				{
-					EIGENRAND_CHECK_INFINITY_LOOP();
-					double ys;
-					ys = std::tan(constant::pi * ur(rng));
-					res = (Scalar)(sqrt_v * ys + mean);
-					if (0 <= res && res <= trials && ur(rng) <= 1.2 * sqrt_v
-						* (1.0 + ys * ys)
-						* std::exp(g1 - std::lgamma(res + 1)
-							- std::lgamma(trials - res + 1.0)
-							+ res * log_small_p
-							+ (trials - res) * log_small_q)
-						)
+					for (int _i = 0; ; ++_i)
 					{
-						break;
+						EIGENRAND_CHECK_INFINITY_LOOP();
+						double ys;
+						ys = std::tan(constant::pi * ur(rng));
+						res = (Scalar)(sqrt_v * ys + mean);
+						if (0 <= res && res <= trials && ur(rng) <= 1.2 * sqrt_v
+							* (1.0 + ys * ys)
+							* std::exp(g1 - std::lgamma(res + 1)
+								- std::lgamma(trials - res + 1.0)
+								+ res * log_small_p
+								+ (trials - res) * log_small_q)
+							)
+						{
+							break;
+						}
 					}
 				}
 				return p == small_p ? res : trials - res;
@@ -1070,7 +1081,7 @@ namespace Eigen
 				const auto plog_small_p = plog(psmall_p);
 				const auto plog_small_q = plog(psub(pset1<FPacket>(1), psmall_p));
 				const auto ppi = pset1<FPacket>(constant::pi);
-				valid = reinterpret_to_int(pcmp_lt(pmean, pset1<FPacket>(1)));
+				valid = reinterpret_to_int(pcmplt(pmean, pset1<FPacket>(1)));
 				if (predux_any(valid))
 				{
 					Packet res = pset1<Packet>(0);
@@ -1079,43 +1090,47 @@ namespace Eigen
 					{
 						EIGENRAND_CHECK_INFINITY_LOOP();
 						val = pmul(val, ur.template packetOp<FPacket>(rng));
-						auto c = pand(reinterpret_to_int(pcmp_lt(pne_mean, val)), valid);
+						auto c = pand(reinterpret_to_int(pcmplt(pne_mean, val)), valid);
 						if (!predux_any(c)) break;
 						res = padd(res, pnegate(c));
 					}
 					valid_res = pcast<Packet, FPacket>(res);
 				}
 
-				for (int _i = 0; ; ++_i)
+				if (!predux_all(valid))
 				{
-					EIGENRAND_CHECK_INFINITY_LOOP();
-					FPacket fres, ys, psin, pcos;
-					psincos(pmul(ppi, ur.template packetOp<FPacket>(rng)), psin, pcos);
-					ys = pdiv(psin, pcos);
-					fres = ptruncate(padd(pmul(psqrt_v, ys), pmean));
-
-					auto p1 = pmul(pmul(pset1<FPacket>(1.2), psqrt_v), padd(pset1<FPacket>(1), pmul(ys, ys)));
-					auto p2 = pexp(
-						padd(padd(psub(
-							psub(pg1, plgamma_approx(padd(fres, pset1<FPacket>(1)))),
-							plgamma_approx(psub(padd(ptrials, pset1<FPacket>(1)), fres))
-						), pmul(fres, plog_small_p)), pmul(psub(ptrials, fres), plog_small_q))
-					);
-
-					auto c1 = pand(pcmple(pset1<FPacket>(0), fres), pcmple(fres, ptrials));
-					auto c2 = pcmple(ur.template packetOp<FPacket>(rng), pmul(p1, p2));
-
-					auto fvalid = pand(c1, c2);
-					valid_res = pblendv(pandnot(fvalid, reinterpret_to_float(valid)), fres, valid_res);
-					valid = por(reinterpret_to_int(fvalid), valid);
-
-					if (!predux_any(pnot(valid)))
+					for (int _i = 0; ; ++_i)
 					{
-						break;
+						EIGENRAND_CHECK_INFINITY_LOOP();
+						FPacket fres, ys, psin, pcos;
+						psincos(pmul(ppi, ur.template packetOp<FPacket>(rng)), psin, pcos);
+						ys = pdiv(psin, pcos);
+						fres = ptruncate(padd(pmul(psqrt_v, ys), pmean));
+
+						auto p1 = pmul(pmul(pset1<FPacket>(1.2), psqrt_v), padd(pset1<FPacket>(1), pmul(ys, ys)));
+						auto p2 = pexp(
+							padd(padd(psub(
+								psub(pg1, plgamma_approx(padd(fres, pset1<FPacket>(1)))),
+								plgamma_approx(psub(padd(ptrials, pset1<FPacket>(1)), fres))
+							), pmul(fres, plog_small_p)), pmul(psub(ptrials, fres), plog_small_q))
+						);
+
+						auto c1 = pand(pcmple(pset1<FPacket>(0), fres), pcmple(fres, ptrials));
+						auto c2 = pcmple(ur.template packetOp<FPacket>(rng), pmul(p1, p2));
+
+						auto fvalid = pand(c1, c2);
+						valid_res = pblendv(pnew_andnot(fvalid, reinterpret_to_float(valid)), fres, valid_res);
+						valid = por(reinterpret_to_int(fvalid), valid);
+
+						if (predux_all(valid))
+						{
+							break;
+						}
 					}
 				}
+
 				return pblendv(
-					reinterpret_to_int(pcmp_eq(p, psmall_p)), 
+					reinterpret_to_int(pcmpeq(p, psmall_p)), 
 					pcast<FPacket, Packet>(valid_res), 
 					psub(trials, pcast<FPacket, Packet>(valid_res))
 				);
@@ -1145,7 +1160,16 @@ namespace Eigen
 				float log_small_q = std::log(1 - small_p);
 
 				int32_t res = 0;
-				if (mean < 1.)
+				if (trials < 25)
+				{
+					res = 0;
+					for (int i = 0; i < trials; ++i)
+					{
+						if (ur(rng) < p) ++res;
+					}
+					return res;
+				}
+				else if (mean < 1.)
 				{
 					float ne_mean = std::exp(-mean);
 					float val = 1;
@@ -1155,22 +1179,24 @@ namespace Eigen
 						if (val <= ne_mean) break;
 					}
 				}
-
-				for (int _i = 0; ; ++_i)
+				else
 				{
-					EIGENRAND_CHECK_INFINITY_LOOP();
-					double ys;
-					ys = std::tan(constant::pi * ur(rng));
-					res = (int32_t)(sqrt_v * ys + mean);
-					if (0 <= res && res <= trials && ur(rng) <= 1.2 * sqrt_v
-						* (1.0 + ys * ys)
-						* std::exp(g1 - std::lgamma(res + 1)
-							- std::lgamma(trials - res + 1.0)
-							+ res * log_small_p
-							+ (trials - res) * log_small_q)
-						)
+					for (int _i = 0; ; ++_i)
 					{
-						break;
+						EIGENRAND_CHECK_INFINITY_LOOP();
+						double ys;
+						ys = std::tan(constant::pi * ur(rng));
+						res = (int32_t)(sqrt_v * ys + mean);
+						if (0 <= res && res <= trials && ur(rng) <= 1.2 * sqrt_v
+							* (1.0 + ys * ys)
+							* std::exp(g1 - std::lgamma(res + 1)
+								- std::lgamma(trials - res + 1.0)
+								+ res * log_small_p
+								+ (trials - res) * log_small_q)
+							)
+						{
+							break;
+						}
 					}
 				}
 				res = p == small_p ? res : trials - res;
@@ -1194,7 +1220,7 @@ namespace Eigen
 				const auto plog_small_p = plog(psmall_p);
 				const auto plog_small_q = plog(psub(pset1<Packet>(1), psmall_p));
 				const auto ppi = pset1<Packet>(constant::pi);
-				valid = reinterpret_to_int(pcmp_lt(pmean, pset1<Packet>(1)));
+				valid = reinterpret_to_int(pcmplt(pmean, pset1<Packet>(1)));
 				if (predux_any(reinterpret_to_float(valid)))
 				{
 					Packet res = pset1<Packet>(0);
@@ -1203,43 +1229,46 @@ namespace Eigen
 					{
 						EIGENRAND_CHECK_INFINITY_LOOP();
 						val = pmul(val, ur.template packetOp<Packet>(rng));
-						auto c = pand(reinterpret_to_int(pcmp_lt(pne_mean, val)), valid);
+						auto c = pand(reinterpret_to_int(pcmplt(pne_mean, val)), valid);
 						if (!predux_any(reinterpret_to_float(c))) break;
 						res = padd(res, pcast<IPacket, Packet>(pnegate(c)));
 					}
 					valid_res = res;
 				}
 
-				for (int _i = 0; ; ++_i)
+				if (!predux_all(reinterpret_to_float(valid)))
 				{
-					EIGENRAND_CHECK_INFINITY_LOOP();
-					Packet fres, ys, psin, pcos;
-					psincos(pmul(ppi, ur.template packetOp<Packet>(rng)), psin, pcos);
-					ys = pdiv(psin, pcos);
-					fres = ptruncate(padd(pmul(psqrt_v, ys), pmean));
-
-					auto p1 = pmul(pmul(pset1<Packet>(1.2), psqrt_v), padd(pset1<Packet>(1), pmul(ys, ys)));
-					auto p2 = pexp(
-						padd(padd(psub(
-							psub(pg1, plgamma_approx(padd(fres, pset1<Packet>(1)))),
-							plgamma_approx(psub(padd(ptrials, pset1<Packet>(1)), fres))
-						), pmul(fres, plog_small_p)), pmul(psub(ptrials, fres), plog_small_q))
-					);
-
-					auto c1 = pand(pcmple(pset1<Packet>(0), fres), pcmple(fres, ptrials));
-					auto c2 = pcmple(ur.template packetOp<Packet>(rng), pmul(p1, p2));
-
-					auto fvalid = pand(c1, c2);
-					valid_res = pblendv(pandnot(fvalid, reinterpret_to_float(valid)), fres, valid_res);
-					valid = por(reinterpret_to_int(fvalid), valid);
-
-					if (!predux_any(pnot(reinterpret_to_float(valid))))
+					for (int _i = 0; ; ++_i)
 					{
-						break;
+						EIGENRAND_CHECK_INFINITY_LOOP();
+						Packet fres, ys, psin, pcos;
+						psincos(pmul(ppi, ur.template packetOp<Packet>(rng)), psin, pcos);
+						ys = pdiv(psin, pcos);
+						fres = ptruncate(padd(pmul(psqrt_v, ys), pmean));
+
+						auto p1 = pmul(pmul(pset1<Packet>(1.2), psqrt_v), padd(pset1<Packet>(1), pmul(ys, ys)));
+						auto p2 = pexp(
+							padd(padd(psub(
+								psub(pg1, plgamma_approx(padd(fres, pset1<Packet>(1)))),
+								plgamma_approx(psub(padd(ptrials, pset1<Packet>(1)), fres))
+							), pmul(fres, plog_small_p)), pmul(psub(ptrials, fres), plog_small_q))
+						);
+
+						auto c1 = pand(pcmple(pset1<Packet>(0), fres), pcmple(fres, ptrials));
+						auto c2 = pcmple(ur.template packetOp<Packet>(rng), pmul(p1, p2));
+
+						auto fvalid = pand(c1, c2);
+						valid_res = pblendv(pnew_andnot(fvalid, reinterpret_to_float(valid)), fres, valid_res);
+						valid = por(reinterpret_to_int(fvalid), valid);
+
+						if (predux_all(reinterpret_to_float(valid)))
+						{
+							break;
+						}
 					}
 				}
 				return pblendv(
-					pcmp_eq(p, psmall_p),
+					pcmpeq(p, psmall_p),
 					reinterpret_to_float(pcast<Packet, IPacket>(valid_res)),
 					reinterpret_to_float(psub(trials, pcast<Packet, IPacket>(valid_res)))
 				);

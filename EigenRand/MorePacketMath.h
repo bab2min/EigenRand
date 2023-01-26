@@ -89,6 +89,12 @@ namespace Eigen
 		template<int b, typename Packet>
 		EIGEN_STRONG_INLINE Packet psrl64(const Packet& a);
 
+		template<typename Packet> 
+		EIGEN_STRONG_INLINE bool predux_all(const Packet& a);
+
+		template<typename Packet>
+		EIGEN_STRONG_INLINE bool predux_any(const Packet& a);
+
 		/*template<typename Packet>
 		EIGEN_STRONG_INLINE Packet psll(const Packet& a, int b);
 
@@ -209,6 +215,16 @@ namespace Eigen
 			return psub(reinterpret_to_double(por(pand(x, lower), upper)), one);
 		}
 
+		template<typename Packet>
+		EIGEN_STRONG_INLINE Packet pnew_andnot(const Packet& a, const Packet& b)
+		{
+#if defined(EIGEN_VECTORIZE_NEON) || defined(EIGENRAND_EIGEN_34_MODE)
+			return pandnot(a, b);
+#else
+			return pandnot(b, a);
+#endif
+		}
+
 		template<typename _Scalar>
 		struct BitScalar;
 
@@ -319,11 +335,7 @@ namespace Eigen
 			x = padd(x, xmm3);
 
 			emm4 = psub(emm4, pset1<IntPacket>(2));
-	#if defined(EIGEN_VECTORIZE_NEON) || defined(EIGENRAND_EIGEN_34_MODE)
-			emm4 = pandnot(pset1<IntPacket>(4), emm4);
-	#else
-			emm4 = pandnot(emm4, pset1<IntPacket>(4));
-	#endif
+			emm4 = pnew_andnot(pset1<IntPacket>(4), emm4);
 			emm4 = psll<29>(emm4);
 			Packet sign_bit_cos = reinterpret_to_float(emm4);
 			sign_bit_sin = pxor(sign_bit_sin, swap_sign_bit_sin);
@@ -357,11 +369,7 @@ namespace Eigen
 			/* select the correct result from the two polynoms */
 			xmm3 = poly_mask;
 			Packet ysin2 = pand(xmm3, y2);
-	#if defined(EIGEN_VECTORIZE_NEON) || defined(EIGENRAND_EIGEN_34_MODE)
-			Packet ysin1 = pandnot(y, xmm3);
-	#else
-			Packet ysin1 = pandnot(xmm3, y);
-	#endif
+			Packet ysin1 = pnew_andnot(y, xmm3);
 			y2 = psub(y2, ysin2);
 			y = psub(y, ysin1);
 
@@ -425,11 +433,7 @@ namespace Eigen
 			x = padd(x, xmm3);
 
 			emm4 = psub64(emm4, pseti64<IntPacket>(2));
-	#if defined(EIGEN_VECTORIZE_NEON) || defined(EIGENRAND_EIGEN_34_MODE)
-			emm4 = pandnot(pseti64<IntPacket>(4), emm4);
-	#else
-			emm4 = pandnot(emm4, pseti64<IntPacket>(4));
-	#endif
+			emm4 = pnew_andnot(pseti64<IntPacket>(4), emm4);
 			emm4 = psll64<61>(emm4);
 			Packet sign_bit_cos = reinterpret_to_double(emm4);
 			sign_bit_sin = pxor(sign_bit_sin, swap_sign_bit_sin);
@@ -463,11 +467,7 @@ namespace Eigen
 			/* select the correct result from the two polynoms */
 			xmm3 = poly_mask;
 			Packet ysin2 = pand(xmm3, y2);
-	#if defined(EIGEN_VECTORIZE_NEON) || defined(EIGENRAND_EIGEN_34_MODE)
-			Packet ysin1 = pandnot(y, xmm3);
-	#else
-			Packet ysin1 = pandnot(xmm3, y);
-	#endif
+			Packet ysin1 = pnew_andnot(y, xmm3);
 			y2 = psub(y2, ysin2);
 			y = psub(y, ysin1);
 
@@ -559,11 +559,7 @@ namespace Eigen
 			/* select the correct result from the two polynoms */
 			xmm3 = poly_mask;
 			Packet ysin2 = pand(xmm3, y2);
-	#if defined(EIGEN_VECTORIZE_NEON) || defined(EIGENRAND_EIGEN_34_MODE)
-			Packet ysin1 = pandnot(y, xmm3);
-	#else
-			Packet ysin1 = pandnot(xmm3, y);
-	#endif
+			Packet ysin1 = pnew_andnot(y, xmm3);
 
 			xmm1 = padd(ysin1, ysin2);
 
