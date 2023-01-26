@@ -1779,7 +1779,9 @@ namespace Eigen
 			template<class Derived, class NewType> struct CastType 
 			{ 
 				using type = typename internal::eval<
-					typename internal::cast_return_type<Derived, const CwiseUnaryOp<internal::scalar_cast_op<typename Derived::Scalar, NewType>, const Derived> >::type
+					typename std::remove_reference<
+						typename internal::cast_return_type<Derived, const CwiseUnaryOp<internal::scalar_cast_op<typename Derived::Scalar, NewType>, const Derived> >::type
+					>::type
 				>::type; 
 			};
 		}
