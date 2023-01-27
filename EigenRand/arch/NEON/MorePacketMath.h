@@ -290,7 +290,7 @@ namespace Eigen
 		template<> 
 		EIGEN_STRONG_INLINE bool predux_all(const Packet4i& x)
 		{
-			return predux_all((Packet4f)vreinterpretq_f32_s32(a));
+			return predux_all((Packet4f)vreinterpretq_f32_s32(x));
 		}
 
 	#ifdef EIGENRAND_EIGEN_33_MODE
@@ -305,7 +305,7 @@ namespace Eigen
 		template<> 
 		EIGEN_STRONG_INLINE bool predux_any(const Packet4i& x)
 		{
-			return predux_any((Packet4f)vreinterpretq_f32_s32(a));
+			return predux_any((Packet4f)vreinterpretq_f32_s32(x));
 		}
 
 		template<>
