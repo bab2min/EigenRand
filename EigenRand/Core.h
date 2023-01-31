@@ -15,6 +15,8 @@
 
 #include "RandUtils.h"
 
+#include "CwiseHeteroBinaryOp.h"
+
 #include "Dists/Basic.h"
 #include "Dists/Discrete.h"
 #include "Dists/NormalExp.h"

@@ -28,7 +28,7 @@ namespace Eigen
 			static_assert(std::is_same<_Scalar, int32_t>::value, "`MultinomialGen` needs integral types.");
 			_Scalar trials;
 			Matrix<double, Dim, 1> probs;
-			DiscreteGen<_Scalar> discrete;
+			DiscreteGen<_Scalar, int32_t> discrete;
 		public:
 			/**
 			 * @brief Construct a new multinomial generator
@@ -62,31 +62,33 @@ namespace Eigen
 			{
 				const Index dim = probs.size();
 				Matrix<_Scalar, Dim, -1> ret(dim, samples);
-				//if (trials < 2500)
+				if (trials < std::max(30 * (dim - 1), (Index)100))
 				{
-					for (Index j = 0; j < samples; ++j)
+					for (Index s = 0; s < samples; ++s)
 					{
-						ret.col(j) = generate(urng);
+						ret.col(s) = generate(urng);
 					}
 				}
-				/*else
+				else
 				{
-					ret.row(0) = binomial<Matrix<_Scalar, -1, 1>>(samples, 1, urng, trials, probs[0]).eval().transpose();
-					for (Index j = 0; j < samples; ++j)
+					Array<_Scalar, 1, -1> r_trials{ samples }, t{ samples };
+					Map<const Array<float, -1, 1>> fr_trials{ reinterpret_cast<float*>(r_trials.data()), samples };
+					Map<Array<float, -1, 1>> ft{ reinterpret_cast<float*>(t.data()), samples };
+					r_trials.setConstant(trials);
+					ft = impl::binomial(urng, fr_trials, probs[0]);
+					r_trials -= t;
+					ret.row(0) = t.matrix();
+					double rest_p = 1 - probs[0];
+					for (Index i = 1; i < dim - 1; ++i)
 					{
-						double rest_p = 1 - probs[0];
-						_Scalar t = trials - ret(0, j);
-						for (Index i = 1; i < dim - 1; ++i)
-						{
-							ret(i, j) = binomial<Matrix<_Scalar, 1, 1>>(1, 1, urng, t, probs[i] / rest_p)(0);
-							t -= ret(i, j);
-							rest_p -= probs[i];
-						}
-						ret(dim - 1, j) = 0;
+						ft = impl::binomial(urng, fr_trials, probs[i] / rest_p);
+						r_trials -= t;
+						ret.row(i) = t.matrix();
+						rest_p -= probs[i];
 					}
-					ret.row(dim - 1).setZero();
-					ret.row(dim - 1).array() = trials - ret.colwise().sum().array();
-				}*/
+
+					ret.row(dim - 1) = r_trials;
+				}
 				return ret;
 			}
 
@@ -95,13 +97,24 @@ namespace Eigen
 			{
 				const Index dim = probs.size();
 				Matrix<_Scalar, Dim, 1> ret(dim);
-				//if (trials < 2500)
+				//if (trials < std::max(30 * (dim - 1), (Index)100))
 				{
 					ret.setZero();
-					auto d = discrete.template generate<Matrix<_Scalar, -1, 1>>(trials, 1, urng).eval();
-					for (Index i = 0; i < trials; ++i)
+					auto d = discrete.template generate<Matrix<_Scalar, 16, 1>>(16, 1, urng);
+					Matrix<_Scalar, 16, 1> buf;
+					Index i;
+					for (i = 0; i < (trials & ~15); i += 16)
 					{
-						ret[d[i]] += 1;
+						buf = d;
+						for (Index j = 0; j < 16; ++j)
+						{
+							ret[buf[j]] += 1;
+						}
+					}
+					buf.middleRows(0, trials - i) = d.middleRows(0, trials - i);
+					for (Index j = 0; j < trials - i; ++j)
+					{
+						ret[buf[j]] += 1;
 					}
 				}
 				/*else
@@ -110,12 +123,11 @@ namespace Eigen
 					_Scalar t = trials;
 					for (Index i = 0; i < dim - 1; ++i)
 					{
-						ret[i] = binomial<Matrix<_Scalar, 1, 1>>(1, 1, urng, t, probs[i] / rest_p)(0);
+						ret[i] = binomial<Array<_Scalar, 1, 1>>(1, 1, urng, t, probs[i] / rest_p)(0);
 						t -= ret[i];
 						rest_p -= probs[i];
 					}
-					ret[dim - 1] = 0;
-					ret[dim - 1] = trials - ret.sum();
+					ret[dim - 1] = trials - ret.head(dim - 1).sum();
 				}*/
 				return ret;
 			}

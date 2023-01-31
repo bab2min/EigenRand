@@ -279,7 +279,35 @@ namespace Eigen
 			return vreinterpretq_s32_u64(vld1q_u64(u));
 		}
 
+		template<> 
+		EIGEN_STRONG_INLINE bool predux_all(const Packet4f& x)
+		{
+			uint32x2_t tmp = vand_u32(vget_low_u32( vreinterpretq_u32_f32(x)),
+										vget_high_u32(vreinterpretq_u32_f32(x)));
+			return vget_lane_u32(vpmin_u32(tmp, tmp), 0);
+		}
+
+		template<> 
+		EIGEN_STRONG_INLINE bool predux_all(const Packet4i& x)
+		{
+			return predux_all((Packet4f)vreinterpretq_f32_s32(x));
+		}
+
 	#ifdef EIGENRAND_EIGEN_33_MODE
+		template<> 
+		EIGEN_STRONG_INLINE bool predux_any(const Packet4f& x)
+		{
+			uint32x2_t tmp = vorr_u32(vget_low_u32( vreinterpretq_u32_f32(x)),
+										vget_high_u32(vreinterpretq_u32_f32(x)));
+			return vget_lane_u32(vpmax_u32(tmp, tmp), 0);
+		}
+
+		template<> 
+		EIGEN_STRONG_INLINE bool predux_any(const Packet4i& x)
+		{
+			return predux_any((Packet4f)vreinterpretq_f32_s32(x));
+		}
+
 		template<>
 		EIGEN_STRONG_INLINE Packet4f plog<Packet4f>(const Packet4f& _x)
 		{

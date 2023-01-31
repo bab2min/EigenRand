@@ -72,6 +72,82 @@ namespace Eigen
 			}
 		};
 
+		template<typename DerivedGen, typename Scalar, typename ScalarA>
+		class UnaryGenBase
+		{
+		public:
+			/**
+			 * @brief generate random values from its distribution
+			 *
+			 * @tparam Lhs, Rhs
+			 * @tparam Urng
+			 * @param urng c++11-style random number generator
+			 * @param a, b operands for the random distribution
+			 * @return
+			 * a random matrix expression with a shape `(rows, cols)`
+			 */
+			template<typename Lhs, typename Urng>
+			inline CwiseUnaryOp<
+				internal::scalar_unary_rng_adaptor<DerivedGen&, Scalar, typename Lhs::Scalar, Urng>,
+				const Lhs
+			> generate(Urng&& urng, const ArrayBase<Lhs>& a)
+			{
+				return {
+					a, { std::forward<Urng>(urng), static_cast<DerivedGen&>(*this) }
+				};
+			}
+		};
+
+		template<typename DerivedGen, typename Scalar, typename ScalarA, typename ScalarB>
+		class BinaryGenBase
+		{
+		public:
+			/**
+			 * @brief generate random values from its distribution
+			 *
+			 * @tparam Lhs, Rhs
+			 * @tparam Urng
+			 * @param urng c++11-style random number generator
+			 * @param a, b operands for the random distribution
+			 * @return
+			 * a random matrix expression with a shape `(rows, cols)`
+			 */
+			template<typename Lhs, typename Rhs, typename Urng>
+			inline CwiseBinaryOp<
+				internal::scalar_binary_rng_adaptor<DerivedGen&, Scalar, typename Lhs::Scalar, typename Rhs::Scalar, Urng>,
+				const Lhs, const Rhs
+			> generate(Urng&& urng, const ArrayBase<Lhs>& a, const ArrayBase<Rhs>& b)
+			{
+				return {
+					a, b, { std::forward<Urng>(urng), static_cast<DerivedGen&>(*this) }
+				};
+			}
+
+			template<typename Lhs, typename Rhs, typename Urng>
+			inline CwiseBinaryOp<
+				internal::scalar_binary_rng_adaptor<DerivedGen&, Scalar, typename Lhs::Scalar, Rhs, Urng>,
+				const Lhs, CwiseNullaryOp<internal::scalar_constant_op<Rhs>, const Lhs>
+			> generate(Urng&& urng, const ArrayBase<Lhs>& a, Rhs b)
+			{
+				return {
+					a, { a.rows(), a.cols(), internal::scalar_constant_op<Rhs>{ b } },
+					{ std::forward<Urng>(urng), static_cast<DerivedGen&>(*this) }
+				};
+			}
+
+			template<typename Lhs, typename Rhs, typename Urng>
+			inline CwiseBinaryOp<
+				internal::scalar_binary_rng_adaptor<DerivedGen&, Scalar, Lhs, typename Rhs::Scalar, Urng>,
+				CwiseNullaryOp<internal::scalar_constant_op<Lhs>, const Rhs>, const Rhs
+			> generate(Urng&& urng, Lhs a, const ArrayBase<Rhs>& b)
+			{
+				return {
+					{ b.rows(), b.cols(), internal::scalar_constant_op<Lhs>{ a } }, b,
+					{ std::forward<Urng>(urng), static_cast<DerivedGen&>(*this) }
+				};
+			}
+		};
+
 		/**
 		 * @brief Base class of all multivariate random vector generators
 		 * 
@@ -360,6 +436,30 @@ namespace Eigen
 			}
 		};
 
+		template<typename _Scalar>
+		class BalancedVGen : public BinaryGenBase<BalancedVGen<_Scalar>, _Scalar, _Scalar, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "balanced needs floating point types.");
+
+		public:
+			using Scalar = _Scalar;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar a, _Scalar b)
+			{
+				using namespace Eigen::internal;
+				return ((_Scalar)((int32_t)pfirst(std::forward<Rng>(rng)()) & 0x7FFFFFFF) / 0x7FFFFFFF) * (b - a) + a;
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& a, const Packet& b)
+			{
+				using namespace Eigen::internal;
+				using RUtils = RandUtils<Packet, Rng>;
+				return padd(pmul(RUtils{}.zero_to_one(std::forward<Rng>(rng)), psub(b, a)), a);
+			}
+		};
+
 		namespace detail
 		{
 			template<size_t v>
@@ -501,6 +601,32 @@ namespace Eigen
 			}
 		};
 
+		template<typename _Scalar>
+		class UniformRealVGen : public BinaryGenBase<UniformRealVGen<_Scalar>, _Scalar, _Scalar, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "uniformReal needs floating point types.");
+
+		public:
+			using Scalar = _Scalar;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar a, _Scalar b)
+			{
+				using namespace Eigen::internal;
+				return a + BitScalar<_Scalar>{}.to_ur(pfirst(std::forward<Rng>(rng)())) * (b - a);
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& a, const Packet& b)
+			{
+				using namespace Eigen::internal;
+				using RUtils = RandUtils<Packet, Rng>;
+				return padd(pmul(
+					RUtils{}.uniform_real(std::forward<Rng>(rng)), psub(b, a)
+				), a);
+			}
+		};
+
 
 		/**
 		 * @brief Generator of Bernoulli distribution
@@ -547,6 +673,35 @@ namespace Eigen
 			}
 		};
 
+		template<typename _Scalar>
+		class BernoulliVGen : public UnaryGenBase<BernoulliVGen<_Scalar>, _Scalar, _Scalar>
+		{
+			static_assert(std::is_floating_point<_Scalar>::value, "vectorized `bernoulli` needs a float type.");
+		public:
+			using Scalar = _Scalar;
+
+			template<typename Rng>
+			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng, _Scalar a)
+			{
+				using namespace Eigen::internal;
+				uint32_t p = (uint32_t)(a * 0x80000000);
+				return (((uint32_t)pfirst(std::forward<Rng>(rng)()) & 0x7FFFFFFF) < p) ? 1 : 0;
+			}
+
+			template<typename Packet, typename Rng>
+			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng, const Packet& a)
+			{
+				using namespace Eigen::internal;
+				using IPacket = decltype(reinterpret_to_int(std::declval<Packet>()));
+				using RUtils = RawbitsMaker<IPacket, Rng>;
+				auto one = pset1<Packet>(1);
+				auto zero = pset1<Packet>(0);
+				auto p = pcast<Packet, IPacket>(pmul(a, pset1<Packet>(0x80000000)));
+				auto r = RUtils{}.rawbits(std::forward<Rng>(rng));
+				r = pand(r, pset1<IPacket>(0x7FFFFFFF));
+				return pblendv(pcmplt(r, p), one, zero);
+			}
+		};
 
 		template<typename Derived, typename Urng>
 		using RandBitsType = CwiseNullaryOp<internal::scalar_rng_adaptor<RandbitsGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
@@ -683,6 +838,68 @@ namespace Eigen
 		}
 
 		template<typename Derived, typename Urng>
+		using BalancedVVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<BalancedVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			const Derived, const Derived
+		>;
+
+		/**
+		 * @brief generates reals in a range `[a, b]`
+		 *
+		 * @tparam Lhs, Rhs ArrayBase type of lhs and rhs operands
+		 * @tparam Urng
+		 * @param urng c++11-style random number generator
+		 * @param a,b left and right boundary
+		 * @return a random matrix expression with the same shape as `a` and `b`
+		 * @note `a` and `b` should have the same shape and scalar type.
+		 * 
+		 *
+		 * @see Eigen::Rand::BalancedGen
+		 */
+		template<typename Lhs, typename Rhs, typename Urng>
+		inline const BalancedVVType<Lhs, Urng>
+			balanced(Urng&& urng, const ArrayBase<Lhs>& a, const ArrayBase<Rhs>& b)
+		{
+			static_assert(std::is_same<typename Lhs::Scalar, typename Rhs::Scalar>::value, "`Lhs::Scalar` must be equal to `Rhs::Scalar`");
+			return {
+				static_cast<const Lhs&>(a), static_cast<const Rhs&>(b), 
+				{ std::forward<Urng>(urng), BalancedVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using BalancedVSType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<BalancedVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			const Derived, CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>
+		>;
+
+		template<typename Lhs, typename Urng>
+		inline const BalancedVSType<Lhs, Urng>
+			balanced(Urng&& urng, const ArrayBase<Lhs>& a, typename Lhs::Scalar b)
+		{
+			return {
+				static_cast<const Lhs&>(a), { a.rows(), a.cols(), internal::scalar_constant_op<typename Lhs::Scalar>{ b } },
+				{ std::forward<Urng>(urng), BalancedVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using BalancedSVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<BalancedVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>, const Derived
+		>;
+
+		template<typename Rhs, typename Urng>
+		inline const BalancedSVType<Rhs, Urng>
+			balanced(Urng&& urng, typename Rhs::Scalar a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				{ b.rows(), b.cols(), internal::scalar_constant_op<typename Rhs::Scalar>{ a } }, static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), BalancedVGen<typename Rhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
 		using StdUniformRealType = CwiseNullaryOp<internal::scalar_rng_adaptor<StdUniformRealGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
 
 		/**
@@ -773,6 +990,69 @@ namespace Eigen
 		}
 
 		template<typename Derived, typename Urng>
+		using UniformRealVVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<UniformRealVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			const Derived, const Derived
+		>;
+
+		/**
+		 * @brief generates reals in a range `[a, b)`
+		 *
+		 * @tparam Lhs, Rhs ArrayBase type of lhs and rhs operands
+		 * @tparam Urng
+		 * @param urng c++11-style random number generator
+		 * @param a,b left and right boundary
+		 * @return a random matrix expression with the same shape as `a` and `b`
+		 * @note `a` and `b` should have the same shape and scalar type.
+		 *
+		 *
+		 * @see Eigen::Rand::UniformRealGen
+		 */
+		template<typename Lhs, typename Rhs, typename Urng>
+		inline const UniformRealVVType<Lhs, Urng>
+			uniformReal(Urng&& urng, const ArrayBase<Lhs>& a, const ArrayBase<Rhs>& b)
+		{
+			static_assert(std::is_same<typename Lhs::Scalar, typename Rhs::Scalar>::value, "`Lhs::Scalar` must be equal to `Rhs::Scalar`");
+			return {
+				static_cast<const Lhs&>(a), static_cast<const Rhs&>(b), 
+				{ std::forward<Urng>(urng), UniformRealVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using UniformRealVSType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<UniformRealVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			const Derived, CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>
+		>;
+
+		template<typename Lhs, typename Urng>
+		inline const UniformRealVSType<Lhs, Urng>
+			uniformReal(Urng&& urng, const ArrayBase<Lhs>& a, typename Lhs::Scalar b)
+		{
+			return {
+				static_cast<const Lhs&>(a), { a.rows(), a.cols(), internal::scalar_constant_op<typename Lhs::Scalar>{ b } },
+				{ std::forward<Urng>(urng), UniformRealVGen<typename Lhs::Scalar>{} }
+			};
+		}
+
+
+		template<typename Derived, typename Urng>
+		using UniformRealSVType = CwiseBinaryOp<
+			internal::scalar_binary_rng_adaptor<UniformRealVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, typename Derived::Scalar, Urng, true>,
+			CwiseNullaryOp<internal::scalar_constant_op<typename Derived::Scalar>, const Derived>, const Derived
+		>;
+
+		template<typename Rhs, typename Urng>
+		inline const UniformRealSVType<Rhs, Urng>
+			uniformReal(Urng&& urng, typename Rhs::Scalar a, const ArrayBase<Rhs>& b)
+		{
+			return {
+				{ b.rows(), b.cols(), internal::scalar_constant_op<typename Rhs::Scalar>{ a } }, static_cast<const Rhs&>(b),
+				{ std::forward<Urng>(urng), UniformRealVGen<typename Rhs::Scalar>{} }
+			};
+		}
+
+		template<typename Derived, typename Urng>
 		using BernoulliType = CwiseNullaryOp<internal::scalar_rng_adaptor<BernoulliGen<typename Derived::Scalar>, typename Derived::Scalar, Urng, true>, const Derived>;
 
 		/**
@@ -811,6 +1091,30 @@ namespace Eigen
 		{
 			return {
 				o.rows(), o.cols(), { std::forward<Urng>(urng), BernoulliGen<typename Derived::Scalar>{ p } }
+			};
+		}
+
+		template<typename Derived, typename Urng>
+		using BernoulliVType = CwiseUnaryOp<
+			internal::scalar_unary_rng_adaptor<BernoulliVGen<typename Derived::Scalar>, typename Derived::Scalar, typename Derived::Scalar, Urng, true>, 
+			const Derived
+		>;
+
+		/**
+		 * @brief generates 1 with probability `p` and 0 with probability `1 - p`
+		 *
+		 * @tparam Lhs
+		 * @tparam Urng
+		 * @param urng c++11-style random number generator
+		 * @param p a probability of generating 1
+		 * @return a random matrix expression with the same shape as `p`
+		 */
+		template<typename Lhs, typename Urng>
+		inline const BernoulliVType<Lhs, Urng>
+			bernoulli(Urng&& urng, const ArrayBase<Lhs>& p)
+		{
+			return BernoulliVType<Lhs, Urng>{
+				static_cast<const Lhs&>(p), { std::forward<Urng>(urng), BernoulliVGen<typename Lhs::Scalar>{} }
 			};
 		}
 	}

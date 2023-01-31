@@ -8,54 +8,7 @@
 #include <random>
 
 #include <EigenRand/EigenRand>
-
-class BenchmarkHelper
-{
-	std::map<std::string, double>& timing;
-	std::map<std::string, std::pair<double, double> >& mean_var;
-public:
-
-	template<typename _EigenTy>
-	class ScopeMeasure
-	{
-		BenchmarkHelper& bh;
-		std::string name;
-		_EigenTy& results;
-		std::chrono::high_resolution_clock::time_point start;
-	public:
-		ScopeMeasure(BenchmarkHelper& _bh, 
-			const std::string& _name,
-			_EigenTy& _results) :
-			bh{ _bh }, name{ _name }, results{ _results },
-			start{ std::chrono::high_resolution_clock::now() }
-		{
-		}
-
-		~ScopeMeasure()
-		{
-			if (!name.empty())
-			{
-				bh.timing[name] = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - start).count();
-
-				double mean = results.template cast<double>().sum() / results.size();
-				double sqmean = results.template cast<double>().array().square().sum() / results.size();
-				bh.mean_var[name] = std::make_pair(mean, sqmean - mean * mean);
-			}
-		}
-	};
-
-	BenchmarkHelper(std::map<std::string, double>& _timing,
-		std::map<std::string, std::pair<double, double>>& _mean_var)
-		: timing{ _timing }, mean_var{ _mean_var }
-	{
-	}
-
-	template<typename _EigenTy>
-	ScopeMeasure<_EigenTy> measure(const std::string& name, _EigenTy& results)
-	{
-		return ScopeMeasure<_EigenTy>(*this, name, results);
-	}
-};
+#include "utils.hpp"
 
 template<typename Rng>
 std::map<std::string, double> test_eigenrand(size_t size, const std::string& suffix, std::map<std::string, std::pair<double, double> >& results)
@@ -812,6 +765,7 @@ int main(int argc, char** argv)
 	if (argc > 1) size = std::stoi(argv[1]);
 	if (argc > 2) repeat = std::stoi(argv[2]);
 
+	std::cout << "SIMD arch: " << Eigen::SimdInstructionSetsInUse() << std::endl;
 	std::cout << "[Benchmark] Generating Random Matrix " << size << "x" << size 
 		<< " " << repeat << " times" << std::endl;
 

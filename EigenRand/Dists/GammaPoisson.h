@@ -29,7 +29,7 @@ namespace Eigen
 		class NegativeBinomialGen : public GenBase<NegativeBinomialGen<_Scalar>, _Scalar>
 		{
 			static_assert(std::is_same<_Scalar, int32_t>::value, "negativeBinomial needs integral types."); 
-			UniformRealGen<float> ur;
+			StdUniformRealGen<float> ur;
 			GammaGen<float> gamma;
 		public:
 			using Scalar = _Scalar;

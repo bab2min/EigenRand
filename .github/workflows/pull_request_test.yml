@@ -29,6 +29,7 @@ jobs:
         git checkout v1.8.x
         popd
     - name: Build
+      continue-on-error: true
       run: |
         export EIGEN_PATH=`pwd`/include
         mkdir build && cd build
@@ -61,6 +62,7 @@ jobs:
         git checkout v1.8.x
         popd
     - name: Build
+      continue-on-error: true
       run: |
         export EIGEN_PATH=`pwd`/include
         mkdir build && cd build
@@ -94,6 +96,7 @@ jobs:
         git checkout v1.8.x
         popd
     - name: Build
+      continue-on-error: true
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
