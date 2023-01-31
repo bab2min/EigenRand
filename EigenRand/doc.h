@@ -85,7 +85,51 @@
 
  Every random distribution function has its corresponding -Like function.
 
- @section getting_started_4 Efficient Reusable Generator
+ @section getting_started_4 Vectorization over Parameters
+ EigenRand's random number generators typically accept scalar parameters. 
+ However, certain generators can generate random numbers efficiently for an array of parameters in an element-wise manner.
+ You can see the full list of distributions which support the vectorization over parameters at @link list_of_supported_distribution @endlink.
+ 
+ @code
+ #include <iostream>
+ #include <Eigen/Dense>
+ #include <EigenRand/EigenRand>
+
+ using namespace Eigen;
+
+ int main()
+ {
+   Rand::P8_mt19937_64 urng{ 42 };
+
+   ArrayXf a{ 10 }, b{ 10 }, c{ 10 };
+	 a << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+	 b << 10, 12, 14, 16, 18, 20, 22, 24, 26, 28;
+   
+   // You can use two array parameters.
+   // The shape of two parameters should be equal in this case.
+   c = Rand::uniformReal(urng, a, b);
+   std::cout << c << std::endl;
+   // c[0] is generated in the range [a[0], b[0]), 
+   // c[1] is generated in the range [a[1], b[1]) ...
+   
+   // Or you can provide one parameter as a scalar
+   // In this case, a scalar parameter is broadcast to the shape of the array parameter.
+   c = Rand::uniformReal(urng, -5, b);
+   std::cout << c << std::endl;
+   // c[0] is generated in the range [-5, b[0]), 
+   // c[1] is generated in the range [-5, b[1]) ...
+
+   c = Rand::uniformReal(urng, a, 11);
+   std::cout << c << std::endl;
+   // c[0] is generated in the range [a[0], 11), 
+   // c[1] is generated in the range [a[1], 11) ...
+   return 0;
+ }
+ @endcode
+
+
+
+ @section getting_started_5 Efficient Reusable Generator
  In the example above, functions, such as `Eigen::Rand::balancedLike`, `Eigen::Rand::normal` and so on, creates a generator internally each time to be called.
  If you want to generate random matrices from the same distribution, consider using Generator classes as following:
 
@@ -114,7 +158,7 @@
  }
  @endcode
 
- @section getting_started_5 Drawing samples from Multivariate Distribution
+ @section getting_started_6 Drawing samples from Multivariate Distribution
  EigenRand provides generators for some multivariate distributions.
 
  @code
@@ -169,33 +213,38 @@
  * 
  @section list_of_supported_distribution_1 Random Distributions for Real types
 
-| Function | Generator | Scalar Type | Description | Equivalent to |
-|:---:|:---:|:---:|:---:|:---:|
-| `Eigen::Rand::balanced` | `Eigen::Rand::BalancedGen` | float, double | generates real values in the [-1, 1] range | `Eigen::DenseBase<Ty>::Random` for floating point types |
-| `Eigen::Rand::beta` | `Eigen::Rand::BetaGen` | float, double | generates real values on a [beta distribution](https://en.wikipedia.org/wiki/Beta_distribution) |  |
-| `Eigen::Rand::cauchy` | `Eigen::Rand::CauchyGen` | float, double | generates real values on the [Cauchy distribution](https://en.wikipedia.org/wiki/Cauchy_distribution). | `std::cauchy_distribution` |
-| `Eigen::Rand::chiSquared` | `Eigen::Rand::ChiSquaredGen` | float, double | generates real values on a [chi-squared distribution](https://en.wikipedia.org/wiki/Chi-squared_distribution). | `std::chi_squared_distribution` |
-| `Eigen::Rand::exponential` | `Eigen::Rand::ExponentialGen` | float, double | generates real values on an [exponential distribution](https://en.wikipedia.org/wiki/Exponential_distribution). | `std::exponential_distribution` |
-| `Eigen::Rand::extremeValue` | `Eigen::Rand::ExtremeValueGen` | float, double | generates real values on an [extreme value distribution](https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution). | `std::extreme_value_distribution` |
-| `Eigen::Rand::fisherF` | `Eigen::Rand::FisherFGen` | float, double | generates real values on the [Fisher's F distribution](https://en.wikipedia.org/wiki/F_distribution). | `std::fisher_f_distribution` |
-| `Eigen::Rand::gamma` | `Eigen::Rand::GammaGen` | float, double | generates real values on a [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution). | `std::gamma_distribution` |
-| `Eigen::Rand::lognormal` | `Eigen::Rand::LognormalGen` | float, double | generates real values on a [lognormal distribution](https://en.wikipedia.org/wiki/Lognormal_distribution). | `std::lognormal_distribution` |
-| `Eigen::Rand::normal` | `Eigen::Rand::StdNormalGen`, `Eigen::Rand::NormalGen` | float, double | generates real values on a [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution). | `std::normal_distribution` |
-| `Eigen::Rand::studentT` | `Eigen::Rand::StudentTGen` | float, double | generates real values on the [Student's t distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution). | `std::student_t_distribution` |
-| `Eigen::Rand::uniformReal` | `Eigen::Rand::StdUniformRealGen`, `Eigen::Rand::UniformRealGen` | float, double | generates real values in the `[-1, 0)` range. | `std::generate_canonical` |
-| `Eigen::Rand::weibull` | `Eigen::Rand::WeibullGen` | float, double | generates real values on the [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution). | `std::weibull_distribution` |
+| Function | Generator | Scalar Type | VoP | Description | Equivalent to |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| `Eigen::Rand::balanced` | `Eigen::Rand::BalancedGen` | float, double | yes | generates real values in the [-1, 1] range | `Eigen::DenseBase<Ty>::Random` for floating point types |
+| `Eigen::Rand::beta` | `Eigen::Rand::BetaGen` | float, double | | generates real values on a [beta distribution](https://en.wikipedia.org/wiki/Beta_distribution) |  |
+| `Eigen::Rand::cauchy` | `Eigen::Rand::CauchyGen` | float, double | yes | generates real values on the [Cauchy distribution](https://en.wikipedia.org/wiki/Cauchy_distribution). | `std::cauchy_distribution` |
+| `Eigen::Rand::chiSquared` | `Eigen::Rand::ChiSquaredGen` | float, double | | generates real values on a [chi-squared distribution](https://en.wikipedia.org/wiki/Chi-squared_distribution). | `std::chi_squared_distribution` |
+| `Eigen::Rand::exponential` | `Eigen::Rand::ExponentialGen` | float, double | yes | generates real values on an [exponential distribution](https://en.wikipedia.org/wiki/Exponential_distribution). | `std::exponential_distribution` |
+| `Eigen::Rand::extremeValue` | `Eigen::Rand::ExtremeValueGen` | float, double | yes | generates real values on an [extreme value distribution](https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution). | `std::extreme_value_distribution` |
+| `Eigen::Rand::fisherF` | `Eigen::Rand::FisherFGen` | float, double | | generates real values on the [Fisher's F distribution](https://en.wikipedia.org/wiki/F_distribution). | `std::fisher_f_distribution` |
+| `Eigen::Rand::gamma` | `Eigen::Rand::GammaGen` | float, double | | generates real values on a [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution). | `std::gamma_distribution` |
+| `Eigen::Rand::lognormal` | `Eigen::Rand::LognormalGen` | float, double | yes | generates real values on a [lognormal distribution](https://en.wikipedia.org/wiki/Lognormal_distribution). | `std::lognormal_distribution` |
+| `Eigen::Rand::normal` | `Eigen::Rand::StdNormalGen`, `Eigen::Rand::NormalGen` | float, double | yes | generates real values on a [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution). | `std::normal_distribution` |
+| `Eigen::Rand::studentT` | `Eigen::Rand::StudentTGen` | float, double | yes | generates real values on the [Student's t distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution). | `std::student_t_distribution` |
+| `Eigen::Rand::uniformReal` | `Eigen::Rand::StdUniformRealGen`, `Eigen::Rand::UniformRealGen` | float, double | yes | generates real values in the `[0, 1)` range. | `std::generate_canonical` |
+| `Eigen::Rand::weibull` | `Eigen::Rand::WeibullGen` | float, double | yes | generates real values on the [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution). | `std::weibull_distribution` |
+
+* VoP indicates 'Vectorization over Parameters'. 
 
  @section list_of_supported_distribution_2 Random Distributions for Integer Types
 
-| Function | Generator | Scalar Type | Description | Equivalent to |
-|:---:|:---:|:---:|:---:|:---:|
-| `Eigen::Rand::binomial` | `Eigen::Rand::BinomialGen` | int | generates integers on a [binomial distribution](https://en.wikipedia.org/wiki/Binomial_distribution). | `std::binomial_distribution` |
-| `Eigen::Rand::discrete` | `Eigen::Rand::DiscreteGen` | int | generates random integers on a discrete distribution. | `std::discrete_distribution` |
-| `Eigen::Rand::geometric` | `Eigen::Rand::GeometricGen` | int | generates integers on a [geometric distribution](https://en.wikipedia.org/wiki/Geometric_distribution). | `std::geometric_distribution` |
-| `Eigen::Rand::negativeBinomial` | `Eigen::Rand::NegativeBinomialGen` | int | generates integers on a [negative binomial distribution](https://en.wikipedia.org/wiki/Negative_binomial_distribution). | `std::negative_binomial_distribution` |
-| `Eigen::Rand::poisson` | `Eigen::Rand::PoissonGen` | int | generates integers on the [Poisson distribution](https://en.wikipedia.org/wiki/Poisson_distribution). | `std::poisson_distribution` |
-| `Eigen::Rand::randBits` | `Eigen::Rand::RandbitsGen` | int | generates integers with random bits. | `Eigen::DenseBase<Ty>::Random` for integer types |
-| `Eigen::Rand::uniformInt` | `Eigen::Rand::UniformIntGen` | int | generates integers in the `[min, max]` range. | `std::uniform_int_distribution` |
+| Function | Generator | Scalar Type | VoP | Description | Equivalent to |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| `Eigen::Rand::bernoulli` | `Eigen::Rand::BernoulliGen` | int | yes | generates 0 or 1 on a [Bernoulli distribution](https://en.wikipedia.org/wiki/Bernoulli_distribution). | `std::bernoulli_distribution` |
+| `Eigen::Rand::binomial` | `Eigen::Rand::BinomialGen` | int | yes | generates integers on a [binomial distribution](https://en.wikipedia.org/wiki/Binomial_distribution). | `std::binomial_distribution` |
+| `Eigen::Rand::discrete` | `Eigen::Rand::DiscreteGen` | int | | generates random integers on a discrete distribution. | `std::discrete_distribution` |
+| `Eigen::Rand::geometric` | `Eigen::Rand::GeometricGen` | int | | generates integers on a [geometric distribution](https://en.wikipedia.org/wiki/Geometric_distribution). | `std::geometric_distribution` |
+| `Eigen::Rand::negativeBinomial` | `Eigen::Rand::NegativeBinomialGen` | int | | generates integers on a [negative binomial distribution](https://en.wikipedia.org/wiki/Negative_binomial_distribution). | `std::negative_binomial_distribution` |
+| `Eigen::Rand::poisson` | `Eigen::Rand::PoissonGen` | int | | generates integers on the [Poisson distribution](https://en.wikipedia.org/wiki/Poisson_distribution). | `std::poisson_distribution` |
+| `Eigen::Rand::randBits` | `Eigen::Rand::RandbitsGen` | int | | generates integers with random bits. | `Eigen::DenseBase<Ty>::Random` for integer types |
+| `Eigen::Rand::uniformInt` | `Eigen::Rand::UniformIntGen` | int | | generates integers in the `[min, max]` range. | `std::uniform_int_distribution` |
+
+* VoP indicates 'Vectorization over Parameters'. 
 
  @section list_of_distribution_3 Multivariate Random Distributions
 | Generator | Description | Equivalent to |
@@ -212,6 +261,7 @@
 |:---:|:---:|:---:|
 | `Eigen::Rand::Vmt19937_64` | a vectorized version of Mersenne Twister algorithm. It generates two 64bit random integers simultaneously with SSE2 and four integers with AVX2. | `std::mt19937_64` |
 | `Eigen::Rand::P8_mt19937_64` | a vectorized version of Mersenne Twister algorithm. Since it generates eight 64bit random integers simultaneously, the random values are the same regardless of architecture. | |
+
  * 
  * @page performance Performance
  * The following charts show the relative speed-up of EigenRand compared to Reference(C++ std or Eigen functions). Detailed results are below the charts.
