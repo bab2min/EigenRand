@@ -1503,7 +1503,7 @@ namespace Eigen
 		inline const StudentTVType<Lhs, Urng>
 			studentT(Urng&& urng, const ArrayBase<Lhs>& a)
 		{
-			return {
+			return StudentTVType<Lhs, Urng> {
 				static_cast<const Lhs&>(a), 
 				{ std::forward<Urng>(urng), StudentTVGen<typename Lhs::Scalar>{} }
 			};
@@ -1575,7 +1575,7 @@ namespace Eigen
 		inline const ExponentialVType<Lhs, Urng>
 			exponential(Urng&& urng, const ArrayBase<Lhs>& a)
 		{
-			return {
+			return ExponentialVType<Lhs, Urng> {
 				static_cast<const Lhs&>(a),
 				{ std::forward<Urng>(urng), ExponentialVGen<typename Lhs::Scalar>{} }
 			};

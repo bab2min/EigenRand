@@ -134,7 +134,7 @@ namespace Eigen
 		template<typename Gen, typename _Scalar, typename Urng, bool _mutable>
 		struct functor_traits<scalar_rng_adaptor<Gen, _Scalar, Urng, _mutable> >
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<_Scalar>::HasSin & packet_traits<_Scalar>::HasCos, IsRepeatable = false };
+			enum { Cost = HugeCost, PacketAccess = std::is_floating_point<_Scalar>::value ? packet_traits<_Scalar>::HasSin : packet_traits<_Scalar>::Vectorizable, IsRepeatable = false };
 		};
 
 		template<typename Gen, typename _Scalar, typename _ScalarA, typename Rng, bool _mutable = false>
@@ -220,7 +220,7 @@ namespace Eigen
 		template<typename Gen, typename _Scalar, typename _ScalarA, typename Urng, bool _mutable>
 		struct functor_traits<scalar_unary_rng_adaptor<Gen, _Scalar, _ScalarA, Urng, _mutable> >
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<_Scalar>::HasSin & packet_traits<_Scalar>::HasCos, IsRepeatable = false };
+			enum { Cost = HugeCost, PacketAccess = std::is_floating_point<_Scalar>::value ? packet_traits<_Scalar>::HasSin : packet_traits<_Scalar>::Vectorizable, IsRepeatable = false };
 		};
 
 		template<typename Gen, typename _Scalar, typename _ScalarA, typename _ScalarB, typename Rng, bool _mutable = false>
@@ -306,7 +306,7 @@ namespace Eigen
 		template<typename Gen, typename _Scalar, typename _ScalarA, typename _ScalarB, typename Urng, bool _mutable>
 		struct functor_traits<scalar_binary_rng_adaptor<Gen, _Scalar, _ScalarA, _ScalarB, Urng, _mutable> >
 		{
-			enum { Cost = HugeCost, PacketAccess = packet_traits<_Scalar>::HasSin & packet_traits<_Scalar>::HasCos, IsRepeatable = false };
+			enum { Cost = HugeCost, PacketAccess = std::is_floating_point<_Scalar>::value ? packet_traits<_Scalar>::HasSin : packet_traits<_Scalar>::Vectorizable, IsRepeatable = false };
 		};
 	}
 }
