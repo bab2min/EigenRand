@@ -6,6 +6,39 @@ on:
       - main
 
 jobs:
+  build_macos_aarch64:
+    name: Build for macOS aarch64
+    runs-on: macOS-11
+    strategy:
+      max-parallel: 4
+      matrix:
+        arch: [DEIGEN_DONT_VECTORIZE, DDUMMY]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
+        tar -zxvf eigen-${{ matrix.eigenversion }}.tar.gz
+        mv eigen-${{ matrix.eigenversion }} include
+        git clone https://github.com/google/googletest
+        pushd googletest
+        git checkout v1.8.x
+        popd
+    - name: Build
+      continue-on-error: true
+      run: |
+        export EIGEN_PATH=`pwd`/include
+        mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
+        make
+    #- name: Test
+    #  run: |
+    #    ./build/test/EigenRand-test
+    #- name: Run Accuracy
+    #  run: |
+    #    ./build/EigenRand-accuracy
+
   build-arm64:
     name: Build for Arm64-Centos7
     runs-on: ubuntu-18.04
