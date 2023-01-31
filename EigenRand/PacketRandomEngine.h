@@ -2,8 +2,8 @@
  * @file PacketRandomEngine.h
  * @author bab2min (bab2min@gmail.com)
  * @brief
- * @version 0.4.1
- * @date 2022-08-13
+ * @version 0.5.0
+ * @date 2023-01-31
  *
  * @copyright Copyright (c) 2020-2021
  *
