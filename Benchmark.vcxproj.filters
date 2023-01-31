@@ -102,6 +102,12 @@
     <ClInclude Include="EigenRand\arch\NEON\PacketFilter.h">
       <Filter>EigenRand\arch\NEON</Filter>
     </ClInclude>
+    <ClInclude Include="EigenRand\CwiseHeteroBinaryOp.h">
+      <Filter>EigenRand</Filter>
+    </ClInclude>
+    <ClInclude Include="benchmark\utils.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
