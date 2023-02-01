@@ -122,7 +122,7 @@ namespace Eigen
 		{
 			EIGEN_STRONG_INLINE Packet2d zero_to_one(Rng& rng)
 			{
-				return pdiv((Packet2d)vcvtq_f64_s64(vreinterpretq_s64_s32(pand(this->rawbits(rng), vreinterpretq_s32_s64(pset1<Packet2l>(0x7FFFFFFF))))),
+				return pdiv((Packet2d)vcvtq_f64_s64(vreinterpretq_s64_s32(pand(this->rawbits(rng), vreinterpretq_s32_s64(vdupq_n_s64(0x7FFFFFFF))))),
 					pset1<Packet2d>(0x7FFFFFFF));
 			}
 
