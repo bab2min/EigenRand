@@ -47,6 +47,9 @@ namespace Eigen
 		struct IsFloatPacket<Packet4f> : std::true_type {};
 
 		template<>
+		struct IsDoublePacket<Packet2d> : std::true_type {};
+
+		template<>
 		struct HalfPacket<Packet4i>
 		{
 			using type = uint64_t;
@@ -64,6 +67,11 @@ namespace Eigen
 			{
 				return x;
 			}
+
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet4i& x)
+			{
+				return (Packet2d)vreinterpretq_f64_s32(x);
+			}
 		};
 
 		template<>
@@ -77,6 +85,30 @@ namespace Eigen
 			EIGEN_STRONG_INLINE Packet4i to_int(const Packet4f& x)
 			{
 				return (Packet4i)vreinterpretq_s32_f32(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet4f& x)
+			{
+				return (Packet2d)vreinterpretq_f64_f32(x);
+			}
+		};
+
+		template<>
+		struct reinterpreter<Packet2d>
+		{
+			EIGEN_STRONG_INLINE Packet4f to_float(const Packet2d& x)
+			{
+				return vreinterpretq_f32_f64(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet2d to_double(const Packet2d& x)
+			{
+				return x;
+			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int(const Packet2d& x)
+			{
+				return vreinterpretq_s32_f64(x);
 			}
 		};
 
@@ -193,6 +225,18 @@ namespace Eigen
 		}
 
 		template<>
+		EIGEN_STRONG_INLINE Packet2d pcmplt<Packet2d>(const Packet2d& a, const Packet2d& b)
+		{
+			return vreinterpretq_f64_u32(vcltq_f64(a,b));
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet2d pcmple<Packet2d>(const Packet2d& a, const Packet2d& b)
+		{
+			return vreinterpretq_f64_u32(vcleq_f64(a,b));
+		}
+
+		template<>
 		EIGEN_STRONG_INLINE Packet4f pblendv(const Packet4f& ifPacket, const Packet4f& thenPacket, const Packet4f& elsePacket)
 		{
 			return vbslq_f32(vreinterpretq_u32_f32(ifPacket), thenPacket, elsePacket);
@@ -208,6 +252,18 @@ namespace Eigen
 		EIGEN_STRONG_INLINE Packet4i pblendv(const Packet4i& ifPacket, const Packet4i& thenPacket, const Packet4i& elsePacket)
 		{
 			return vbslq_s32(vreinterpretq_u32_s32(ifPacket), thenPacket, elsePacket);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet2d pblendv(const Packet2d& ifPacket, const Packet2d& thenPacket, const Packet2d& elsePacket)
+		{
+			return vbslq_f64(vreinterpretq_u64_f64(ifPacket), thenPacket, elsePacket);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet2d pblendv(const Packet4i& ifPacket, const Packet2d& thenPacket, const Packet2d& elsePacket)
+		{
+			return vbslq_f64(vreinterpretq_u64_s32(ifPacket), thenPacket, elsePacket);
 		}
 
 		template<>
@@ -255,6 +311,37 @@ namespace Eigen
 		EIGEN_STRONG_INLINE Packet4f ptruncate<Packet4f>(const Packet4f& a)
 		{
 			return vrndq_f32(a);
+		}
+		
+		template<>
+		EIGEN_STRONG_INLINE Packet4i pcast64<Packet2d, Packet4i>(const Packet2d& a)
+		{
+			return (Packet4i)vcvtq_s64_f64(a);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet2d pcast64<Packet4i, Packet2d>(const Packet4i& a)
+		{
+			return vcvtq_f64_s64((int64x2_t)a);
+		}
+
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4i padd64<Packet4i>(const Packet4i& a, const Packet4i& b)
+		{
+			return (Packet4i)vaddq_s64((int64x2_t)a, (int64x2_t)b);
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4i psub64<Packet4i>(const Packet4i& a, const Packet4i& b)
+		{
+			return (Packet4i)vsubq_s64((int64x2_t)a, (int64x2_t)b);
+		}
+
+		template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
+			Packet2d psin<Packet2d>(const Packet2d& x)
+		{
+			return _psin(x);
 		}
 
 		template<>
