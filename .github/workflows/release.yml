@@ -35,9 +35,10 @@ jobs:
         mkdir build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
         make
+    - name: CPU info
+      run: cat /proc/cpuinfo
     - name: Run Bench
       run: |
-        cat /proc/cpuinfo
         ./build/EigenRand-benchmark
     - name: Run BenchMv
       run: |
@@ -48,6 +49,15 @@ jobs:
     - name: Run Accuracy
       run: |
         ./build/EigenRand-accuracy
+    - name: Set up Python3
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+        architecture: x64
+    - name: Test Reference
+      run: |
+        pip install scipy
+        python benchmark/comp_scipy.py
 
   build_macos:
     name: Build for macOS
@@ -74,10 +84,11 @@ jobs:
         mkdir build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
         make
+    - name: CPU info
+      run: sysctl -a | grep machdep.cpu
     - name: Run Bench
       continue-on-error: true
       run: |
-        sysctl -a | grep machdep.cpu
         ./build/EigenRand-benchmark
     - name: Run BenchMv
       continue-on-error: true
@@ -90,6 +101,15 @@ jobs:
     - name: Run Accuracy
       run: |
         ./build/EigenRand-accuracy
+    - name: Set up Python3
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+        architecture: x64
+    - name: Test Reference
+      run: |
+        pip install scipy
+        python benchmark/comp_scipy.py
 
   build_windows:
     name: Build for Windows
@@ -120,9 +140,10 @@ jobs:
         cmakeAppendedArgs: -G"Visual Studio 16 2019" -Ax64 -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }} /I${{ env.EIGEN_PATH }}"
         buildWithCMakeArgs: --config Release
         buildDirectory: build
+    - name: CPU info
+      run: bash -c "cat /proc/cpuinfo"
     - name: Run Bench
       run: |
-        bash -c "cat /proc/cpuinfo"
         .\build\Release\EigenRand-benchmark.exe
     - name: Run BenchMv
       run: |
@@ -133,6 +154,16 @@ jobs:
     - name: Run Accuracy
       run: |
         .\build\Release\EigenRand-accuracy.exe
+    - name: Set up Python3
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+        architecture: x64
+    - name: Test Reference
+      run: |
+        pip install scipy
+        python benchmark/comp_scipy.py
+
 
   build-arm64:
     name: Build for Arm64-Centos7
