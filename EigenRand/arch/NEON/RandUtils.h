@@ -116,11 +116,29 @@ namespace Eigen
 			}
 		};
 
+#if EIGEN_ARCH_ARM64 && !EIGEN_APPLE_DOUBLE_NEON_BUG
+		template<typename Rng>
+		struct UniformRealUtils<Packet2d, Rng> : public RawbitsMaker<Packet4i, Rng>
+		{
+			EIGEN_STRONG_INLINE Packet2d zero_to_one(Rng& rng)
+			{
+				return pdiv((Packet2d)vcvtq_f64_s64(pand(this->rawbits(rng), pset1<Packet2l>(0x7FFFFFFF))),
+					pset1<Packet2d>(0x7FFFFFFF));
+			}
+
+			EIGEN_STRONG_INLINE Packet2d uniform_real(Rng& rng)
+			{
+				return bit_to_ur_double(this->rawbits(rng));
+			}
+		};
+
+#else
 		template<typename Gen, typename Urng, bool _mutable>
 		struct functor_traits<scalar_rng_adaptor<Gen, double, Urng, _mutable> >
 		{
 			enum { Cost = HugeCost, PacketAccess = 0, IsRepeatable = false };
 		};
+#endif
 	}
 }
 #endif
