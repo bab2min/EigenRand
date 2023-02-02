@@ -22,6 +22,7 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 
 	Eigen::ArrayXXi xi{ size, size }, xi2{ size, size };
 	Eigen::ArrayXXf x{ size, size }, x2{ size, size };
+	Eigen::ArrayXXd xd{ size, size }, xd2{ size, size };
 
 	{
 		std::array<float, 5> a = { 1, 3, 5, 7, 9 };
@@ -34,6 +35,19 @@ std::map<std::string, double> test_eigenrand(size_t size, const std::string& suf
 
 		auto scope = bh.measure("uniformRealV" + suffix, x);
 		x = Eigen::Rand::uniformReal(urng, x, x2);
+	}
+
+	{
+		std::array<float, 5> a = { 1, 3, 5, 7, 9 };
+		std::array<float, 5> b = { 10, 11, 12, 13, 14 };
+		for (int i = 0; i < size; ++i)
+		{
+			xd.col(i).setConstant(a[i % a.size()]);
+			xd2.row(i).setConstant(b[i % b.size()]);
+		}
+
+		auto scope = bh.measure("uniformRealV(double)" + suffix, xd);
+		xd = Eigen::Rand::uniformReal(urng, xd, xd2);
 	}
 
 	{

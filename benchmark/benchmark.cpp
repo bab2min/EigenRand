@@ -828,7 +828,7 @@ int main(int argc, char** argv)
 			timeSq[p.first] += p.second * p.second;
 		}
 
-#if defined(EIGEN_VECTORIZE_SSE2) || defined(EIGEN_VECTORIZE_AVX)
+#if defined(EIGEN_VECTORIZE_SSE2) || defined(EIGEN_VECTORIZE_AVX) || defined(EIGEN_VECTORIZE_NEON)
 		for (auto& p : test_eigenrand<Eigen::Rand::Vmt19937_64>(size, "\t:ERand+vRNG", results))
 		{
 			time[p.first] += p.second;
