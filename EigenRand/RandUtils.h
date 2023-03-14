@@ -311,6 +311,9 @@ namespace Eigen
 	}
 }
 
+#ifdef EIGEN_VECTORIZE_AVX512
+#include "arch/AVX512/RandUtils.h"
+#endif
 
 #ifdef EIGEN_VECTORIZE_AVX
 #include "arch/AVX/RandUtils.h"
