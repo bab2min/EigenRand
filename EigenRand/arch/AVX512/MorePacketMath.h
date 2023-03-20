@@ -181,7 +181,7 @@ namespace Eigen
 		EIGEN_STRONG_INLINE Packet16i pcmplt<Packet16i>(const Packet16i& a, const Packet16i& b)
 		{
 			__mmask16 mask = _mm512_cmp_epi32_mask(a, b, _MM_CMPINT_LT);
-			return _mm512_mask_set1_epi32(_mm512_set1_epi32(0), mask, 0xffffffffu);
+			return _mm512_movm_epi32(mask);
 		}
 
 		template<>
@@ -273,8 +273,8 @@ namespace Eigen
 		template<>
 		EIGEN_STRONG_INLINE Packet16i pcmpeq64<Packet16i>(const Packet16i& a, const Packet16i& b)
 		{
-			__mmask16 mask = _mm512_cmp_epi64_mask(a, b, _MM_CMPINT_EQ);
-			return _mm512_mask_set1_epi64(_mm512_set1_epi64(0), mask, 0xfffffffffffffffful);
+			__mmask8 mask = _mm512_cmp_epi64_mask(a, b, _MM_CMPINT_EQ);
+			return _mm512_movm_epi64(mask);
 		}
 
 		EIGEN_STRONG_INLINE __m512d int64_to_double_avx512(__m512i x) {
