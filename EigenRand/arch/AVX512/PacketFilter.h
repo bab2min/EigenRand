@@ -41,7 +41,7 @@ namespace Eigen
 					auto& mask = reinterpret_cast<const internal::Packet16f&>(_mask);
 					auto& rest = reinterpret_cast<internal::Packet16f&>(_rest);
 
-					const __mmask16 m = _mm512_movepi32_mask(_mm512_castsi512_ps(mask));
+					const __mmask16 m = _mm512_movepi32_mask(_mm512_castps_si512(mask));
 
 					if (m == 0xFFFF)
 					{
@@ -53,7 +53,7 @@ namespace Eigen
 
 					const __m512i counting = _mm512_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
 					__m512i rotate = _mm512_sub_epi32(counting, _mm512_set1_epi32(cnt_m));
-					__m512 rot_rest = _mm512_permutexvar_ps(rotate, _rest);
+					__m512 rot_rest = _mm512_permutexvar_ps(rotate, rest);
 
 					__m512 p1 = _mm512_mask_compress_ps(rot_rest, m, value);
 

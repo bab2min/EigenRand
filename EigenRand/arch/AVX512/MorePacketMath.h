@@ -174,7 +174,7 @@ namespace Eigen
 
 		template<> EIGEN_STRONG_INLINE bool predux_all(const Packet16f& x)
 		{
-			return predux_all(_mm512_castsi512_ps(x));
+			return predux_all(_mm512_castps_si512(x));
 		}
 
 		template<>
