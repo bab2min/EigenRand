@@ -180,7 +180,8 @@ namespace Eigen
 		template<>
 		EIGEN_STRONG_INLINE Packet16i pcmplt<Packet16i>(const Packet16i& a, const Packet16i& b)
 		{
-			return pcmp_lt(a, b);
+			__mmask16 mask = _mm512_cmp_epi32_mask(a, b, _MM_CMPINT_LT);
+			return _mm512_mask_set1_epi32(_mm512_set1_epi32(0), mask, 0xffffffffu);
 		}
 
 		template<>
