@@ -68,7 +68,7 @@ jobs:
       run: |
         export EIGEN_PATH=`pwd`/include
         mkdir build && cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
+        cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -mavx512f -mfma -I${EIGEN_PATH}" ../
         make
     - name: Test
       run: |
