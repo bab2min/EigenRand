@@ -15,7 +15,7 @@ jobs:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx, mavx2]
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
         os: [ubuntu-18.04]
-    steps:        
+    steps:
     - uses: actions/checkout@v1
     - name: Install dependencies
       run: |
@@ -34,6 +34,41 @@ jobs:
         export EIGEN_PATH=`pwd`/include
         mkdir build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
+        make
+    - name: Test
+      run: |
+        ./build/test/EigenRand-test
+    - name: Run Accuracy
+      run: |
+        ./build/EigenRand-accuracy
+
+  build_linux_avx512:
+    name: Build for linux AVX512
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 4
+      matrix:
+        arch: [mavx512dq]
+        eigenversion: [3.4.0]
+        os: [ubuntu-18.04]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        git clone https://gitlab.com/libeigen/eigen
+        pushd eigen
+        git checkout tags/${{ matrix.eigenversion }}
+        popd
+        mv eigen include
+        git clone https://github.com/google/googletest
+        pushd googletest
+        git checkout v1.8.x
+        popd
+    - name: Build
+      run: |
+        export EIGEN_PATH=`pwd`/include
+        mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -mavx512f -mfma -I${EIGEN_PATH}" ../
         make
     - name: Test
       run: |
@@ -97,6 +132,42 @@ jobs:
         popd
     - name: Build
       continue-on-error: true
+      uses: lukka/run-cmake@v3
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeBuildType: Release
+        buildWithCMake: true
+        cmakeAppendedArgs: -G"Visual Studio 16 2019" -Ax64 -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }} /I${{ env.EIGEN_PATH }}"
+        buildWithCMakeArgs: --config Release
+        buildDirectory: build
+    - name: Test
+      run: |
+        .\build\test\Release\EigenRand-test.exe
+    - name: Run Accuracy
+      run: |
+        .\build\Release\EigenRand-accuracy.exe
+
+  build_windows_avx512:
+    name: Build for Windows
+    runs-on: windows-2019
+    strategy:
+      max-parallel: 4
+      matrix:
+        arch: ['/arch:AVX512']
+        eigenversion: [3.4.0]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        Invoke-WebRequest -OutFile eigen.tar.gz https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
+        tar -zxvf eigen.tar.gz
+        mv eigen-${{ matrix.eigenversion }} include
+        echo "EIGEN_PATH=$(Get-Location)\include" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+        git clone https://github.com/google/googletest
+        pushd googletest
+        git checkout v1.8.x
+        popd
+    - name: Build
       uses: lukka/run-cmake@v3
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced

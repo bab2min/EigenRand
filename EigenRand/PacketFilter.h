@@ -27,6 +27,9 @@ namespace Eigen
 	}
 }
 
+#ifdef EIGEN_VECTORIZE_AVX512
+#include "arch/AVX512/PacketFilter.h"
+#endif
 
 #ifdef EIGEN_VECTORIZE_AVX
 #include "arch/AVX/PacketFilter.h"

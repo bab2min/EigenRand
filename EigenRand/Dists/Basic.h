@@ -333,9 +333,13 @@ namespace Eigen
 			template<typename Packet>
 			auto operator()(Packet v) -> uint64_t
 			{
+#ifdef EIGEN_VECTORIZE_AVX512
+				return Eigen::internal::pfirst(v);
+#else
 				uint64_t arr[sizeof(Packet) / 8];
 				Eigen::internal::pstoreu((Packet*)arr, v);
 				return arr[0];
+#endif
 			}
 		};
 
