@@ -11,8 +11,7 @@ add_executable(EigenRand-test ${TEST_SRC})
 # If used often, could be made a macro.
 
 add_dependencies(EigenRand-test gtest)
-include_directories(googletest/include)
-target_link_libraries(EigenRand-test gtest_main gtest)
+target_link_libraries(EigenRand-test gtest_main gtest eigenrand)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   target_link_libraries(EigenRand-test -Wl,--whole-archive -lpthread -Wl,--no-whole-archive)
 endif()
@@ -22,3 +21,4 @@ endif()
 
 enable_testing()
 add_test(EigenRand-test EigenRand-test)
+

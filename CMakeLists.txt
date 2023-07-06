@@ -2,61 +2,147 @@ cmake_minimum_required(VERSION 3.9)
 
 project(EigenRand VERSION 0.5.0 DESCRIPTION "EigenRand, Random Number Generator for Eigen")
 
+include(GNUInstallDirs)
+
 option(EIGENRAND_BUILD_TEST  "Build Test sets" ON)
 
-set ( CMAKE_CXX_STANDARD 11 )
-set ( CMAKE_VERBOSE_MAKEFILE true )
+option(EIGENRAND_CMAKE_VERBOSE "Define flags for cmake verbosity" OFF)
+
+if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  message(STATUS "Building as a standalone project")
+  option(EIGENRAND_DEFINE_FLAGS "Define flags for EigenRand" ON)
+  set(EIGEN_SUBPROJECT OFF)
+else()
+  message(STATUS "Building as a sub-project")
+  option(EIGENRAND_DEFINE_FLAGS "Define flags for EigenRand" OFF)
+  set(EIGEN_SUBPROJECT ON)
+endif()
+
+if ( NOT CMAKE_CXX_STANDARD )
+  set ( CMAKE_CXX_STANDARD 11 )
+endif()
+
+set ( CMAKE_VERBOSE_MAKEFILE ${EIGENRAND_CMAKE_VERBOSE} )
+
 set ( ADDITIONAL_FLAGS "${EIGENRAND_CXX_FLAGS}" )
 
-if(MSVC)
-  set ( CMAKE_C_FLAGS_DEBUG "-DDEBUG -DC_FLAGS -Zi -Od ${ADDITIONAL_FLAGS}" )
-  set ( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}" )
-
-  set ( CMAKE_C_FLAGS_RELEASE "-DNDEBUG -DRELEASE -DC_FLAGS -O2 -Oi -Gy ${ADDITIONAL_FLAGS}" )
-  set ( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}" )
-
-  set ( CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELEASE} -Zi")
-  set ( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
-  set ( CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" )
-else()
-  link_libraries ( pthread )
-  
-  set ( CMAKE_C_FLAGS_DEBUG "-DDEBUG -DC_FLAGS -g3 -O0 ${ADDITIONAL_FLAGS}" )
-  set ( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}" )
-  set ( CMAKE_EXE_LINKER_FLAGS_DEBUG "-DDEBUG -DLINKER_FLAGS" )
-
-  set ( CMAKE_C_FLAGS_RELEASE "-DNDEBUG -DRELEASE -DC_FLAGS -O3 ${ADDITIONAL_FLAGS}" )
-  set ( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}" )
-  set ( CMAKE_EXE_LINKER_FLAGS_RELEASE "-DRELEASE -DLINKER_FLAGS" )
-
-  set ( CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELEASE} -g3")
-  set ( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
-  set ( CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" )
+if ( NOT TARGET Eigen3::Eigen )
+  message(STATUS "Eigen3 not available")
+  find_package(Eigen3 REQUIRED)
 endif()
+add_library(eigenrand INTERFACE)
+target_link_libraries(eigenrand INTERFACE Eigen3::Eigen)
 
-include_directories( ./ )
+if ( EIGENRAND_DEFINE_FLAGS )
+  if(MSVC)
+    set ( CMAKE_C_FLAGS_DEBUG "-DDEBUG -DC_FLAGS -Zi -Od ${ADDITIONAL_FLAGS}" )
+    set ( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}" )
 
-add_executable( "${PROJECT_NAME}-benchmark"
+    set ( CMAKE_C_FLAGS_RELEASE "-DNDEBUG -DRELEASE -DC_FLAGS -O2 -Oi -Gy ${ADDITIONAL_FLAGS}" )
+    set ( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}" )
+
+    set ( CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELEASE} -Zi")
+    set ( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+    set ( CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" )
+  else()
+   
+
+    set ( CMAKE_C_FLAGS_DEBUG "-DDEBUG -DC_FLAGS -g3 -O0 ${ADDITIONAL_FLAGS}" )
+    set ( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}" )
+    set ( CMAKE_EXE_LINKER_FLAGS_DEBUG "-DDEBUG -DLINKER_FLAGS" )
+
+    set ( CMAKE_C_FLAGS_RELEASE "-DNDEBUG -DRELEASE -DC_FLAGS -O3 ${ADDITIONAL_FLAGS}" )
+    set ( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}" )
+    set ( CMAKE_EXE_LINKER_FLAGS_RELEASE "-DRELEASE -DLINKER_FLAGS" )
+
+    set ( CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELEASE} -g3")
+    set ( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+    set ( CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" )
+  endif()
+endif(EIGENRAND_DEFINE_FLAGS)
+
+if ( UNIX )
+  target_link_libraries(eigenrand INTERFACE pthread)
+endif()
+message(STATUS "PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
+target_include_directories(eigenrand INTERFACE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/EigenRand>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+add_library(EigenRand::EigenRand ALIAS eigenrand)
+
+set(ITEMS
   benchmark/benchmark.cpp
-)
-
-add_executable( "${PROJECT_NAME}-benchmark-mv"
   benchmark/benchmark_mv.cpp
-)
-
-add_executable( "${PROJECT_NAME}-benchmark-disc"
   benchmark/benchmark_disc.cpp
-)
-
-add_executable( "${PROJECT_NAME}-benchmark-vop"
   benchmark/benchmark_vectorize_over_params.cpp
-)
-
-add_executable( "${PROJECT_NAME}-accuracy"
   benchmark/accuracy.cpp
 )
+foreach(app ${ITEMS})
+  get_filename_component(app_name ${app} NAME_WE)
+  string(TOLOWER ${app_name} app_name_lower)
+  string(TOLOWER ${PROJECT_NAME} project_name_lower)
+  add_executable(${project_name_lower}-${app_name_lower} ${app})
+  target_link_libraries(${project_name_lower}-${app_name_lower} PRIVATE eigenrand)
+  install(TARGETS ${project_name_lower}-${app_name_lower} DESTINATION bin)
+endforeach()
+
+include(FetchContent)
+set(FETCHCONTENT_SOURCE_DIR_GOOGLETEST ${CMAKE_CURRENT_SOURCE_DIR}/googletest)
+message(STATUS "FETCHCONTENT_SOURCE_DIR_GOOGLETEST: ${FETCHCONTENT_SOURCE_DIR_GOOGLETEST}")
+FetchContent_Declare(googletest GIT_REPOSITORY https://github.com/google/googletest GIT_TAG v1.8.x)
 
 if(EIGENRAND_BUILD_TEST)
-  add_subdirectory( googletest )
+    FetchContent_MakeAvailable(googletest)
   add_subdirectory( test )
 endif()
+
+
+install(DIRECTORY EigenRand DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(TARGETS eigenrand
+  EXPORT EigenRandTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
+
+set(CPACK_PACKAGE_NAME "EigenRand-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "EigenRand-${PROJECT_VERSION}${EXTRA_VERSION}")
+set(CPACK_PACKAGE_FILE_NAME "EigenRand-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}-${CMAKE_SYSTEM_NAME}")
+set(CPACK_PACKAGE_DIRECTORY "${PROJECT_BINARY_DIR}/")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "EigenRand - The Fastest C++11-compatible random distribution generator for Eigen")
+set(CPACK_PACKAGE_DESCRIPTION "EigenRand - The Fastest C++11-compatible random distribution generator for Eigen")
+set(CPACK_PACKAGE_VENDOR "bab2min")
+set(CPACK_PACKAGE_CONTACT "bab2min@gmail.com")
+set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
+
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+  set(CPACK_GENERATOR "TGZ;DEB")
+else()
+  set(CPACK_GENERATOR "TGZ")
+endif()
+
+set(CPACK_SOURCE_GENERATOR "TGZ")
+
+set(CPACK_DEBIAN_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
+
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+set(CPACK_DEBIAN_PACKAGE_SECTION "science")
+set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}${EXTRA_VERSION}")
+set(CPACK_DEBIAN_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
+
+
+set(CPACK_PACKAGE_IGNORE_FILES
+  "/\\\\.git/"
+  "/\\\\.gitignore"
+  "/build/"
+)
+# set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/cmake/debian/postinst")
+include(CPack)
