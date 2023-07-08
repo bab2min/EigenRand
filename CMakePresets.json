@@ -61,11 +61,13 @@
         {
             "name": "default",
             "configurePreset": "default",
+            "configuration": "Release",
             "jobs": 10
         },
         {
             "name": "windows",
             "configurePreset": "windows",
+            "configuration": "Release",
             "jobs": 10
         },
         {
