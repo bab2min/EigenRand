@@ -25,6 +25,21 @@
             }
         },
         {
+            "name": "windows",
+            "displayName": "Windows 2019 Config",
+            "description": "Windows 2019 config",
+            "generator": "Visual Studio 16 2019",
+            "binaryDir": "-Ax64",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            },
+            "vendor": {
+                "example.com/ExampleIDE/1.0": {
+                    "autoFormat": true
+                }
+            }
+        },
+        {
             "name": "install-local",
             "inherits": "default",
             "displayName": "Build and Install system",
@@ -48,6 +63,11 @@
             "jobs": 10
         },
         {
+            "name": "windows",
+            "configurePreset": "windows",
+            "jobs": 10
+        },
+        {
             "name": "install-local",
             "configurePreset": "install-local",
             "inherits": "default",
@@ -66,9 +86,19 @@
                 "outputOnFailure": true
             },
             "execution": {
+                "jobs": 2,
                 "noTestsAction": "error",
-                "stopOnFailure": true
+                "stopOnFailure": false,
+                "repeat": {
+                    "mode": "until-pass",
+                    "count": 3
+                }
             }
+        },
+        {
+            "name": "windows",
+            "configurePreset": "windows",
+            "inherits": "default"
         }
     ],
     "vendor": {

@@ -26,6 +26,7 @@ endif()
 set ( CMAKE_VERBOSE_MAKEFILE ${EIGENRAND_CMAKE_VERBOSE} )
 
 set ( ADDITIONAL_FLAGS "${EIGENRAND_CXX_FLAGS}" )
+message(STATUS "ADDITIONAL_FLAGS: ${ADDITIONAL_FLAGS}")
 
 if ( NOT TARGET Eigen3::Eigen )
   message(STATUS "Eigen3 not available from master project")

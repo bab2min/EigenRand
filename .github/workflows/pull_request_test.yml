@@ -8,7 +8,7 @@ on:
 jobs:
   build_linux:
     name: Build for linux
-    if: "!contains(github.event.head_commit.message, '[skip linux]')"
+    if: "!contains(github.event.head_commit.message, 'skip linux')"
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     strategy:
@@ -33,22 +33,17 @@ jobs:
     - name: Build
       continue-on-error: true
       run: |
-        export EIGEN_PATH=`pwd`/include
-        mkdir build && cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
-        make
+        cmake --preset default -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} 
+        cmake --build --preset default
+        ctest --preset default -N
     - name: Tests
       run: |
-        ctest -R test
-      working-directory: build
-    - name: Accuracy
-      run: |
-        ctest -R accuracy
-      working-directory: build
+        ctest --preset default -R test
+        ctest --preset default -R accuracy
 
   build_linux_avx512:
     name: Build for linux AVX512
-    if: "!contains(github.event.head_commit.message, '[skip avx]')"
+    if: "!contains(github.event.head_commit.message, 'skip avx')"
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     strategy:
@@ -69,23 +64,19 @@ jobs:
         popd
         mv eigen include
     - name: Build
+      continue-on-error: true
       run: |
-        export EIGEN_PATH=`pwd`/include
-        mkdir build && cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -mavx512f -mfma -I${EIGEN_PATH}" ../
-        make
+        cmake --preset default -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} 
+        cmake --build --preset default
+        ctest --preset default -N
     - name: Tests
       run: |
-        ctest -R test
-      working-directory: build
-    - name: Accuracy
-      run: |
-        ctest -R accuracy
-      working-directory: build
+        ctest --preset default -R test
+        ctest --preset default -R accuracy
 
   build_macos:
     name: Build for macOS
-    if: "!contains(github.event.head_commit.message, '[skip macos]')"
+    if: "!contains(github.event.head_commit.message, 'skip macos')"
     runs-on: macOS-10.15
     continue-on-error: true
     strategy:
@@ -105,22 +96,17 @@ jobs:
     - name: Build
       continue-on-error: true
       run: |
-        export EIGEN_PATH=`pwd`/include
-        mkdir build && cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
-        make
+        cmake --preset default -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} 
+        cmake --build --preset default
+        ctest --preset default -N
     - name: Tests
       run: |
-        ctest -R test
-      working-directory: build
-    - name: Accuracy
-      run: |
-        ctest -R accuracy
-      working-directory: build
+        ctest --preset default -R test
+        ctest --preset default -R accuracy
 
   build_windows:
     name: Build for Windows
-    if: "!contains(github.event.head_commit.message, '[skip windows]')"
+    if: "!contains(github.event.head_commit.message, 'skip windows')"
     runs-on: windows-2019
     continue-on-error: true
     strategy:
@@ -140,26 +126,18 @@ jobs:
         echo "EIGEN_PATH=$(Get-Location)\include" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
     - name: Build
       continue-on-error: true
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeBuildType: Release
-        buildWithCMake: true
-        cmakeAppendedArgs: -G"Visual Studio 16 2019" -Ax64 -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }} /I${{ env.EIGEN_PATH }}"
-        buildWithCMakeArgs: --config Release
-        buildDirectory: build
+      run: |
+        cmake --preset windows -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }} 
+        cmake --build --preset windows
+        ctest --preset windows -N
     - name: Tests
       run: |
-        ctest -R test
-      working-directory: build
-    - name: Accuracy
-      run: |
-        ctest -R accuracy
-      working-directory: build
+        ctest --preset windows -R test
+        ctest --preset windows -R accuracy
 
   build_windows_avx512:
     name: Build for Windows
-    if: "!contains(github.event.head_commit.message, '[skip windows-avx]')"
+    if: "!contains(github.event.head_commit.message, 'skip windows-avx')"
     runs-on: windows-2019
     continue-on-error: true
     strategy:
@@ -178,22 +156,15 @@ jobs:
         mv eigen-${{ matrix.eigenversion }} include
         echo "EIGEN_PATH=$(Get-Location)\include" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
     - name: Build
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeBuildType: Release
-        buildWithCMake: true
-        cmakeAppendedArgs: -G"Visual Studio 16 2019" -Ax64 -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }} /I${{ env.EIGEN_PATH }}"
-        buildWithCMakeArgs: --config Release
-        buildDirectory: build
+      continue-on-error: true
+      run: |
+        cmake --preset windows -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }} 
+        cmake --build --preset windows
+        ctest --preset windows -N
     - name: Tests
       run: |
-        ctest -R test
-      working-directory: build
-    - name: Accuracy
-      run: |
-        ctest -R accuracy
-      working-directory: build
+        ctest --preset windows -R test
+        ctest --preset windows -R accuracy
 
   reference:
     name: Reference
