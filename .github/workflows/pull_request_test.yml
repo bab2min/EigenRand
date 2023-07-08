@@ -107,7 +107,7 @@ jobs:
   build_windows:
     name: Build for Windows
     if: "!contains(github.event.head_commit.message, '[skip windows]')"
-    runs-on: windows-2019
+    runs-on: windows-latest
     continue-on-error: true
     strategy:
       max-parallel: 4
@@ -138,7 +138,7 @@ jobs:
   build_windows_avx512:
     name: Build for Windows
     if: "!contains(github.event.head_commit.message, '[skip windows-avx]')"
-    runs-on: windows-2019
+    runs-on: windows-latest
     continue-on-error: true
     strategy:
       max-parallel: 4
@@ -172,7 +172,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        os: [ubuntu-22.04, macOS-10.15, windows-2019]
+        os: [ubuntu-latest, macOS-latest, windows-latest]
     steps:        
     - uses: actions/checkout@v3
       with:
