@@ -8,7 +8,7 @@ on:
 jobs:
   build_linux:
     name: Build for linux
-    if: "!contains(github.event.head_commit.message, 'skip linux')"
+    if: "!contains(github.event.head_commit.message, '[skip linux]')"
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     strategy:
@@ -43,7 +43,7 @@ jobs:
 
   build_linux_avx512:
     name: Build for linux AVX512
-    if: "!contains(github.event.head_commit.message, 'skip avx')"
+    if: "!contains(github.event.head_commit.message, '[skip avx]')"
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     strategy:
@@ -76,7 +76,7 @@ jobs:
 
   build_macos:
     name: Build for macOS
-    if: "!contains(github.event.head_commit.message, 'skip macos')"
+    if: "!contains(github.event.head_commit.message, '[skip macos]')"
     runs-on: macOS-latest
     continue-on-error: true
     strategy:
@@ -106,7 +106,7 @@ jobs:
 
   build_windows:
     name: Build for Windows
-    if: "!contains(github.event.head_commit.message, 'skip windows')"
+    if: "!contains(github.event.head_commit.message, '[skip windows]')"
     runs-on: windows-2019
     continue-on-error: true
     strategy:
@@ -137,7 +137,7 @@ jobs:
 
   build_windows_avx512:
     name: Build for Windows
-    if: "!contains(github.event.head_commit.message, 'skip windows-avx')"
+    if: "!contains(github.event.head_commit.message, '[skip windows-avx]')"
     runs-on: windows-2019
     continue-on-error: true
     strategy:
