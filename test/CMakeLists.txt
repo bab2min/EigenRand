@@ -19,6 +19,6 @@ endif()
 # Just make the test runnable with
 #   $ make test
 
-enable_testing()
+
 add_test(EigenRand-test EigenRand-test)
 

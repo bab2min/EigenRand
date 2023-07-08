@@ -16,7 +16,7 @@ jobs:
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
         os: [ubuntu-18.04]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         git clone https://gitlab.com/libeigen/eigen
@@ -48,7 +48,7 @@ jobs:
         eigenversion: [3.4.0]
         os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         git clone https://gitlab.com/libeigen/eigen
@@ -78,7 +78,7 @@ jobs:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx]
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
@@ -107,7 +107,7 @@ jobs:
         arch: ['/D EIGEN_DONT_VECTORIZE', '/arch:SSE2', '/arch:AVX', '/arch:AVX2']
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         Invoke-WebRequest -OutFile eigen.tar.gz https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
@@ -140,7 +140,7 @@ jobs:
         arch: ['/arch:AVX512']
         eigenversion: [3.4.0]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         Invoke-WebRequest -OutFile eigen.tar.gz https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
@@ -171,7 +171,7 @@ jobs:
       matrix:
         os: [ubuntu-18.04, macOS-10.15, windows-2019]
     steps:        
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python3
       uses: actions/setup-python@v1
       with:

@@ -27,9 +27,22 @@ set ( CMAKE_VERBOSE_MAKEFILE ${EIGENRAND_CMAKE_VERBOSE} )
 set ( ADDITIONAL_FLAGS "${EIGENRAND_CXX_FLAGS}" )
 
 if ( NOT TARGET Eigen3::Eigen )
-  message(STATUS "Eigen3 not available")
+  message(STATUS "Eigen3 not available from master project")
+  if ( EXISTS ${PROJECT_SOURCE_DIR}/include/Eigen )
+    # Set the path to the directory containing Eigen3
+    list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/include/Eigen")
+    message(STATUS "Eigen3 directory found locally in ${PROJECT_SOURCE_DIR}/include/Eigen")
+  endif()
   find_package(Eigen3 REQUIRED)
+  # Check if Eigen3 is found
+  if(TARGET Eigen3::Eigen )
+    message(STATUS "Eigen3 found")
+  else()
+    message(FATAL_ERROR "Eigen3 not found")
+  endif()
 endif()
+
+# create interface lib for EigenRand to create the programming interface and propagating it simply using target_link_libraries 
 add_library(eigenrand INTERFACE)
 target_link_libraries(eigenrand INTERFACE Eigen3::Eigen)
 
@@ -94,7 +107,8 @@ message(STATUS "FETCHCONTENT_SOURCE_DIR_GOOGLETEST: ${FETCHCONTENT_SOURCE_DIR_GO
 FetchContent_Declare(googletest GIT_REPOSITORY https://github.com/google/googletest GIT_TAG v1.8.x)
 
 if(EIGENRAND_BUILD_TEST)
-    FetchContent_MakeAvailable(googletest)
+  FetchContent_MakeAvailable(googletest)
+  enable_testing()
   add_subdirectory( test )
 endif()
 
