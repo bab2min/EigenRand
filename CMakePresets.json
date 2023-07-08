@@ -62,13 +62,13 @@
             "name": "default",
             "configurePreset": "default",
             "configuration": "Release",
-            "jobs": 10
+            "jobs": 2
         },
         {
             "name": "windows",
             "configurePreset": "windows",
             "configuration": "Release",
-            "jobs": 10
+            "jobs": 2
         },
         {
             "name": "install-local",
