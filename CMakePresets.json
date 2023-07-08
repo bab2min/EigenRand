@@ -1,0 +1,113 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default Config",
+            "description": "Default config",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/default",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/default/install/",
+                "CMAKE_BUILD_TYPE": "Release"
+            },
+            "vendor": {
+                "example.com/ExampleIDE/1.0": {
+                    "autoFormat": true
+                }
+            }
+        },
+        {
+            "name": "windows",
+            "displayName": "Windows 2022 Config",
+            "description": "Windows 2022 config",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build/windows",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            },
+            "vendor": {
+                "example.com/ExampleIDE/1.0": {
+                    "autoFormat": true
+                }
+            }
+        },
+        {
+            "name": "install-local",
+            "inherits": "default",
+            "displayName": "Build and Install system",
+            "description": "Build and Install in /usr/local",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/install-local",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "/usr/local"
+            },
+            "vendor": {
+                "example.com/ExampleIDE/1.0": {
+                    "autoFormat": true
+                }
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "configuration": "Release",
+            "jobs": 2
+        },
+        {
+            "name": "windows",
+            "configurePreset": "windows",
+            "configuration": "Release",
+            "jobs": 2
+        },
+        {
+            "name": "install-local",
+            "configurePreset": "install-local",
+            "inherits": "default",
+            "targets": [
+                "all",
+                "install",
+                "package"
+            ]
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "jobs": 2,
+                "noTestsAction": "error",
+                "stopOnFailure": false,
+                "repeat": {
+                    "mode": "until-pass",
+                    "count": 3
+                }
+            }
+        },
+        {
+            "name": "windows",
+            "configurePreset": "windows",
+            "inherits": "default"
+        }
+    ],
+    "vendor": {
+        "example.com/ExampleIDE/1.0": {
+            "autoFormat": false
+        }
+    }
+}
