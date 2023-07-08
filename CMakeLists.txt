@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.9)
 project(EigenRand VERSION 0.5.0 DESCRIPTION "EigenRand, Random Number Generator for Eigen")
 
 include(GNUInstallDirs)
+include(FetchContent)
 
 option(EIGENRAND_BUILD_TEST  "Build Test sets" ON)
 
@@ -29,11 +30,21 @@ set ( ADDITIONAL_FLAGS "${EIGENRAND_CXX_FLAGS}" )
 if ( NOT TARGET Eigen3::Eigen )
   message(STATUS "Eigen3 not available from master project")
   if ( EXISTS ${PROJECT_SOURCE_DIR}/include/Eigen )
-    # Set the path to the directory containing Eigen3
-    list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/include/Eigen")
-    message(STATUS "Eigen3 directory found locally in ${PROJECT_SOURCE_DIR}/include/Eigen")
+    # this is for the CI
+    include_directories(${PROJECT_SOURCE_DIR}/include)
+    add_library(Eigen INTERFACE)
+    add_library(Eigen3::Eigen ALIAS Eigen)
+    target_include_directories(Eigen INTERFACE ${PROJECT_SOURCE_DIR}/include)
+  else()
+    find_package(Eigen3)
+    # try harder to find Eigen3 using pkgconfig
+    if (NOT TARGET Eigen3::Eigen )
+      message(STATUS "Eigen3 not found with find_package(Eigen3), trying to find using pkgconfig")
+      find_package(PkgConfig REQUIRED)
+      pkg_search_module(Eigen3 REQUIRED eigen3)
+    endif()
   endif()
-  find_package(Eigen3 REQUIRED)
+
   # Check if Eigen3 is found
   if(TARGET Eigen3::Eigen )
     message(STATUS "Eigen3 found")
@@ -101,7 +112,7 @@ foreach(app ${ITEMS})
   install(TARGETS ${project_name_lower}-${app_name_lower} DESTINATION bin)
 endforeach()
 
-include(FetchContent)
+
 set(FETCHCONTENT_SOURCE_DIR_GOOGLETEST ${CMAKE_CURRENT_SOURCE_DIR}/googletest)
 message(STATUS "FETCHCONTENT_SOURCE_DIR_GOOGLETEST: ${FETCHCONTENT_SOURCE_DIR_GOOGLETEST}")
 FetchContent_Declare(googletest GIT_REPOSITORY https://github.com/google/googletest GIT_TAG v1.8.x)
