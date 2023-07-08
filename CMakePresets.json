@@ -26,9 +26,9 @@
         },
         {
             "name": "windows",
-            "displayName": "Windows 2019 Config",
-            "description": "Windows 2019 config",
-            "generator": "Visual Studio 16 2019",
+            "displayName": "Windows 2022 Config",
+            "description": "Windows 2022 config",
+            "generator": "Visual Studio 17 2022",
             "architecture": "x64",
             "binaryDir": "${sourceDir}/build/windows",
             "cacheVariables": {
