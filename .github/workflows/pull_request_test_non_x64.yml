@@ -8,6 +8,7 @@ on:
 jobs:
   build_macos_aarch64:
     name: Build for macOS aarch64
+    if: "!contains(github.event.head_commit.message, '[skip macos-aarch64]')"
     runs-on: macOS-11
     strategy:
       max-parallel: 4
@@ -15,7 +16,7 @@ jobs:
         arch: [DEIGEN_DONT_VECTORIZE, DDUMMY]
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
@@ -36,7 +37,8 @@ jobs:
 
   build-arm64:
     name: Build for Arm64-Centos7
-    runs-on: ubuntu-18.04
+    if: "!contains(github.event.head_commit.message, '[skip arm64]')"
+    runs-on: ubuntu-22.04
     strategy:
       max-parallel: 4
       matrix:
@@ -44,7 +46,7 @@ jobs:
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
       with:
         submodules: true
     - uses: bab2min/run-on-arch-action@use-custom-image

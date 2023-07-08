@@ -106,10 +106,10 @@ set(ITEMS
 foreach(app ${ITEMS})
   get_filename_component(app_name ${app} NAME_WE)
   string(TOLOWER ${app_name} app_name_lower)
-  string(TOLOWER ${PROJECT_NAME} project_name_lower)
-  add_executable(${project_name_lower}-${app_name_lower} ${app})
-  target_link_libraries(${project_name_lower}-${app_name_lower} PRIVATE eigenrand)
-  install(TARGETS ${project_name_lower}-${app_name_lower} DESTINATION bin)
+#  string(TOLOWER ${PROJECT_NAME} project_name_lower)
+  add_executable(${project_name}-${app_name_lower} ${app})
+  target_link_libraries(${project_name}-${app_name_lower} PRIVATE eigenrand)
+  install(TARGETS ${project_name}-${app_name_lower} DESTINATION bin)
 endforeach()
 
 
@@ -119,6 +119,9 @@ FetchContent_Declare(googletest GIT_REPOSITORY https://github.com/google/googlet
 
 if(EIGENRAND_BUILD_TEST)
   FetchContent_MakeAvailable(googletest)
+  if (NOT TARGET gtest)
+    message(STATUS FATAL_ERROR "gtest target not found, is there a problem with googltest?")
+  endif()
   enable_testing()
   add_subdirectory( test )
 endif()

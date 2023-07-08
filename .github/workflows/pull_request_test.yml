@@ -8,13 +8,14 @@ on:
 jobs:
   build_linux:
     name: Build for linux
+    if: "!contains(github.event.head_commit.message, '[skip linux]')"
     runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 4
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx, mavx2]
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
-        os: [ubuntu-18.04]
+        os: [ubuntu-22.04]
     steps:
     - uses: actions/checkout@v3
     - name: Install dependencies
@@ -40,13 +41,14 @@ jobs:
 
   build_linux_avx512:
     name: Build for linux AVX512
+    if: "!contains(github.event.head_commit.message, '[skip avx]')"
     runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 4
       matrix:
         arch: [mavx512dq]
         eigenversion: [3.4.0]
-        os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-22.04]
     steps:
     - uses: actions/checkout@v3
     - name: Install dependencies
@@ -71,6 +73,7 @@ jobs:
 
   build_macos:
     name: Build for macOS
+    if: "!contains(github.event.head_commit.message, '[skip macos]')"
     runs-on: macOS-10.15
     strategy:
       max-parallel: 4
@@ -100,6 +103,7 @@ jobs:
 
   build_windows:
     name: Build for Windows
+    if: "!contains(github.event.head_commit.message, '[skip windows]')"
     runs-on: windows-2019
     strategy:
       max-parallel: 4
@@ -133,6 +137,7 @@ jobs:
 
   build_windows_avx512:
     name: Build for Windows
+    if: "!contains(github.event.head_commit.message, '[skip windows-avx]')"
     runs-on: windows-2019
     strategy:
       max-parallel: 4
@@ -169,7 +174,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        os: [ubuntu-18.04, macOS-10.15, windows-2019]
+        os: [ubuntu-22.04, macOS-10.15, windows-2019]
     steps:        
     - uses: actions/checkout@v3
     - name: Set up Python3
