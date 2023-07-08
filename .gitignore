@@ -268,3 +268,4 @@ doxygen/docs
 *.out
 ARM64/
 *.vcxproj.filters
+include/
