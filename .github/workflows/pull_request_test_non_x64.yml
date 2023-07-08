@@ -70,5 +70,5 @@ jobs:
           mkdir build && cd build
           cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
           make
-          ./test/EigenRand-test
-          ./EigenRand-accuracy 256
+          ctest -R test
+          ctest -R accuracy

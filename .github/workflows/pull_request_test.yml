@@ -34,12 +34,14 @@ jobs:
         mkdir build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
         make
-    - name: Test
+    - name: Tests
       run: |
-        ./build/test/EigenRand-test
-    - name: Run Accuracy
+        ctest -R test
+      working-directory: build
+    - name: Accuracy
       run: |
-        ./build/EigenRand-accuracy
+        ctest -R accuracy
+      working-directory: build
 
   build_linux_avx512:
     name: Build for linux AVX512
@@ -68,12 +70,14 @@ jobs:
         mkdir build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -mavx512f -mfma -I${EIGEN_PATH}" ../
         make
-    - name: Test
+    - name: Tests
       run: |
-        ./build/test/EigenRand-test
-    - name: Run Accuracy
+        ctest -R test
+      working-directory: build
+    - name: Accuracy
       run: |
-        ./build/EigenRand-accuracy
+        ctest -R accuracy
+      working-directory: build
 
   build_macos:
     name: Build for macOS
@@ -100,12 +104,14 @@ jobs:
         mkdir build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
         make
-    - name: Test
+    - name: Tests
       run: |
-        ./build/test/EigenRand-test
-    - name: Run Accuracy
+        ctest -R test
+      working-directory: build
+    - name: Accuracy
       run: |
-        ./build/EigenRand-accuracy
+        ctest -R accuracy
+      working-directory: build
 
   build_windows:
     name: Build for Windows
@@ -136,12 +142,14 @@ jobs:
         cmakeAppendedArgs: -G"Visual Studio 16 2019" -Ax64 -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }} /I${{ env.EIGEN_PATH }}"
         buildWithCMakeArgs: --config Release
         buildDirectory: build
-    - name: Test
+    - name: Tests
       run: |
-        .\build\test\Release\EigenRand-test.exe
-    - name: Run Accuracy
+        ctest -R test
+      working-directory: build
+    - name: Accuracy
       run: |
-        .\build\Release\EigenRand-accuracy.exe
+        ctest -R accuracy
+      working-directory: build
 
   build_windows_avx512:
     name: Build for Windows
@@ -171,12 +179,14 @@ jobs:
         cmakeAppendedArgs: -G"Visual Studio 16 2019" -Ax64 -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }} /I${{ env.EIGEN_PATH }}"
         buildWithCMakeArgs: --config Release
         buildDirectory: build
-    - name: Test
+    - name: Tests
       run: |
-        .\build\test\Release\EigenRand-test.exe
-    - name: Run Accuracy
+        ctest -R test
+      working-directory: build
+    - name: Accuracy
       run: |
-        .\build\Release\EigenRand-accuracy.exe
+        ctest -R accuracy
+      working-directory: build
 
   reference:
     name: Reference

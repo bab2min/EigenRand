@@ -105,11 +105,10 @@ set(ITEMS
 )
 foreach(app ${ITEMS})
   get_filename_component(app_name ${app} NAME_WE)
-  string(TOLOWER ${app_name} app_name_lower)
-#  string(TOLOWER ${PROJECT_NAME} project_name_lower)
-  add_executable(${project_name}-${app_name_lower} ${app})
-  target_link_libraries(${project_name}-${app_name_lower} PRIVATE eigenrand)
-  install(TARGETS ${project_name}-${app_name_lower} DESTINATION bin)
+  add_executable(${PROJECT_NAME}-${app_name} ${app})
+  target_link_libraries(${PROJECT_NAME}-${app_name} PRIVATE eigenrand)
+  install(TARGETS ${PROJECT_NAME}-${app_name} DESTINATION bin)
+  add_test(NAME ${PROJECT_NAME}-${app_name} COMMAND ${PROJECT_NAME}-${app_name})
 endforeach()
 
 
