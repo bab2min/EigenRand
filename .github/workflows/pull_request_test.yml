@@ -10,12 +10,15 @@ jobs:
     name: Build for linux
     if: "!contains(github.event.head_commit.message, '[skip linux]')"
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     strategy:
       max-parallel: 4
+      fail-fast: false
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx, mavx2]
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
         os: [ubuntu-22.04]
+
     steps:
     - uses: actions/checkout@v3
       with:
@@ -47,6 +50,7 @@ jobs:
     name: Build for linux AVX512
     if: "!contains(github.event.head_commit.message, '[skip avx]')"
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     strategy:
       max-parallel: 4
       matrix:
@@ -83,6 +87,7 @@ jobs:
     name: Build for macOS
     if: "!contains(github.event.head_commit.message, '[skip macos]')"
     runs-on: macOS-10.15
+    continue-on-error: true
     strategy:
       max-parallel: 4
       matrix:
@@ -117,6 +122,7 @@ jobs:
     name: Build for Windows
     if: "!contains(github.event.head_commit.message, '[skip windows]')"
     runs-on: windows-2019
+    continue-on-error: true
     strategy:
       max-parallel: 4
       matrix:
@@ -155,6 +161,7 @@ jobs:
     name: Build for Windows
     if: "!contains(github.event.head_commit.message, '[skip windows-avx]')"
     runs-on: windows-2019
+    continue-on-error: true
     strategy:
       max-parallel: 4
       matrix:

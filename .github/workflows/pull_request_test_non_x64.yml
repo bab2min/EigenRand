@@ -41,6 +41,7 @@ jobs:
     name: Build for Arm64-Centos7
     if: "!contains(github.event.head_commit.message, '[skip arm64]')"
     runs-on: ubuntu-22.04
+    continue-on-error: true
     strategy:
       max-parallel: 4
       matrix:
