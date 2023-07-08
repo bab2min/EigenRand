@@ -21,10 +21,6 @@ jobs:
         wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
         tar -zxvf eigen-${{ matrix.eigenversion }}.tar.gz
         mv eigen-${{ matrix.eigenversion }} include
-        git clone https://github.com/google/googletest
-        pushd googletest
-        git checkout v1.8.x
-        popd
     - name: Build
       run: |
         export EIGEN_PATH=`pwd`/include
@@ -64,10 +60,6 @@ jobs:
           git clone https://gitlab.com/libeigen/eigen
           pushd eigen
           git checkout tags/${{ matrix.eigenversion }}
-          popd
-          git clone https://github.com/google/googletest
-          pushd googletest
-          git checkout v1.8.x
           popd
           mv eigen include
           export EIGEN_PATH=`pwd`/include

@@ -17,6 +17,7 @@ jobs:
       with:
         working-directory: './doxygen'
     - name: gen doc
+      if: github.repository == 'bab2min/EigenRand'
       run: |
         export EIGENRAND_VER=${GITHUB_REF##*/}
         mkdir -p ../g
