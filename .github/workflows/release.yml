@@ -15,9 +15,9 @@ jobs:
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mavx, mavx2]
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
-        os: [ubuntu-18.04]
+        os: [ubuntu-18.04,ubuntu-20.04,ubuntu-22.04]
     steps:        
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         git clone https://gitlab.com/libeigen/eigen
@@ -25,10 +25,6 @@ jobs:
         git checkout tags/${{ matrix.eigenversion }}
         popd
         mv eigen include
-        git clone https://github.com/google/googletest
-        pushd googletest
-        git checkout v1.8.x
-        popd
     - name: Build
       run: |
         export EIGEN_PATH=`pwd`/include
@@ -68,16 +64,12 @@ jobs:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mavx]
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
         tar -zxvf eigen-${{ matrix.eigenversion }}.tar.gz
         mv eigen-${{ matrix.eigenversion }} include
-        git clone https://github.com/google/googletest
-        pushd googletest
-        git checkout v1.8.x
-        popd
     - name: Build
       run: |
         export EIGEN_PATH=`pwd`/include
@@ -120,17 +112,13 @@ jobs:
         arch: ['/D EIGEN_DONT_VECTORIZE', '/arch:SSE2', '/arch:AVX', '/arch:AVX2']
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         Invoke-WebRequest -OutFile eigen.tar.gz https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
         tar -zxvf eigen.tar.gz
         mv eigen-${{ matrix.eigenversion }} include
         echo "EIGEN_PATH=$(Get-Location)\include" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
-        git clone https://github.com/google/googletest
-        pushd googletest
-        git checkout v1.8.x
-        popd
     - name: Build
       uses: lukka/run-cmake@v3
       with:
@@ -167,7 +155,7 @@ jobs:
 
   build-arm64:
     name: Build for Arm64-Centos7
-    runs-on: ubuntu-18.04
+    runs-on: [ubuntu-18.04,ubuntu-20.04,ubuntu-22.04]
     strategy:
       max-parallel: 4
       matrix:
@@ -175,7 +163,7 @@ jobs:
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
       with:
         submodules: true
     - uses: bab2min/run-on-arch-action@use-custom-image
@@ -191,10 +179,6 @@ jobs:
           git clone https://gitlab.com/libeigen/eigen
           pushd eigen
           git checkout tags/${{ matrix.eigenversion }}
-          popd
-          git clone https://github.com/google/googletest
-          pushd googletest
-          git checkout v1.8.x
           popd
           mv eigen include
           export EIGEN_PATH=`pwd`/include

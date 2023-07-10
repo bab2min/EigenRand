@@ -46,6 +46,13 @@ You can specify additional compiler arguments including target machine options (
 $ cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-march=native" ..
 ```
 
+Alternatively cmake preset with cmake 3.21 or later can be used to compile EigenRand which also integrates nicely in VSCode
+```console
+cmake --preset default
+cmake --build --preset default
+ctest --preset default
+```
+
 ## Documentation
 
 https://bab2min.github.io/eigenrand/
