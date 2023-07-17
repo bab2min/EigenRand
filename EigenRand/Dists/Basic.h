@@ -33,6 +33,11 @@ namespace Eigen
 		{
 		public:
 			/**
+			 * @brief Return a reference to the derived type.
+			 */
+			DerivedGen &derived() { return static_cast<DerivedGen &>(*this); }
+
+			/**
 			 * @brief generate random values from its distribution
 			 * 
 			 * @tparam Derived 
@@ -48,7 +53,7 @@ namespace Eigen
 				generate(Index rows, Index cols, Urng&& urng)
 			{
 				return {
-					rows, cols, { std::forward<Urng>(urng), static_cast<DerivedGen&>(*this) }
+					rows, cols, { std::forward<Urng>(urng), derived() }
 				};
 			}
 
@@ -67,7 +72,7 @@ namespace Eigen
 				generateLike(const Derived& o, Urng&& urng)
 			{
 				return {
-					o.rows(), o.cols(), { std::forward<Urng>(urng), static_cast<DerivedGen&>(*this) }
+					o.rows(), o.cols(), { std::forward<Urng>(urng), derived() }
 				};
 			}
 		};
@@ -76,6 +81,11 @@ namespace Eigen
 		class UnaryGenBase
 		{
 		public:
+			/**
+			 * @brief Return a reference to the derived type.
+			 */
+			DerivedGen &derived() { return static_cast<DerivedGen &>(*this); }
+
 			/**
 			 * @brief generate random values from its distribution
 			 *
@@ -93,7 +103,7 @@ namespace Eigen
 			> generate(Urng&& urng, const ArrayBase<Lhs>& a)
 			{
 				return {
-					a, { std::forward<Urng>(urng), static_cast<DerivedGen&>(*this) }
+					a, { std::forward<Urng>(urng), derived() }
 				};
 			}
 		};
@@ -102,6 +112,11 @@ namespace Eigen
 		class BinaryGenBase
 		{
 		public:
+			/**
+			 * @brief Return a reference to the derived type.
+			 */
+			DerivedGen &derived() { return static_cast<DerivedGen &>(*this); }
+
 			/**
 			 * @brief generate random values from its distribution
 			 *
@@ -119,7 +134,7 @@ namespace Eigen
 			> generate(Urng&& urng, const ArrayBase<Lhs>& a, const ArrayBase<Rhs>& b)
 			{
 				return {
-					a, b, { std::forward<Urng>(urng), static_cast<DerivedGen&>(*this) }
+					a, b, { std::forward<Urng>(urng), derived() }
 				};
 			}
 
@@ -131,7 +146,7 @@ namespace Eigen
 			{
 				return {
 					a, { a.rows(), a.cols(), internal::scalar_constant_op<Rhs>{ b } },
-					{ std::forward<Urng>(urng), static_cast<DerivedGen&>(*this) }
+					{ std::forward<Urng>(urng), derived() }
 				};
 			}
 
@@ -143,7 +158,7 @@ namespace Eigen
 			{
 				return {
 					{ b.rows(), b.cols(), internal::scalar_constant_op<Lhs>{ a } }, b,
-					{ std::forward<Urng>(urng), static_cast<DerivedGen&>(*this) }
+					{ std::forward<Urng>(urng), derived() }
 				};
 			}
 		};
@@ -160,9 +175,14 @@ namespace Eigen
 		{
 		public:
 			/**
+			 * @brief Return a reference to the derived type.
+			 */
+			DerivedGen &derived() { return static_cast<DerivedGen &>(*this); }
+
+			/**
 			 * @brief returns the dimensions of vectors to be generated
 			 */
-			Index dims() const { return static_cast<DerivedGen&>(*this).dims(); }
+			Index dims() const { return derived().dims(); }
 
 			/**
 			 * @brief generates multiple samples at once
@@ -176,7 +196,7 @@ namespace Eigen
 			template<typename Urng>
 			inline Matrix<_Scalar, Dim, -1> generate(Urng&& urng, Index samples)
 			{
-				return static_cast<DerivedGen&>(*this).generatr(std::forward<Urng>(urng), samples);
+				return derived().generate(std::forward<Urng>(urng), samples);
 			}
 
 			/**
@@ -189,7 +209,7 @@ namespace Eigen
 			template<typename Urng>
 			inline Matrix<_Scalar, Dim, 1> generate(Urng&& urng)
 			{
-				return static_cast<DerivedGen&>(*this).generatr(std::forward<Urng>(urng));
+				return derived().generate(std::forward<Urng>(urng));
 			}
 		};
 
@@ -205,9 +225,14 @@ namespace Eigen
 		{
 		public:
 			/**
+			 * @brief Return a reference to the derived type.
+			 */
+			DerivedGen &derived() { return static_cast<DerivedGen &>(*this); }
+
+			/**
 			 * @brief returns the dimensions of matrices to be generated
 			 */
-			Index dims() const { return static_cast<DerivedGen&>(*this).dims(); }
+			Index dims() const { return derived().dims(); }
 
 			/**
 			 * @brief generates multiple samples at once
@@ -221,7 +246,7 @@ namespace Eigen
 			template<typename Urng>
 			inline Matrix<_Scalar, Dim, -1> generate(Urng&& urng, Index samples)
 			{
-				return static_cast<DerivedGen&>(*this).generate(std::forward<Urng>(urng), samples);
+				return derived().generate(std::forward<Urng>(urng), samples);
 			}
 
 			/**
@@ -234,7 +259,7 @@ namespace Eigen
 			template<typename Urng>
 			inline Matrix<_Scalar, Dim, Dim> generate(Urng&& urng)
 			{
-				return static_cast<DerivedGen&>(*this).generate(std::forward<Urng>(urng));
+				return derived().generate(std::forward<Urng>(urng));
 			}
 		};
 
