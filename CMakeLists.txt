@@ -4,8 +4,10 @@ project(EigenRand VERSION 0.5.0 DESCRIPTION "EigenRand, Random Number Generator 
 
 include(GNUInstallDirs)
 include(FetchContent)
+enable_testing()
 
 option(EIGENRAND_BUILD_TEST  "Build Test sets" ON)
+option(EIGENRAND_BUILD_BENCHMARK  "Build Benchmark sets" ON)
 
 option(EIGENRAND_CMAKE_VERBOSE "Define flags for cmake verbosity" OFF)
 
@@ -97,20 +99,22 @@ target_include_directories(eigenrand INTERFACE
 )
 add_library(EigenRand::EigenRand ALIAS eigenrand)
 
-set(ITEMS
-  benchmark/benchmark.cpp
-  benchmark/benchmark_mv.cpp
-  benchmark/benchmark_disc.cpp
-  benchmark/benchmark_vectorize_over_params.cpp
-  benchmark/accuracy.cpp
-)
-foreach(app ${ITEMS})
-  get_filename_component(app_name ${app} NAME_WE)
-  add_executable(${PROJECT_NAME}-${app_name} ${app})
-  target_link_libraries(${PROJECT_NAME}-${app_name} PRIVATE eigenrand)
-  install(TARGETS ${PROJECT_NAME}-${app_name} DESTINATION bin)
-  add_test(NAME ${PROJECT_NAME}-${app_name} COMMAND ${PROJECT_NAME}-${app_name})
-endforeach()
+if(EIGENRAND_BUILD_BENCHMARK)
+  set(ITEMS
+    benchmark/benchmark.cpp
+    benchmark/benchmark_mv.cpp
+    benchmark/benchmark_disc.cpp
+    benchmark/benchmark_vectorize_over_params.cpp
+    benchmark/accuracy.cpp
+  )
+  foreach(app ${ITEMS})
+    get_filename_component(app_name ${app} NAME_WE)
+    add_executable(${PROJECT_NAME}-${app_name} ${app})
+    target_link_libraries(${PROJECT_NAME}-${app_name} PRIVATE eigenrand)
+    install(TARGETS ${PROJECT_NAME}-${app_name} DESTINATION bin)
+    add_test(NAME ${PROJECT_NAME}-${app_name} COMMAND ${PROJECT_NAME}-${app_name})
+  endforeach()
+endif()
 
 
 set(FETCHCONTENT_SOURCE_DIR_GOOGLETEST ${CMAKE_CURRENT_SOURCE_DIR}/googletest)
@@ -122,7 +126,6 @@ if(EIGENRAND_BUILD_TEST)
   if (NOT TARGET gtest)
     message(STATUS FATAL_ERROR "gtest target not found, is there a problem with googltest?")
   endif()
-  enable_testing()
   add_subdirectory( test )
 endif()
 
