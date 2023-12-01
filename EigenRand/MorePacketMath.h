@@ -13,6 +13,7 @@
 #define EIGENRAND_MORE_PACKET_MATH_H
 
 #include <Eigen/Dense>
+#include <cstdint>
 
 #define EIGENRAND_PRINT_PACKET(p) do { using _MTy = typename std::remove_const<typename std::remove_reference<decltype(p)>::type>::type; typename std::conditional<Eigen::internal::IsFloatPacket<_MTy>::value, float, typename std::conditional<Eigen::internal::IsDoublePacket<_MTy>::value, double, int>::type>::type f[4]; Eigen::internal::pstore(f, p); std::cout << #p " " << f[0] << " " << f[1] << " " << f[2] << " " << f[3] << std::endl; } while(0)
 
