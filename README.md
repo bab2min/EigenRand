@@ -164,6 +164,10 @@ MIT License
 
 ## History
 
+### 0.5.1 (2024-09-08)
+* Add AVX512 support
+* Add `EIGENRAND_BUILD_BENCHMARK` cmake option
+
 ### 0.5.0 (2023-01-31)
 * Improved the performance of `MultinomialGen`.
 * Implemented vectorization over parameters to some distributions.
