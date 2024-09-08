@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 
-project(EigenRand VERSION 0.5.0 DESCRIPTION "EigenRand, Random Number Generator for Eigen")
+project(EigenRand VERSION 0.5.1 DESCRIPTION "EigenRand, Random Number Generator for Eigen")
 
 include(GNUInstallDirs)
 include(FetchContent)

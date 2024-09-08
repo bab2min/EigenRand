@@ -2,10 +2,10 @@
  * @file Core.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.5.0
- * @date 2023-01-31
- * 
- * @copyright Copyright (c) 2020-2021
+ * @version 0.5.1
+ * @date 2024-09-08
+ *
+ * @copyright Copyright (c) 2020-2024
  * 
  */
 
