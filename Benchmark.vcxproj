@@ -64,6 +64,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="benchmark\utils.hpp" />
+    <ClInclude Include="EigenRand\arch\AVX512\MorePacketMath.h" />
+    <ClInclude Include="EigenRand\arch\AVX512\PacketFilter.h" />
+    <ClInclude Include="EigenRand\arch\AVX512\RandUtils.h" />
     <ClInclude Include="EigenRand\arch\AVX\MorePacketMath.h" />
     <ClInclude Include="EigenRand\arch\AVX\PacketFilter.h" />
     <ClInclude Include="EigenRand\arch\AVX\RandUtils.h" />

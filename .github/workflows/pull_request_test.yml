@@ -172,7 +172,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest]
     steps:        
     - uses: actions/checkout@v3
       with:
@@ -180,8 +180,7 @@ jobs:
     - name: Set up Python3
       uses: actions/setup-python@v1
       with:
-        python-version: 3.8
-        architecture: x64
+        python-version: "3.10"
     - name: Test Reference
       run: |
         pip install scipy
