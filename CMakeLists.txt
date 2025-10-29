@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 
 project(EigenRand VERSION 0.6.0 DESCRIPTION "EigenRand, Random Number Generator for Eigen")
 
