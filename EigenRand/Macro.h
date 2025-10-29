@@ -22,9 +22,9 @@
 #define EIGENRAND_EIGEN_33_MODE
 #endif
 
-#if EIGEN_VERSION_AT_LEAST(3,3,4) && !EIGEN_VERSION_AT_LEAST(3,4,1)
+#if EIGEN_VERSION_AT_LEAST(3,3,4) && !EIGEN_VERSION_AT_LEAST(3,4,2)
 #else
-#error Eigen 3.3.4 ~ 3.4.0 is required.
+#error Eigen 3.3.4 ~ 3.4.1 is required.
 #endif
 
 #endif
