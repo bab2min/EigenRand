@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx, mavx2]
-        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0, 5.0.0]
         os: [ubuntu-22.04]
 
     steps:
@@ -30,10 +30,18 @@ jobs:
         git checkout tags/${{ matrix.eigenversion }}
         popd
         mv eigen include
+    - name: Set C++ standard for Eigen 5.x
+      id: cxx_standard
+      run: |
+        if [[ "${{ matrix.eigenversion }}" == 5.* ]]; then
+          echo "cxx_standard=14" >> $GITHUB_OUTPUT
+        else
+          echo "cxx_standard=11" >> $GITHUB_OUTPUT
+        fi
     - name: Build
       continue-on-error: true
       run: |
-        cmake --preset default -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }}"
+        cmake --preset default -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }}" -DCMAKE_CXX_STANDARD=${{ steps.cxx_standard.outputs.cxx_standard }}
         cmake --build --preset default
         ctest --preset default -N
     - name: Tests
@@ -50,7 +58,7 @@ jobs:
       max-parallel: 4
       matrix:
         arch: [mavx512dq]
-        eigenversion: [3.4.0]
+        eigenversion: [3.4.0, 5.0.0]
         os: [ubuntu-22.04]
     steps:
     - uses: actions/checkout@v3
@@ -63,10 +71,18 @@ jobs:
         git checkout tags/${{ matrix.eigenversion }}
         popd
         mv eigen include
+    - name: Set C++ standard for Eigen 5.x
+      id: cxx_standard
+      run: |
+        if [[ "${{ matrix.eigenversion }}" == 5.* ]]; then
+          echo "cxx_standard=14" >> $GITHUB_OUTPUT
+        else
+          echo "cxx_standard=11" >> $GITHUB_OUTPUT
+        fi
     - name: Build
       continue-on-error: true
       run: |
-        cmake --preset default -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }}"
+        cmake --preset default -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }}" -DCMAKE_CXX_STANDARD=${{ steps.cxx_standard.outputs.cxx_standard }}
         cmake --build --preset default
         ctest --preset default -N
     - name: Tests
@@ -83,7 +99,7 @@ jobs:
       max-parallel: 4
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mssse3, mavx]
-        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0, 5.0.0]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -93,10 +109,18 @@ jobs:
         wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
         tar -zxvf eigen-${{ matrix.eigenversion }}.tar.gz
         mv eigen-${{ matrix.eigenversion }} include
+    - name: Set C++ standard for Eigen 5.x
+      id: cxx_standard
+      run: |
+        if [[ "${{ matrix.eigenversion }}" == 5.* ]]; then
+          echo "cxx_standard=14" >> $GITHUB_OUTPUT
+        else
+          echo "cxx_standard=11" >> $GITHUB_OUTPUT
+        fi
     - name: Build
       continue-on-error: true
       run: |
-        cmake --preset default -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }}"
+        cmake --preset default -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }}" -DCMAKE_CXX_STANDARD=${{ steps.cxx_standard.outputs.cxx_standard }}
         cmake --build --preset default
         ctest --preset default -N
     - name: Tests
@@ -113,7 +137,7 @@ jobs:
       max-parallel: 4
       matrix:
         arch: ['/D EIGEN_DONT_VECTORIZE', '/arch:SSE2', '/arch:AVX', '/arch:AVX2']
-        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0, 5.0.0]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -124,10 +148,19 @@ jobs:
         tar -zxvf eigen.tar.gz
         mv eigen-${{ matrix.eigenversion }} include
         echo "EIGEN_PATH=$(Get-Location)\include" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+    - name: Set C++ standard for Eigen 5.x
+      id: cxx_standard
+      shell: pwsh
+      run: |
+        if ("${{ matrix.eigenversion }}" -like "5.*") {
+          echo "cxx_standard=14" >> $env:GITHUB_OUTPUT
+        } else {
+          echo "cxx_standard=11" >> $env:GITHUB_OUTPUT
+        }
     - name: Build
       continue-on-error: true
       run: |
-        cmake --preset windows -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }}" 
+        cmake --preset windows -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }}" -DCMAKE_CXX_STANDARD=${{ steps.cxx_standard.outputs.cxx_standard }}
         cmake --build --preset windows
         ctest --preset windows -N
     - name: Tests
@@ -144,7 +177,7 @@ jobs:
       max-parallel: 4
       matrix:
         arch: ['/arch:AVX512 /bigobj']
-        eigenversion: [3.4.0]
+        eigenversion: [3.4.0, 5.0.0]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -155,10 +188,19 @@ jobs:
         tar -zxvf eigen.tar.gz
         mv eigen-${{ matrix.eigenversion }} include
         echo "EIGEN_PATH=$(Get-Location)\include" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+    - name: Set C++ standard for Eigen 5.x
+      id: cxx_standard
+      shell: pwsh
+      run: |
+        if ("${{ matrix.eigenversion }}" -like "5.*") {
+          echo "cxx_standard=14" >> $env:GITHUB_OUTPUT
+        } else {
+          echo "cxx_standard=11" >> $env:GITHUB_OUTPUT
+        }
     - name: Build
       continue-on-error: true
       run: |
-        cmake --preset windows -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }}"
+        cmake --preset windows -DEIGENRAND_CXX_FLAGS="${{ matrix.arch }}" -DCMAKE_CXX_STANDARD=${{ steps.cxx_standard.outputs.cxx_standard }}
         cmake --build --preset windows
         ctest --preset windows -N
     - name: Tests

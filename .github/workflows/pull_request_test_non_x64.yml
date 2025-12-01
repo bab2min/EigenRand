@@ -14,7 +14,7 @@ jobs:
       max-parallel: 4
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, DDUMMY]
-        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0, 5.0.0]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -24,11 +24,19 @@ jobs:
         wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
         tar -zxvf eigen-${{ matrix.eigenversion }}.tar.gz
         mv eigen-${{ matrix.eigenversion }} include
+    - name: Set C++ standard for Eigen 5.x
+      id: cxx_standard
+      run: |
+        if [[ "${{ matrix.eigenversion }}" == 5.* ]]; then
+          echo "cxx_standard=14" >> $GITHUB_OUTPUT
+        else
+          echo "cxx_standard=11" >> $GITHUB_OUTPUT
+        fi
     - name: Build
       run: |
         export EIGEN_PATH=`pwd`/include
         mkdir build && cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_CXX_STANDARD=${{ steps.cxx_standard.outputs.cxx_standard }} -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
         make
     #- name: Test
     #  run: |
@@ -46,7 +54,7 @@ jobs:
       max-parallel: 4
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, march=native]
-        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0]
+        eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0, 5.0.0]
 
     steps:
     - uses: actions/checkout@v3
@@ -62,6 +70,10 @@ jobs:
         dockerRunArgs: |
           --volume "${PWD}/artifacts:/artifacts"
         run: |
+          CXX_STANDARD=11
+          if [[ "${{ matrix.eigenversion }}" == 5.* ]]; then
+            CXX_STANDARD=14
+          fi
           git clone https://gitlab.com/libeigen/eigen
           pushd eigen
           git checkout tags/${{ matrix.eigenversion }}
@@ -69,7 +81,7 @@ jobs:
           mv eigen include
           export EIGEN_PATH=`pwd`/include
           mkdir build && cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=${CXX_STANDARD} -DEIGENRAND_CXX_FLAGS="-${{ matrix.arch }} -I${EIGEN_PATH}" ../
           make
           ctest -R test
           ctest -R accuracy
