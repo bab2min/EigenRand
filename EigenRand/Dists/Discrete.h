@@ -231,7 +231,11 @@ namespace Eigen
 			UniformIntGen(_Scalar _min = 0, _Scalar _max = 0)
 				: pmin{ _min }, pdiff{ (size_t)(_max - _min) }
 			{
-				if ((pdiff + 1) > pdiff)
+				if (pdiff == 0)
+				{
+					bitsize = 0;
+				}
+				else if ((pdiff + 1) > pdiff)
 				{
 					bitsize = (size_t)std::ceil(std::log2(pdiff + 1));
 				}
@@ -252,6 +256,12 @@ namespace Eigen
 			EIGEN_STRONG_INLINE const _Scalar operator() (Rng&& rng)
 			{
 				using namespace Eigen::internal;
+				
+				if (pdiff == 0)
+				{
+					return pmin;
+				}
+
 				auto rx = randbits(rng);
 				if (pdiff == bitmask)
 				{
@@ -283,6 +293,12 @@ namespace Eigen
 			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
 				using namespace Eigen::internal;
+				
+				if (pdiff == 0)
+				{
+					return pset1<Packet>(pmin);
+				}
+
 				auto rx = randbits.template packetOp<Packet>(rng);
 				auto pbitmask = pset1<Packet>(bitmask);
 				if (pdiff == bitmask)
