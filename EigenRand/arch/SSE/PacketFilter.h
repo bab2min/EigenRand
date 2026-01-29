@@ -129,7 +129,7 @@ namespace Eigen
 					}
 
 					auto p1 = permute_raw(value, idx[rest_cnt][m]);
-					p1 = pblendv(_mm_castsi128_ps(to_raw_m128i(selector[rest_cnt])), rest_val, p1);
+					p1 = internal::pblendv(_mm_castsi128_ps(to_raw_m128i(selector[rest_cnt])), rest_val, p1);
 
 					auto new_cnt = rest_cnt + cnt[m];
 					if (new_cnt >= full_size)
