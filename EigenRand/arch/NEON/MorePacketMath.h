@@ -72,6 +72,11 @@ namespace Eigen
 			{
 				return (Packet2d)vreinterpretq_f64_s32(x);
 			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int32(const Packet4i& x)
+			{
+				return x;
+			}
 		};
 
 		template<>
@@ -91,6 +96,11 @@ namespace Eigen
 			{
 				return (Packet2d)vreinterpretq_f64_f32(x);
 			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int32(const Packet4f& x)
+			{
+				return (Packet4i)vreinterpretq_s32_f32(x);
+			}
 		};
 
 		template<>
@@ -107,6 +117,11 @@ namespace Eigen
 			}
 
 			EIGEN_STRONG_INLINE Packet4i to_int(const Packet2d& x)
+			{
+				return vreinterpretq_s32_f64(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int32(const Packet2d& x)
 			{
 				return vreinterpretq_s32_f64(x);
 			}
