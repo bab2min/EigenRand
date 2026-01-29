@@ -30,14 +30,14 @@ namespace Eigen
 				template<typename Packet>
 				static EIGEN_STRONG_INLINE __m512i to_raw_m512i(const Packet& p)
 				{
-					return __m512i(p);
+					return reinterpret_cast<const __m512i&>(p);
 				}
 
 				// Helper to convert raw __m512i back to Packet type
 				template<typename Packet>
 				static EIGEN_STRONG_INLINE Packet from_raw_m512i(__m512i v)
 				{
-					return Packet(v);
+					return reinterpret_cast<const Packet&>(v);
 				}
 
 			public:
