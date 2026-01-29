@@ -692,7 +692,8 @@ namespace Eigen
 			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
 				using namespace Eigen::internal;
-				using IPacket = decltype(reinterpret_to_int(std::declval<Packet>()));
+				// Use reinterpret_to_int32 to always get 32-bit int packet for RawbitsMaker
+				using IPacket = decltype(reinterpret_to_int32(std::declval<Packet>()));
 				using RUtils = RawbitsMaker<IPacket, Rng>;
 				auto one = pset1<Packet>(1);
 				auto zero = pset1<Packet>(0);

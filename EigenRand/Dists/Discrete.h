@@ -337,7 +337,7 @@ namespace Eigen
 		class DiscreteGen<_Scalar, int32_t> : public GenBase<DiscreteGen<_Scalar, int32_t>, _Scalar>
 		{
 			static_assert(std::is_same<_Scalar, int32_t>::value, "discreteDist needs integral types.");
-#ifdef EIGEN_VECTORIZE_AVX2
+#if defined(EIGEN_VECTORIZE_AVX2) && !defined(EIGENRAND_EIGEN_50_MODE)
 			OptCacheStore cache;
 			bool valid = false;
 #endif
@@ -428,7 +428,8 @@ namespace Eigen
 			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
 				using namespace Eigen::internal;
-#ifdef EIGEN_VECTORIZE_AVX2
+// AVX2 optimization is disabled for Eigen 5.x due to packet wrapper type incompatibility
+#if defined(EIGEN_VECTORIZE_AVX2) && !defined(EIGENRAND_EIGEN_50_MODE)
 				if (valid)
 				{
 					valid = false;
@@ -457,10 +458,10 @@ namespace Eigen
 					ret = pblendv(c, albit, pgather(alias_table.get_alias(), albit));
 				}
 
-#ifdef EIGEN_VECTORIZE_AVX2
+#if defined(EIGEN_VECTORIZE_AVX2) && !defined(EIGENRAND_EIGEN_50_MODE)
 				valid = true;
-				cache.template get<Packet>() = _mm256_extractf128_si256(ret, 1);
-				return _mm256_extractf128_si256(ret, 0);
+				cache.template get<Packet>() = Packet4i(_mm256_extractf128_si256(ret, 1));
+				return Packet4i(_mm256_extractf128_si256(ret, 0));
 #else
 				return ret;
 #endif
@@ -675,8 +676,8 @@ namespace Eigen
 				}
 			}
 
-#ifdef EIGEN_VECTORIZE_NEON
-#else
+// Vectorized packetOp for NEON is not supported
+#ifndef EIGEN_VECTORIZE_NEON
 			template<typename Packet, typename Rng>
 			EIGEN_STRONG_INLINE const Packet packetOp(Rng&& rng)
 			{
@@ -685,7 +686,30 @@ namespace Eigen
 				if (!cdf.empty())
 				{
 					auto ret = pset1<Packet>(cdf.size());
-	#ifdef EIGEN_VECTORIZE_AVX
+	// Eigen 5.x AVX512: use Packet8d (8 x double) and Packet8l (8 x int64)
+	#if defined(EIGEN_VECTORIZE_AVX512) && defined(EIGENRAND_EIGEN_50_MODE)
+					auto rx1 = ur.template packetOp<Packet8d>(rng);
+					auto rx2 = ur.template packetOp<Packet8d>(rng);
+					for (auto& p : cdf)
+					{
+						auto pp = pset1<Packet8d>(p);
+						auto c1 = reinterpret_to_int(pcmplt(rx1, pp));
+						auto c2 = reinterpret_to_int(pcmplt(rx2, pp));
+						ret = padd(ret, combine_low32(c1, c2));
+					}
+	// Eigen 5.x AVX2: use native 256-bit int operations with Packet8i
+	// Generate 8 doubles (2 x Packet4d) and extract lower 32 bits from comparison results
+	#elif defined(EIGEN_VECTORIZE_AVX) && defined(EIGENRAND_EIGEN_50_MODE)
+					auto rx1 = ur.template packetOp<Packet4d>(rng);
+					auto rx2 = ur.template packetOp<Packet4d>(rng);
+					for (auto& p : cdf)
+					{
+						auto pp = pset1<Packet4d>(p);
+						auto c1 = reinterpret_to_int(pcmplt(rx1, pp));
+						auto c2 = reinterpret_to_int(pcmplt(rx2, pp));
+						ret = padd(ret, combine_low32(c1, c2));
+					}
+	#elif defined(EIGEN_VECTORIZE_AVX)
 					auto rx = ur.template packetOp<Packet4d>(std::forward<Rng>(rng));
 					for (auto& p : cdf)
 					{
@@ -706,7 +730,25 @@ namespace Eigen
 				}
 				else
 				{
-	#ifdef EIGEN_VECTORIZE_AVX
+	// Eigen 5.x AVX512: use Packet8d and Packet8l
+	#if defined(EIGEN_VECTORIZE_AVX512) && defined(EIGENRAND_EIGEN_50_MODE)
+					using RUtils = RawbitsMaker<Packet, Rng>;
+					auto albit = pand(RUtils{}.rawbits(rng), pset1<Packet>(alias_table.get_bitmask()));
+					// For AVX512, use pgather with Packet16i indices split into two Packet8d gathers
+					auto c1 = reinterpret_to_int(pcmplt(ur.template packetOp<Packet8d>(rng), pgather(alias_table.get_prob(), albit, false)));
+					auto c2 = reinterpret_to_int(pcmplt(ur.template packetOp<Packet8d>(rng), pgather(alias_table.get_prob(), albit, true)));
+					return pblendv(combine_low32(c1, c2), albit, pgather(alias_table.get_alias(), albit));
+	// Eigen 5.x AVX2: handle 256-bit int operations properly
+	// Use pgather<Packet8i>(double*, Packet8i, upperhalf) to get Packet4d
+	#elif defined(EIGEN_VECTORIZE_AVX) && defined(EIGENRAND_EIGEN_50_MODE)
+					using RUtils = RawbitsMaker<Packet, Rng>;
+					auto albit = pand(RUtils{}.rawbits(rng), pset1<Packet>(alias_table.get_bitmask()));
+					// pgather with Packet8i index returns Packet4d (4 doubles)
+					// upperhalf=false uses lower 4 indices, upperhalf=true uses upper 4 indices
+					auto c1 = reinterpret_to_int(pcmplt(ur.template packetOp<Packet4d>(rng), pgather(alias_table.get_prob(), albit, false)));
+					auto c2 = reinterpret_to_int(pcmplt(ur.template packetOp<Packet4d>(rng), pgather(alias_table.get_prob(), albit, true)));
+					return pblendv(combine_low32(c1, c2), albit, pgather(alias_table.get_alias(), albit));
+	#elif defined(EIGEN_VECTORIZE_AVX)
 					using RUtils = RawbitsMaker<Packet, Rng>;
 					auto albit = pand(RUtils{}.rawbits(rng), pset1<Packet>(alias_table.get_bitmask()));
 					auto c = reinterpret_to_int(pcmplt(ur.template packetOp<Packet4d>(rng), pgather(alias_table.get_prob(), _mm256_castsi128_si256(albit))));

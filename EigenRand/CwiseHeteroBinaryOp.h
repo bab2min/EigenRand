@@ -11,6 +11,16 @@
 #ifndef EIGEN_CWISE_HETERO_BINARY_OP_H
 #define EIGEN_CWISE_HETERO_BINARY_OP_H
 
+// Eigen 5.x compatibility: these macros were removed in Eigen 5.x
+// as C++14 is now required
+#ifndef EIGEN_NOEXCEPT
+  #define EIGEN_NOEXCEPT noexcept
+#endif
+
+#ifndef EIGEN_PLAIN_ENUM_MIN
+  #define EIGEN_PLAIN_ENUM_MIN(a,b) ((int(a) < int(b)) ? int(a) : int(b))
+#endif
+
 namespace Eigen {
     
     template<typename BinaryOp, typename LhsType, typename RhsType>
@@ -103,10 +113,13 @@ namespace Eigen {
         typedef typename internal::remove_reference<LhsNested>::type _LhsNested;
         typedef typename internal::remove_reference<RhsNested>::type _RhsNested;
 
-#if EIGEN_COMP_MSVC && EIGEN_HAS_CXX11
-        //Required for Visual Studio or the Copy constructor will probably not get inlined!
+// Required for Visual Studio or the Copy constructor will probably not get inlined!
+// EIGEN_HAS_CXX11 was removed in Eigen 5.x (C++14 is now required)
+#if EIGEN_COMP_MSVC
+  #if defined(EIGENRAND_EIGEN_50_MODE) || (defined(EIGEN_HAS_CXX11) && EIGEN_HAS_CXX11)
         EIGEN_STRONG_INLINE
             CwiseHeteroBinaryOp(const CwiseHeteroBinaryOp<BinaryOp, LhsType, RhsType>&) = default;
+  #endif
 #endif
 
         EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
@@ -241,6 +254,18 @@ namespace Eigen {
                 return m_d.func().packetOp(m_d.lhsImpl.template packet<LoadMode, PacketType>(index),
                     m_d.rhsImpl.template packet<LoadMode, RhsPacket>(index));
             }
+
+#ifdef EIGENRAND_EIGEN_50_MODE
+            // Eigen 5.x requires packetSegment method for segment-wise packet access
+            template<int LoadMode, typename PacketType>
+            EIGEN_STRONG_INLINE
+                PacketType packetSegment(Index index, Index /*begin*/, Index /*count*/) const
+            {
+                // For random number generation, segment parameters are not used
+                // Just delegate to the regular packet method
+                return packet<LoadMode, PacketType>(index);
+            }
+#endif
 
         protected:
 

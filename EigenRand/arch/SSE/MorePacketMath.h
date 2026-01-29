@@ -58,6 +58,11 @@ namespace Eigen
 			{
 				return x;
 			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int32(const Packet4i& x)
+			{
+				return x;
+			}
 		};
 
 		template<>
@@ -77,6 +82,11 @@ namespace Eigen
 			{
 				return _mm_castps_si128(x);
 			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int32(const Packet4f& x)
+			{
+				return _mm_castps_si128(x);
+			}
 		};
 
 		template<>
@@ -93,6 +103,11 @@ namespace Eigen
 			}
 
 			EIGEN_STRONG_INLINE Packet4i to_int(const Packet2d& x)
+			{
+				return _mm_castpd_si128(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet4i to_int32(const Packet2d& x)
 			{
 				return _mm_castpd_si128(x);
 			}
@@ -415,11 +430,14 @@ namespace Eigen
 			return int64_to_double(a);
 		}
 
+		// Eigen 5.x already provides psin<Packet2d>
+#ifndef EIGENRAND_EIGEN_50_MODE
 		template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
 			Packet2d psin<Packet2d>(const Packet2d& x)
 		{
 			return _psin(x);
 		}
+#endif
 
 		template<> EIGEN_STRONG_INLINE bool predux_all(const Packet4f& x)
 		{

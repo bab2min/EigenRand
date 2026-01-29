@@ -57,6 +57,16 @@ namespace Eigen
 			return reinterpreter<Packet>{}.to_int(x);
 		}
 
+		// For Eigen 5.x compatibility: reinterpret as 32-bit int packet
+		// This is needed because Packet4d -> Packet4l (64-bit) is natural in Eigen 5.x,
+		// but some code expects Packet8i (32-bit)
+		template<typename Packet>
+		inline auto reinterpret_to_int32(const Packet& x)
+			-> decltype(reinterpreter<Packet>{}.to_int32(x))
+		{
+			return reinterpreter<Packet>{}.to_int32(x);
+		}
+
 		template<typename Packet>
 		EIGEN_STRONG_INLINE void split_two(const Packet& p, typename HalfPacket<Packet>::type& a, typename HalfPacket<Packet>::type& b);
 
