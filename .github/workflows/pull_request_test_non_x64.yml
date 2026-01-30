@@ -42,11 +42,11 @@ jobs:
     - name: Test
       run: |
         cd build
-        ctest -R test --output-on-failure
+        ctest -V -R test
     - name: Run Accuracy
       run: |
         cd build
-        ctest -R accuracy --output-on-failure
+        ctest -V -R accuracy
 
   build-arm64:
     name: Build for Ubuntu 24 (Arm64)
@@ -85,8 +85,8 @@ jobs:
     - name: Test
       run: |
         cd build
-        ctest -R test --output-on-failure
+        ctest -V -R test
     - name: Run Accuracy
       run: |
         cd build
-        ctest -R accuracy --output-on-failure
+        ctest -V -R accuracy
