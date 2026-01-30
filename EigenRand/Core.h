@@ -21,6 +21,7 @@
 #include "Dists/Discrete.h"
 #include "Dists/NormalExp.h"
 #include "Dists/GammaPoisson.h"
+#include "Dists/Truncated.h"
 
 #include "MvDists/MvNormal.h"
 #include "MvDists/Multinomial.h"

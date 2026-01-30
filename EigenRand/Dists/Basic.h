@@ -16,6 +16,8 @@ namespace Eigen
 {
 	namespace Rand
 	{
+		template<typename> class TruncGen;
+
 		namespace constant
 		{
 			static constexpr double pi = 3.1415926535897932;
@@ -434,6 +436,7 @@ namespace Eigen
 		template<typename _Scalar>
 		class Balanced2Gen : public GenBase<Balanced2Gen<_Scalar>, _Scalar>
 		{
+			template<typename> friend class TruncGen;
 			static_assert(std::is_floating_point<_Scalar>::value, "balanced needs floating point types.");
 			_Scalar slope = 2, bias = -1;
 		public:
@@ -595,6 +598,7 @@ namespace Eigen
 		template<typename _Scalar>
 		class UniformRealGen : public GenBase<UniformRealGen<_Scalar>, _Scalar>
 		{
+			template<typename> friend class TruncGen;
 			static_assert(std::is_floating_point<_Scalar>::value, "uniformReal needs floating point types.");
 			_Scalar bias, slope;
 
