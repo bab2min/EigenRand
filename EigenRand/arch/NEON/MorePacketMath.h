@@ -308,6 +308,30 @@ namespace Eigen
 		}
 
 		template<>
+		EIGEN_STRONG_INLINE Packet2d pgather<Packet4i>(const double* addr, const Packet4i& index, bool upperhalf)
+		{
+			int32_t u[4];
+			vst1q_s32(u, index);
+			double t[2];
+			if (upperhalf)
+			{
+				t[0] = addr[u[2]];
+				t[1] = addr[u[3]];
+			}
+			else
+			{
+				t[0] = addr[u[0]];
+				t[1] = addr[u[1]];
+			}
+			return vld1q_f64(t);
+		}
+
+		EIGEN_STRONG_INLINE Packet4i combine_low32(const Packet4i& a, const Packet4i& b)
+		{
+			return vuzp1q_s32(a, b);
+		}
+
+		template<>
 		EIGEN_STRONG_INLINE int pmovemask<Packet4f>(const Packet4f& a)
 		{
 			int32_t bits[4] = { 1, 2, 4, 8 };
