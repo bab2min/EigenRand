@@ -1,4 +1,5 @@
 # EigenRand : The Fastest C++11-compatible random distribution generator for Eigen
+[![](https://img.shields.io/badge/Eigen-3.3.4~5.0.x-blue)](http://eigen.tuxfamily.org/) [![](https://img.shields.io/badge/License-MIT-green)](/LICENSE)
 
 EigenRand is a header-only library for [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page), providing vectorized random number engines and vectorized random distribution generators. 
 Since the classic Random functions of Eigen relies on an old C function `rand()`, 
@@ -16,16 +17,16 @@ You can get 5~10 times speed by just replacing old Eigen's Random or unvectoriza
 * 5~10 times faster than non-vectorized functions
 * Header-only (like Eigen)
 * Can be easily integrated with Eigen's expressions
-* Currently supports only x86, x86-64(up to AVX2), and ARM64 NEON architecture.
+* Supports x86, x86-64 (SSE, AVX2, AVX512), and ARM64 NEON architecture.
 
 ## Requirement
 
-* Eigen 3.3.4 ~ 3.4.0
-* C++11-compatible compilers
+* Eigen 3.3.4 ~ 3.4.0 or Eigen 5.0.x
+* C++11-compatible compilers (C++14 or later required for Eigen 5.0.x)
 
 ## Build for Test & Benchmark
 You can build a test binary to verify if EigenRand is working well.
-First, make sure you have Eigen 3.3.4~3.4.0 installed in your compiler include folder. Also make sure you have cmake 3.9 or higher installed.
+First, make sure you have Eigen 3.3.4~3.4.0 or Eigen 5.0.x installed in your compiler include folder. Also make sure you have cmake 3.9 or higher installed.
 After then, you can build it following:
 ```console
 $ git clone https://github.com/bab2min/EigenRand
@@ -76,6 +77,8 @@ https://bab2min.github.io/eigenrand/
 | `Eigen::Rand::studentT` | `Eigen::Rand::StudentTGen` | float, double | Yes | generates real values on the [Student's t distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution). | `std::student_t_distribution` |
 | `Eigen::Rand::uniformReal` | `Eigen::Rand::UniformRealGen` | float, double | Yes | generates real values in the `[0, 1)` range. | `std::generate_canonical` |
 | `Eigen::Rand::weibull` | `Eigen::Rand::WeibullGen` | float, double | Yes | generates real values on the [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution). | `std::weibull_distribution` |
+| | `Eigen::Rand::TruncGen` | float, double | | **(experimental)** generates real values on a [truncated distribution](https://en.wikipedia.org/wiki/Truncated_distribution) from any base generator. | |
+| `Eigen::Rand::truncatedNormal` | `Eigen::Rand::TruncNormalGen` | float, double | Yes | **(experimental)** generates real values on a [truncated normal distribution](https://en.wikipedia.org/wiki/Truncated_normal_distribution) using inverse CDF. | |
 
 * VoP indicates 'Vectorization over Parameters'.
 
@@ -102,6 +105,7 @@ https://bab2min.github.io/eigenrand/
 | `Eigen::Rand::MvNormalGen` | generates real vectors on a [multivariate normal distribution](https://en.wikipedia.org/wiki/Multivariate_normal_distribution) | [scipy.stats.multivariate_normal in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multivariate_normal.html#scipy.stats.multivariate_normal) |
 | `Eigen::Rand::WishartGen` | generates real matrices on a [Wishart distribution](https://en.wikipedia.org/wiki/Wishart_distribution) | [scipy.stats.wishart in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wishart.html#scipy.stats.wishart) |
 | `Eigen::Rand::InvWishartGen` | generates real matrices on a [inverse Wishart distribution](https://en.wikipedia.org/wiki/Inverse-Wishart_distribution) | [scipy.stats.invwishart in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.invwishart.html#scipy.stats.invwishart) |
+| `Eigen::Rand::TruncMvNormalGen` | **(experimental)** generates real vectors on a [truncated multivariate normal distribution](https://en.wikipedia.org/wiki/Truncated_normal_distribution) with component-wise bounds via Gibbs sampling | |
 
 
 ### Random number engines
@@ -163,6 +167,15 @@ The results of EigenRand and C++ std appear to be equivalent within the margin o
 MIT License
 
 ## History
+
+### 0.6.0 (2026-01-31)
+* Added support for Eigen 5.0.x while maintaining backward compatibility with Eigen 3.3.4 ~ 3.4.0.
+* Added `TruncNormalGen` for univariate truncated normal distribution using inverse CDF method (O(1) per sample).
+* Added `TruncGen` generic wrapper for truncating any base distribution via rejection sampling, with specialized inverse CDF implementations for `NormalGen`, `ExponentialGen`, `CauchyGen`, `LognormalGen`, `ExtremeValueGen`, `WeibullGen`, `UniformRealGen`, `StdNormalGen`, `StdUniformRealGen`, `BalancedGen`, and `Balanced2Gen`.
+* Added `TruncMvNormalGen` for truncated multivariate normal distribution using component-wise Gibbs sampling with precision matrix formulation.
+* Added AVX512 support for packet math and random utilities.
+* Fixed compilation errors on AVX, SSE, AVX512, and NEON architectures with Eigen 5.0.x.
+* Implemented `DiscreteGen` for double type on ARM NEON.
 
 ### 0.5.1 (2024-09-08)
 * Add AVX512 support
