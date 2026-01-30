@@ -25,6 +25,7 @@
 
 #include "MvDists/MvNormal.h"
 #include "MvDists/Multinomial.h"
+#include "MvDists/TruncMvNormal.h"
 
 namespace Eigen
 {
