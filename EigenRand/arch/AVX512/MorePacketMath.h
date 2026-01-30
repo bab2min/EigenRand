@@ -69,6 +69,11 @@ namespace Eigen
 			{
 				return _mm512_castpd_si512(x);
 			}
+
+			EIGEN_STRONG_INLINE Packet16i to_int32(const Packet8d& x)
+			{
+				return _mm512_castpd_si512(x);
+			}
 #endif
 		};
 
