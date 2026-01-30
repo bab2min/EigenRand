@@ -1086,3 +1086,369 @@ TEST(EdgeCaseTest, DiscreteEmptyWeightHandling)
 	EXPECT_GE(vec.minCoeff(), 0);
 	EXPECT_LE(vec.maxCoeff(), 2);
 }
+
+// ============================================================================
+// Truncated Distribution Tests
+// ============================================================================
+
+TYPED_TEST(ContinuousDistTest, truncatedNormalGeneric)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	Matrix mat;
+
+	TypeParam lower = (TypeParam)-1.0;
+	TypeParam upper = (TypeParam)1.0;
+
+	std::vector<int> sizes = { 8, 3, 5, 1 };
+	for (int sz : sizes)
+	{
+		mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen,
+			Eigen::Rand::NormalGen<TypeParam>{0, 1}, Eigen::Rand::support(lower, upper));
+		EXPECT_EQ(mat.rows(), sz);
+		EXPECT_EQ(mat.cols(), sz);
+		EXPECT_GE(mat.minCoeff(), lower);
+		EXPECT_LE(mat.maxCoeff(), upper);
+	}
+	std::cout << mat << std::endl;
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedExponential)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	Matrix mat;
+
+	TypeParam lower = (TypeParam)0.5;
+	TypeParam upper = (TypeParam)3.0;
+
+	std::vector<int> sizes = { 8, 3, 5, 1 };
+	for (int sz : sizes)
+	{
+		mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen,
+			Eigen::Rand::ExponentialGen<TypeParam>{1}, Eigen::Rand::support(lower, upper));
+		EXPECT_GE(mat.minCoeff(), lower);
+		EXPECT_LE(mat.maxCoeff(), upper);
+	}
+	std::cout << mat << std::endl;
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedGamma)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	Matrix mat;
+
+	TypeParam lower = (TypeParam)0.5;
+	TypeParam upper = (TypeParam)5.0;
+
+	std::vector<int> sizes = { 8, 3, 5, 1 };
+	for (int sz : sizes)
+	{
+		mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen,
+			Eigen::Rand::GammaGen<TypeParam>{2, 1}, Eigen::Rand::support(lower, upper));
+		EXPECT_GE(mat.minCoeff(), lower);
+		EXPECT_LE(mat.maxCoeff(), upper);
+	}
+	std::cout << mat << std::endl;
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedNormal)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	Matrix mat;
+
+	TypeParam lower = (TypeParam)-2.0;
+	TypeParam upper = (TypeParam)2.0;
+
+	std::vector<int> sizes = { 8, 3, 5, 1 };
+	for (int sz : sizes)
+	{
+		mat = Eigen::Rand::truncatedNormal<Matrix>(sz, sz, gen,
+			(TypeParam)0, (TypeParam)1, Eigen::Rand::support(lower, upper));
+		EXPECT_EQ(mat.rows(), sz);
+		EXPECT_EQ(mat.cols(), sz);
+		EXPECT_GE(mat.minCoeff(), lower);
+		EXPECT_LE(mat.maxCoeff(), upper);
+	}
+	std::cout << mat << std::endl;
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedNormalOneSided)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	Matrix mat;
+
+	// Half-normal (lower bound only)
+	mat = Eigen::Rand::truncatedNormal<Matrix>(8, 8, gen,
+		(TypeParam)0, (TypeParam)1, Eigen::Rand::support((TypeParam)0, std::numeric_limits<TypeParam>::max()));
+	EXPECT_GE(mat.minCoeff(), (TypeParam)0);
+
+	// Upper-bounded only
+	mat = Eigen::Rand::truncatedNormal<Matrix>(8, 8, gen,
+		(TypeParam)0, (TypeParam)1, Eigen::Rand::support(std::numeric_limits<TypeParam>::lowest(), (TypeParam)0));
+	EXPECT_LE(mat.maxCoeff(), (TypeParam)0);
+	std::cout << mat << std::endl;
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedNested)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	const int sz = 16;
+	TypeParam lower = (TypeParam)-1, upper = (TypeParam)1;
+
+	// Double nesting with NormalGen: TruncGen<TruncGen<NormalGen>>
+	// Inner [-3, 3], outer [-1, 1] => should flatten to [-1, 1]
+	{
+		auto inner = Eigen::Rand::TruncGen<Eigen::Rand::NormalGen<TypeParam>>{
+			Eigen::Rand::NormalGen<TypeParam>{0, 1}, Eigen::Rand::support((TypeParam)-3, (TypeParam)3) };
+		Matrix mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen, inner, Eigen::Rand::support(lower, upper));
+		EXPECT_GE(mat.minCoeff(), lower);
+		EXPECT_LE(mat.maxCoeff(), upper);
+	}
+
+	// Double nesting with ExponentialGen: TruncGen<TruncGen<ExponentialGen>>
+	// Inner [0.5, 5], outer [1, 3] => should flatten to [1, 3]
+	{
+		auto inner = Eigen::Rand::TruncGen<Eigen::Rand::ExponentialGen<TypeParam>>{
+			Eigen::Rand::ExponentialGen<TypeParam>{1}, Eigen::Rand::support((TypeParam)0.5, (TypeParam)5) };
+		TypeParam lo = (TypeParam)1, hi = (TypeParam)3;
+		Matrix mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen, inner, Eigen::Rand::support(lo, hi));
+		EXPECT_GE(mat.minCoeff(), lo);
+		EXPECT_LE(mat.maxCoeff(), hi);
+	}
+
+	// Triple nesting with NormalGen: TruncGen<TruncGen<TruncGen<NormalGen>>>
+	// [-5, 5] -> [-3, 3] -> [-1, 1] => should flatten to [-1, 1]
+	{
+		auto t1 = Eigen::Rand::TruncGen<Eigen::Rand::NormalGen<TypeParam>>{
+			Eigen::Rand::NormalGen<TypeParam>{0, 1}, Eigen::Rand::support((TypeParam)-5, (TypeParam)5) };
+		auto t2 = Eigen::Rand::TruncGen<decltype(t1)>{ t1, Eigen::Rand::support((TypeParam)-3, (TypeParam)3) };
+		Matrix mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen, t2, Eigen::Rand::support(lower, upper));
+		EXPECT_GE(mat.minCoeff(), lower);
+		EXPECT_LE(mat.maxCoeff(), upper);
+	}
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedExponentialSpecialized)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	const int sz = 16;
+	TypeParam lo = (TypeParam)0.5, hi = (TypeParam)3;
+
+	// Direct: TruncGen<ExponentialGen> should use inverse CDF
+	Matrix mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen,
+		Eigen::Rand::ExponentialGen<TypeParam>{1}, Eigen::Rand::support(lo, hi));
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LE(mat.maxCoeff(), hi);
+
+	// Various sizes to test both scalar and packet paths
+	for (int s : { 1, 3, 4, 5, 8 })
+	{
+		mat = Eigen::Rand::truncated<Matrix>(s, 1, gen,
+			Eigen::Rand::ExponentialGen<TypeParam>{2}, Eigen::Rand::support(lo, hi));
+		EXPECT_GE(mat.minCoeff(), lo);
+		EXPECT_LE(mat.maxCoeff(), hi);
+	}
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedCauchySpecialized)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	const int sz = 16;
+	TypeParam lo = (TypeParam)-2, hi = (TypeParam)2;
+
+	Matrix mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen,
+		Eigen::Rand::CauchyGen<TypeParam>{0, 1}, Eigen::Rand::support(lo, hi));
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LE(mat.maxCoeff(), hi);
+
+	// One-sided truncation
+	mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen,
+		Eigen::Rand::CauchyGen<TypeParam>{0, 1},
+		Eigen::Rand::support((TypeParam)0, std::numeric_limits<TypeParam>::max()));
+	EXPECT_GE(mat.minCoeff(), (TypeParam)0);
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedLognormalSpecialized)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	const int sz = 16;
+	TypeParam lo = (TypeParam)0.5, hi = (TypeParam)5;
+
+	Matrix mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen,
+		Eigen::Rand::LognormalGen<TypeParam>{0, 1}, Eigen::Rand::support(lo, hi));
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LE(mat.maxCoeff(), hi);
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedExtremeValueSpecialized)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	const int sz = 16;
+	TypeParam lo = (TypeParam)-2, hi = (TypeParam)3;
+
+	Matrix mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen,
+		Eigen::Rand::ExtremeValueGen<TypeParam>{0, 1}, Eigen::Rand::support(lo, hi));
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LE(mat.maxCoeff(), hi);
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedWeibullSpecialized)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	const int sz = 16;
+	TypeParam lo = (TypeParam)0.5, hi = (TypeParam)3;
+
+	Matrix mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen,
+		Eigen::Rand::WeibullGen<TypeParam>{2, 1}, Eigen::Rand::support(lo, hi));
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LE(mat.maxCoeff(), hi);
+
+	// Various sizes
+	for (int s : { 1, 3, 4, 5, 8 })
+	{
+		mat = Eigen::Rand::truncated<Matrix>(s, 1, gen,
+			Eigen::Rand::WeibullGen<TypeParam>{1.5, 2}, Eigen::Rand::support(lo, hi));
+		EXPECT_GE(mat.minCoeff(), lo);
+		EXPECT_LE(mat.maxCoeff(), hi);
+	}
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedUniformSpecialized)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	const int sz = 16;
+
+	// Uniform[0, 10) truncated to [2, 8] => Uniform[2, 8)
+	{
+		TypeParam lo = (TypeParam)2, hi = (TypeParam)8;
+		Matrix mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen,
+			Eigen::Rand::UniformRealGen<TypeParam>{0, 10}, Eigen::Rand::support(lo, hi));
+		EXPECT_GE(mat.minCoeff(), lo);
+		EXPECT_LT(mat.maxCoeff(), hi);
+	}
+
+	// Truncation bounds wider than original range => same as original
+	{
+		Matrix mat = Eigen::Rand::truncated<Matrix>(sz, sz, gen,
+			Eigen::Rand::UniformRealGen<TypeParam>{2, 5},
+			Eigen::Rand::support((TypeParam)0, (TypeParam)10));
+		EXPECT_GE(mat.minCoeff(), (TypeParam)2);
+		EXPECT_LT(mat.maxCoeff(), (TypeParam)5);
+	}
+
+	// Various sizes
+	for (int s : { 1, 3, 4, 5, 8 })
+	{
+		Matrix mat = Eigen::Rand::truncated<Matrix>(s, 1, gen,
+			Eigen::Rand::UniformRealGen<TypeParam>{0, 1},
+			Eigen::Rand::support((TypeParam)0.2, (TypeParam)0.8));
+		EXPECT_GE(mat.minCoeff(), (TypeParam)0.2);
+		EXPECT_LT(mat.maxCoeff(), (TypeParam)0.8);
+	}
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedStdNormalSpecialized)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	TypeParam lo = (TypeParam)-1, hi = (TypeParam)1;
+	Matrix mat = Eigen::Rand::truncated<Matrix>(16, 16, gen,
+		Eigen::Rand::StdNormalGen<TypeParam>{}, Eigen::Rand::support(lo, hi));
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LE(mat.maxCoeff(), hi);
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedStdUniformSpecialized)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	TypeParam lo = (TypeParam)0.2, hi = (TypeParam)0.8;
+	Matrix mat = Eigen::Rand::truncated<Matrix>(16, 16, gen,
+		Eigen::Rand::StdUniformRealGen<TypeParam>{}, Eigen::Rand::support(lo, hi));
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LT(mat.maxCoeff(), hi);
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedBalancedSpecialized)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	TypeParam lo = (TypeParam)-0.5, hi = (TypeParam)0.5;
+	Matrix mat = Eigen::Rand::truncated<Matrix>(16, 16, gen,
+		Eigen::Rand::BalancedGen<TypeParam>{}, Eigen::Rand::support(lo, hi));
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LE(mat.maxCoeff(), hi);
+}
+
+TYPED_TEST(ContinuousDistTest, truncatedBalanced2Specialized)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	// Balanced2Gen [0, 10] truncated to [2, 8]
+	TypeParam lo = (TypeParam)2, hi = (TypeParam)8;
+	Matrix mat = Eigen::Rand::truncated<Matrix>(16, 16, gen,
+		Eigen::Rand::Balanced2Gen<TypeParam>{0, 10}, Eigen::Rand::support(lo, hi));
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LE(mat.maxCoeff(), hi);
+}
+
+TYPED_TEST(ContinuousDistTest, supportStruct)
+{
+	using Matrix = Eigen::Matrix<TypeParam, -1, -1>;
+	Eigen::Rand::P8_mt19937_64 gen{ 42 };
+	const int sz = 16;
+	TypeParam lo = (TypeParam)-1, hi = (TypeParam)2;
+	auto sup = Eigen::Rand::support(lo, hi);
+
+	// Support with TruncNormalGen constructor
+	Eigen::Rand::TruncNormalGen<TypeParam> tng{ (TypeParam)0, (TypeParam)1, sup };
+	Matrix mat = tng.template generate<Matrix>(sz, sz, gen);
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LE(mat.maxCoeff(), hi);
+
+	// Support with TruncGen constructor
+	Eigen::Rand::NormalGen<TypeParam> ng{ (TypeParam)0, (TypeParam)1 };
+	Eigen::Rand::TruncGen<Eigen::Rand::NormalGen<TypeParam>> trunc{ ng, sup };
+	mat = trunc.template generate<Matrix>(sz, sz, gen);
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LE(mat.maxCoeff(), hi);
+
+	// Support with free function
+	mat = Eigen::Rand::truncatedNormal<Matrix>(sz, sz, gen,
+		(TypeParam)0, (TypeParam)1, sup);
+	EXPECT_GE(mat.minCoeff(), lo);
+	EXPECT_LE(mat.maxCoeff(), hi);
+}
+
+TYPED_TEST(ContinuousDistTest, erfinv)
+{
+	// Test that erf(erfinv(x)) ~= x for various x values
+	Eigen::Array<TypeParam, -1, 1> x(8);
+	x << (TypeParam)-0.9, (TypeParam)-0.5, (TypeParam)-0.1, (TypeParam)0.0,
+		(TypeParam)0.1, (TypeParam)0.3, (TypeParam)0.5, (TypeParam)0.9;
+
+	for (int i = 0; i < x.size(); ++i)
+	{
+		TypeParam ei = Eigen::Rand::detail::scalar_erfinv(x[i]);
+		TypeParam roundtrip = std::erf(ei);
+		if (sizeof(TypeParam) == sizeof(float))
+		{
+			EXPECT_NEAR(roundtrip, x[i], 1e-4) << "erfinv roundtrip failed for x=" << x[i];
+		}
+		else
+		{
+			EXPECT_NEAR(roundtrip, x[i], 1e-6) << "erfinv roundtrip failed for x=" << x[i];
+		}
+	}
+}
