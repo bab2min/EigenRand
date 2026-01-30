@@ -56,6 +56,12 @@ namespace Eigen
 			{
 				return x;
 			}
+
+			// For int packets, to_int32 returns itself
+			EIGEN_STRONG_INLINE Packet8i to_int32(const Packet8i& x)
+			{
+				return x;
+			}
 		};
 
 		template<>
@@ -75,6 +81,12 @@ namespace Eigen
 			{
 				return _mm256_castps_si256(x);
 			}
+
+			// Same as to_int for Packet8f (32-bit already)
+			EIGEN_STRONG_INLINE Packet8i to_int32(const Packet8f& x)
+			{
+				return _mm256_castps_si256(x);
+			}
 		};
 
 		template<>
@@ -90,11 +102,59 @@ namespace Eigen
 				return x;
 			}
 
+			// Eigen 5.x + AVX2: Packet4d reinterprets to Packet4l (4 x int64)
+			// Eigen 5.x + AVX only: Packet4d reinterprets to Packet8i (for compatibility)
+			// Eigen 3.x: Packet4d reinterprets to Packet8i
+#if defined(EIGENRAND_EIGEN_50_MODE) && defined(EIGEN_VECTORIZE_AVX2)
+			EIGEN_STRONG_INLINE Packet4l to_int(const Packet4d& x)
+			{
+				return Packet4l(_mm256_castpd_si256(x));
+			}
+
+			EIGEN_STRONG_INLINE Packet8i to_int32(const Packet4d& x)
+			{
+				return Packet8i(_mm256_castpd_si256(x));
+			}
+#else
 			EIGEN_STRONG_INLINE Packet8i to_int(const Packet4d& x)
 			{
 				return _mm256_castpd_si256(x);
 			}
+
+			EIGEN_STRONG_INLINE Packet8i to_int32(const Packet4d& x)
+			{
+				return _mm256_castpd_si256(x);
+			}
+#endif
 		};
+
+		// Packet4l only exists in Eigen 5.x with AVX2
+#if defined(EIGENRAND_EIGEN_50_MODE) && defined(EIGEN_VECTORIZE_AVX2)
+		template<>
+		struct reinterpreter<Packet4l>
+		{
+			EIGEN_STRONG_INLINE Packet8f to_float(const Packet4l& x)
+			{
+				return _mm256_castsi256_ps(__m256i(x));
+			}
+
+			EIGEN_STRONG_INLINE Packet4d to_double(const Packet4l& x)
+			{
+				return _mm256_castsi256_pd(__m256i(x));
+			}
+
+			EIGEN_STRONG_INLINE Packet4l to_int(const Packet4l& x)
+			{
+				return x;
+			}
+
+			// Reinterpret as 8 x int32
+			EIGEN_STRONG_INLINE Packet8i to_int32(const Packet4l& x)
+			{
+				return Packet8i(__m256i(x));
+			}
+		};
+#endif
 
 		template<>
 		EIGEN_STRONG_INLINE void split_two<Packet8i>(const Packet8i& x, Packet4i& a, Packet4i& b)
@@ -131,11 +191,53 @@ namespace Eigen
 #endif
 		}
 
+		EIGEN_STRONG_INLINE Packet8i combine_low32(const Packet8i& a, const Packet8i& b)
+		{
+#ifdef EIGEN_VECTORIZE_AVX2
+			auto lo_a = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(__m256i(a), _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7)));
+			auto lo_b = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(__m256i(b), _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7)));
+			return _mm256_inserti128_si256(_mm256_castsi128_si256(lo_a), lo_b, 1);
+#else
+			Packet4i lo_a = combine_low32(a);
+			Packet4i lo_b = combine_low32(b);
+			return combine_two(lo_a, lo_b);
+#endif
+		}
+
+		// Eigen 5.x + AVX2: Packet4l (4 x int64) is a separate type from Packet8i
+		// Extract lower 32 bits from each int64 to get Packet4i (4 x int32)
+#if defined(EIGENRAND_EIGEN_50_MODE) && defined(EIGEN_VECTORIZE_AVX2)
+		EIGEN_STRONG_INLINE Packet4i combine_low32(const Packet4l& a)
+		{
+			// Packet4l viewed as 8 x int32: [lo0, hi0, lo1, hi1, lo2, hi2, lo3, hi3]
+			// Extract lo0, lo1, lo2, lo3 (indices 0, 2, 4, 6)
+			return _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(__m256i(a), _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7)));
+		}
+
+		// Eigen 5.x: combine two Packet4l (4 x int64 each) into Packet8i (8 x int32)
+		// Extract lower 32 bits from each int64
+		EIGEN_STRONG_INLINE Packet8i combine_low32(const Packet4l& a, const Packet4l& b)
+		{
+			auto lo_a = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(__m256i(a), _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7)));
+			auto lo_b = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(__m256i(b), _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7)));
+			return _mm256_inserti128_si256(_mm256_castsi128_si256(lo_a), lo_b, 1);
+		}
+#endif
+
 		template<>
 		EIGEN_STRONG_INLINE Packet8i pseti64<Packet8i>(uint64_t a)
 		{
 			return _mm256_set1_epi64x(a);
 		}
+
+		// Packet4l only exists in Eigen 5.x with AVX2
+#if defined(EIGENRAND_EIGEN_50_MODE) && defined(EIGEN_VECTORIZE_AVX2)
+		template<>
+		EIGEN_STRONG_INLINE Packet4l pseti64<Packet4l>(uint64_t a)
+		{
+			return Packet4l(_mm256_set1_epi64x(a));
+		}
+#endif
 
 		template<>
 		EIGEN_STRONG_INLINE Packet8i padd64<Packet8i>(const Packet8i& a, const Packet8i& b)
@@ -150,6 +252,14 @@ namespace Eigen
 #endif
 		}
 
+#if defined(EIGENRAND_EIGEN_50_MODE) && defined(EIGEN_VECTORIZE_AVX2)
+		template<>
+		EIGEN_STRONG_INLINE Packet4l padd64<Packet4l>(const Packet4l& a, const Packet4l& b)
+		{
+			return Packet4l(_mm256_add_epi64(__m256i(a), __m256i(b)));
+		}
+#endif
+
 		template<>
 		EIGEN_STRONG_INLINE Packet8i psub64<Packet8i>(const Packet8i& a, const Packet8i& b)
 		{
@@ -162,6 +272,14 @@ namespace Eigen
 			return combine_two((Packet4i)_mm_sub_epi64(a1, b1), (Packet4i)_mm_sub_epi64(a2, b2));
 #endif
 		}
+
+#if defined(EIGENRAND_EIGEN_50_MODE) && defined(EIGEN_VECTORIZE_AVX2)
+		template<>
+		EIGEN_STRONG_INLINE Packet4l psub64<Packet4l>(const Packet4l& a, const Packet4l& b)
+		{
+			return Packet4l(_mm256_sub_epi64(__m256i(a), __m256i(b)));
+		}
+#endif
 
 		template<>
 		EIGEN_STRONG_INLINE Packet8i pcmpeq<Packet8i>(const Packet8i& a, const Packet8i& b)
@@ -182,6 +300,8 @@ namespace Eigen
 			return _mm256_cmp_ps(a, b, _CMP_EQ_OQ);
 		}
 
+		// Eigen 5.x already provides pnegate<Packet8i>
+#ifndef EIGENRAND_EIGEN_50_MODE
 		template<>
 		EIGEN_STRONG_INLINE Packet8i pnegate<Packet8i>(const Packet8i& a)
 		{
@@ -193,6 +313,7 @@ namespace Eigen
 			return combine_two(_mm_sub_epi32(pset1<Packet4i>(0), a1), _mm_sub_epi32(pset1<Packet4i>(0), a2));
 #endif
 		}
+#endif
 
 		template<>
 		struct BitShifter<Packet8i>
@@ -259,65 +380,104 @@ namespace Eigen
 #endif
 			}
 		};
+
+#if defined(EIGENRAND_EIGEN_50_MODE) && defined(EIGEN_VECTORIZE_AVX2)
+		// Eigen 5.x + AVX2: BitShifter for Packet4l (4 x int64)
+		template<>
+		struct BitShifter<Packet4l>
+		{
+			template<int b>
+			EIGEN_STRONG_INLINE Packet4l sll(const Packet4l& a)
+			{
+				return Packet4l(_mm256_slli_epi64(__m256i(a), b));
+			}
+
+			template<int b>
+			EIGEN_STRONG_INLINE Packet4l srl(const Packet4l& a, int _b = b)
+			{
+				if (b >= 0)
+				{
+					return Packet4l(_mm256_srli_epi64(__m256i(a), b));
+				}
+				else
+				{
+					return Packet4l(_mm256_srli_epi64(__m256i(a), _b));
+				}
+			}
+
+			template<int b>
+			EIGEN_STRONG_INLINE Packet4l sll64(const Packet4l& a)
+			{
+				return sll<b>(a);
+			}
+
+			template<int b>
+			EIGEN_STRONG_INLINE Packet4l srl64(const Packet4l& a)
+			{
+				return srl<b>(a);
+			}
+		};
+#endif
+
 #ifdef EIGENRAND_EIGEN_33_MODE
 		template<> EIGEN_STRONG_INLINE Packet8i padd<Packet8i>(const Packet8i& a, const Packet8i& b)
 		{
-	#ifdef EIGEN_VECTORIZE_AVX2
+#ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_add_epi32(a, b);
-	#else
+#else
 			Packet4i a1, a2, b1, b2;
 			split_two(a, a1, a2);
 			split_two(b, b1, b2);
 			return combine_two((Packet4i)_mm_add_epi32(a1, b1), (Packet4i)_mm_add_epi32(a2, b2));
-	#endif
+#endif
 		}
 
 		template<> EIGEN_STRONG_INLINE Packet8i psub<Packet8i>(const Packet8i& a, const Packet8i& b)
 		{
-	#ifdef EIGEN_VECTORIZE_AVX2
+#ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_sub_epi32(a, b);
-	#else
+#else
 			Packet4i a1, a2, b1, b2;
 			split_two(a, a1, a2);
 			split_two(b, b1, b2);
 			return combine_two((Packet4i)_mm_sub_epi32(a1, b1), (Packet4i)_mm_sub_epi32(a2, b2));
-	#endif
+#endif
 		}
 
 		template<> EIGEN_STRONG_INLINE Packet8i pand<Packet8i>(const Packet8i& a, const Packet8i& b)
 		{
-	#ifdef EIGEN_VECTORIZE_AVX2
+#ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_and_si256(a, b);
-	#else
+#else
 			return reinterpret_to_int((Packet8f)_mm256_and_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
-	#endif
+#endif
 		}
 
 		template<> EIGEN_STRONG_INLINE Packet8i pandnot<Packet8i>(const Packet8i& a, const Packet8i& b)
 		{
-	#ifdef EIGEN_VECTORIZE_AVX2
+#ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_andnot_si256(a, b);
-	#else
+#else
 			return reinterpret_to_int((Packet8f)_mm256_andnot_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
-	#endif
+#endif
 		}
 
 		template<> EIGEN_STRONG_INLINE Packet8i por<Packet8i>(const Packet8i& a, const Packet8i& b)
 		{
-	#ifdef EIGEN_VECTORIZE_AVX2
+#ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_or_si256(a, b);
-	#else
+#else
 			return reinterpret_to_int((Packet8f)_mm256_or_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
-	#endif
+#endif
 		}
 
 		template<> EIGEN_STRONG_INLINE Packet8i pxor<Packet8i>(const Packet8i& a, const Packet8i& b)
 		{
-	#ifdef EIGEN_VECTORIZE_AVX2
+#ifdef EIGEN_VECTORIZE_AVX2
 			return _mm256_xor_si256(a, b);
-	#else
+#else
 			return reinterpret_to_int((Packet8f)_mm256_xor_ps(reinterpret_to_float(a), reinterpret_to_float(b)));
-	#endif
+#endif
 		}
 
 		template<> EIGEN_STRONG_INLINE bool predux_any(const Packet8f& x)
@@ -432,7 +592,7 @@ namespace Eigen
 			return _mm256_i32gather_epi32(addr, index, 4);
 #else
 			uint32_t u[8];
-			_mm256_storeu_si256((Packet8i*)u, index);
+			_mm256_storeu_si256((__m256i*)u, index);
 			return _mm256_setr_epi32(addr[u[0]], addr[u[1]], addr[u[2]], addr[u[3]],
 				addr[u[4]], addr[u[5]], addr[u[6]], addr[u[7]]);
 #endif
@@ -445,7 +605,7 @@ namespace Eigen
 			return _mm256_i32gather_ps(addr, index, 4);
 #else
 			uint32_t u[8];
-			_mm256_storeu_si256((Packet8i*)u, index);
+			_mm256_storeu_si256((__m256i*)u, index);
 			return _mm256_setr_ps(addr[u[0]], addr[u[1]], addr[u[2]], addr[u[3]],
 				addr[u[4]], addr[u[5]], addr[u[6]], addr[u[7]]);
 #endif
@@ -458,7 +618,7 @@ namespace Eigen
 			return _mm256_i32gather_pd(addr, _mm256_castsi256_si128(index), 8);
 #else
 			uint32_t u[8];
-			_mm256_storeu_si256((Packet8i*)u, index);
+			_mm256_storeu_si256((__m256i*)u, index);
 			if (upperhalf)
 			{
 				return _mm256_setr_pd(addr[u[4]], addr[u[5]], addr[u[6]], addr[u[7]]);
@@ -513,6 +673,14 @@ namespace Eigen
 #endif
 		}
 
+#if defined(EIGENRAND_EIGEN_50_MODE) && defined(EIGEN_VECTORIZE_AVX2)
+		template<>
+		EIGEN_STRONG_INLINE Packet4l pcmpeq64<Packet4l>(const Packet4l& a, const Packet4l& b)
+		{
+			return Packet4l(_mm256_cmpeq_epi64(__m256i(a), __m256i(b)));
+		}
+#endif
+
 		template<>
 		EIGEN_STRONG_INLINE Packet8i pmuluadd64<Packet8i>(const Packet8i& a, uint64_t b, uint64_t c)
 		{
@@ -530,14 +698,39 @@ namespace Eigen
 			return _mm256_sub_pd(y, _mm256_set1_pd(0x0010000000000000));
 		}
 
+		// Helper for int64 add/sub using raw __m256i (for Eigen 5.x compatibility)
+		EIGEN_STRONG_INLINE __m256i _add_epi64(__m256i a, __m256i b) {
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm256_add_epi64(a, b);
+#else
+			__m128i a1 = _mm256_castsi256_si128(a);
+			__m128i a2 = _mm256_extractf128_si256(a, 1);
+			__m128i b1 = _mm256_castsi256_si128(b);
+			__m128i b2 = _mm256_extractf128_si256(b, 1);
+			return _mm256_insertf128_si256(_mm256_castsi128_si256(_mm_add_epi64(a1, b1)), _mm_add_epi64(a2, b2), 1);
+#endif
+		}
+
+		EIGEN_STRONG_INLINE __m256i _sub_epi64(__m256i a, __m256i b) {
+#ifdef EIGEN_VECTORIZE_AVX2
+			return _mm256_sub_epi64(a, b);
+#else
+			__m128i a1 = _mm256_castsi256_si128(a);
+			__m128i a2 = _mm256_extractf128_si256(a, 1);
+			__m128i b1 = _mm256_castsi256_si128(b);
+			__m128i b2 = _mm256_extractf128_si256(b, 1);
+			return _mm256_insertf128_si256(_mm256_castsi128_si256(_mm_sub_epi64(a1, b1)), _mm_sub_epi64(a2, b2), 1);
+#endif
+		}
+
 		EIGEN_STRONG_INLINE __m256d int64_to_double(__m256i x) {
-			x = padd64(x, _mm256_castpd_si256(_mm256_set1_pd(0x0018000000000000)));
+			x = _add_epi64(x, _mm256_castpd_si256(_mm256_set1_pd(0x0018000000000000)));
 			return _mm256_sub_pd(_mm256_castsi256_pd(x), _mm256_set1_pd(0x0018000000000000));
 		}
 
 		EIGEN_STRONG_INLINE __m256i double_to_int64(__m256d x) {
 			x = _mm256_add_pd(_mm256_floor_pd(x), _mm256_set1_pd(0x0018000000000000));
-			return psub64(
+			return _sub_epi64(
 				_mm256_castpd_si256(x),
 				_mm256_castpd_si256(_mm256_set1_pd(0x0018000000000000))
 			);
@@ -555,13 +748,34 @@ namespace Eigen
 			return int64_to_double(a);
 		}
 
+		// Packet4l pcast64 only available with AVX2
+#if defined(EIGENRAND_EIGEN_50_MODE) && defined(EIGEN_VECTORIZE_AVX2)
+		template<>
+		EIGEN_STRONG_INLINE Packet4l pcast64<Packet4d, Packet4l>(const Packet4d& a)
+		{
+			return Packet4l(double_to_int64(a));
+		}
+
+		template<>
+		EIGEN_STRONG_INLINE Packet4d pcast64<Packet4l, Packet4d>(const Packet4l& a)
+		{
+			return int64_to_double(__m256i(a));
+		}
+#endif
+
+		// psin<Packet4d>:
+		// - Eigen 5.x with AVX2: provided by Eigen
+		// - Eigen 5.x without AVX2: we need to provide it
+		// - Eigen 3.x: we provide it
+#if !defined(EIGENRAND_EIGEN_50_MODE) || !defined(EIGEN_VECTORIZE_AVX2)
 		template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
 			Packet4d psin<Packet4d>(const Packet4d& x)
 		{
 			return _psin(x);
 		}
+#endif
 
-	#ifdef EIGENRAND_EIGEN_33_MODE
+#ifdef EIGENRAND_EIGEN_33_MODE
 		template <>
 		EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet4d
 			plog<Packet4d>(const Packet4d& _x) {
@@ -641,9 +855,9 @@ namespace Eigen
 			// Filter out invalid inputs, i.e. negative arg will be NAN, 0 will be -INF.
 			return pblendv(iszero_mask, minus_inf, _mm256_or_pd(x, invalid_mask));
 		}
-	#endif
+#endif
 
-	#if !(EIGEN_VERSION_AT_LEAST(3,3,5))
+#if !(EIGEN_VERSION_AT_LEAST(3,3,5))
 		template<> EIGEN_STRONG_INLINE Packet4f pcast<Packet4i, Packet4f>(const Packet4i& a) {
 			return _mm_cvtepi32_ps(a);
 		}
@@ -651,7 +865,7 @@ namespace Eigen
 		template<> EIGEN_STRONG_INLINE Packet4i pcast<Packet4f, Packet4i>(const Packet4f& a) {
 			return _mm_cvttps_epi32(a);
 		}
-	#endif
+#endif
 	}
 }
 

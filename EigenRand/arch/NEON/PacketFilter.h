@@ -81,6 +81,18 @@ namespace Eigen
 				static EIGEN_STRONG_INLINE internal::Packet4f permute(const internal::Packet4f& p, uint8_t i)
 				{
 					float u[4];
+					vst1q_f32(u, float32x4_t(p));
+					float t[4];
+					t[0] = u[i & 3];
+					t[1] = u[(i >> 2) & 3];
+					t[2] = u[(i >> 4) & 3];
+					t[3] = u[(i >> 6) & 3];
+					return vld1q_f32(t);
+				}
+
+				static EIGEN_STRONG_INLINE float32x4_t permute_raw(const float32x4_t& p, uint8_t i)
+				{
+					float u[4];
 					vst1q_f32(u, p);
 					float t[4];
 					t[0] = u[i & 3];
@@ -88,6 +100,21 @@ namespace Eigen
 					t[2] = u[(i >> 4) & 3];
 					t[3] = u[(i >> 6) & 3];
 					return vld1q_f32(t);
+				}
+
+				// Helper to extract raw int32x4_t from packet types (works with both
+				// Eigen 3.x raw types and Eigen 5.x eigen_packet_wrapper types)
+				template<typename Packet>
+				static EIGEN_STRONG_INLINE int32x4_t to_raw_int32x4(const Packet& p)
+				{
+					return int32x4_t(p);
+				}
+
+				// Helper to convert raw int32x4_t back to Packet type
+				template<typename Packet>
+				static EIGEN_STRONG_INLINE Packet from_raw_int32x4(int32x4_t v)
+				{
+					return Packet(v);
 				}
 
 			public:
@@ -104,33 +131,38 @@ namespace Eigen
 				EIGEN_STRONG_INLINE int compress_append(Packet& _value, const Packet& _mask,
 					Packet& _rest, int rest_cnt, bool& full) const
 				{
-					auto& value = reinterpret_cast<internal::Packet4f&>(_value);
-					auto& mask = reinterpret_cast<const internal::Packet4f&>(_mask);
-					auto& rest = reinterpret_cast<internal::Packet4f&>(_rest);
+					// Convert to raw float32x4_t for NEON operations
+					float32x4_t value = vreinterpretq_f32_s32(to_raw_int32x4(_value));
+					float32x4_t mask_f = vreinterpretq_f32_s32(to_raw_int32x4(_mask));
+					float32x4_t rest_val = vreinterpretq_f32_s32(to_raw_int32x4(_rest));
 
-					int m = internal::pmovemask(mask);
+					int m = internal::pmovemask(internal::Packet4f(mask_f));
 					if (cnt[m] == full_size)
 					{
 						full = true;
 						return rest_cnt;
 					}
-					auto p1 = permute(value, idx[rest_cnt][m]);
-					p1 = internal::pblendv(selector[rest_cnt], rest, p1);
+					auto p1 = permute_raw(value, idx[rest_cnt][m]);
+					// pblendv for NEON
+					float32x4_t sel = float32x4_t(selector[rest_cnt]);
+					uint32x4_t sel_mask = vreinterpretq_u32_f32(sel);
+					p1 = vbslq_f32(sel_mask, rest_val, p1);
 
 					auto new_cnt = rest_cnt + cnt[m];
 					if (new_cnt >= full_size)
 					{
 						if (new_cnt > full_size)
 						{
-							rest = permute(value, idx[new_cnt - cnt[m] + full_size - 1][m]);
+							rest_val = permute_raw(value, idx[new_cnt - cnt[m] + full_size - 1][m]);
+							_rest = from_raw_int32x4<Packet>(vreinterpretq_s32_f32(rest_val));
 						}
-						value = p1;
+						_value = from_raw_int32x4<Packet>(vreinterpretq_s32_f32(p1));
 						full = true;
 						return new_cnt - full_size;
 					}
 					else
 					{
-						rest = p1;
+						_rest = from_raw_int32x4<Packet>(vreinterpretq_s32_f32(p1));
 						full = false;
 						return new_cnt;
 					}

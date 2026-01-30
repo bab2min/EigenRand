@@ -1,12 +1,12 @@
 /**
  * @file Macro.h
  * @author bab2min (bab2min@gmail.com)
- * @brief 
+ * @brief
  * @version 0.5.1
  * @date 2024-09-08
- * 
+ *
  * @copyright Copyright (c) 2020-2021
- * 
+ *
  */
 
 #ifndef EIGENRAND_MACRO_H
@@ -16,15 +16,34 @@
 #define EIGENRAND_MAJOR_VERSION 5
 #define EIGENRAND_MINOR_VERSION 1
 
-#if EIGEN_VERSION_AT_LEAST(3,3,10)
+ // Eigen version detection
+ // - Eigen 5.x uses Semantic Versioning (MAJOR.MINOR.PATCH)
+ // - Eigen 3.5+ (development branch) also uses eigen_packet_wrapper like Eigen 5.x
+ // - Eigen 5.0 is the successor to Eigen 3.4
+
+#if EIGEN_VERSION_AT_LEAST(5,0,0)
+// Eigen 5.x (SemVer)
+#define EIGENRAND_EIGEN_34_MODE
+#define EIGENRAND_EIGEN_50_MODE
+#elif EIGEN_VERSION_AT_LEAST(3,5,0)
+// Eigen 3.5+ (development branch before 5.0, uses eigen_packet_wrapper)
+#define EIGENRAND_EIGEN_34_MODE
+#define EIGENRAND_EIGEN_50_MODE
+#elif EIGEN_VERSION_AT_LEAST(3,3,10)
+// Eigen 3.3.10 ~ 3.4.x
 #define EIGENRAND_EIGEN_34_MODE
 #elif EIGEN_VERSION_AT_LEAST(3,3,4)
+// Eigen 3.3.4 ~ 3.3.9
 #define EIGENRAND_EIGEN_33_MODE
 #endif
 
-#if EIGEN_VERSION_AT_LEAST(3,3,4) && !EIGEN_VERSION_AT_LEAST(3,4,2)
+// Support Eigen 3.3.4 ~ 3.4.x, Eigen 3.5+ (dev), and Eigen 5.x
+#if EIGEN_VERSION_AT_LEAST(5,0,0)
+// Eigen 5.x: OK
+#elif EIGEN_VERSION_AT_LEAST(3,3,4)
+// Eigen 3.3.4 ~ 3.5.x: OK
 #else
-#error Eigen 3.3.4 ~ 3.4.1 is required.
+#error Eigen 3.3.4 or higher is required.
 #endif
 
 #endif
