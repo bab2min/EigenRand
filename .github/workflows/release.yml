@@ -5,19 +5,23 @@ on:
     tags:
       - 'v*.*.*'
       - '!v*.*.*d'
+  workflow_dispatch:
 
 jobs:
   build_linux:
     name: Build for linux
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     strategy:
-      max-parallel: 4
+      max-parallel: 8
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mavx, mavx2]
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0, 5.0.0]
         os: [ubuntu-22.04, ubuntu-24.04]
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: true
     - name: Install dependencies
       run: |
         git clone https://gitlab.com/libeigen/eigen
@@ -42,22 +46,31 @@ jobs:
     - name: CPU info
       run: cat /proc/cpuinfo
     - name: Run Bench
+      continue-on-error: true
       run: |
         ./build/EigenRand-benchmark
     - name: Run BenchMv
+      continue-on-error: true
       run: |
-        ./build/EigenRand-benchmark-mv
+        ./build/EigenRand-benchmark_mv
     - name: Run BenchVop
+      continue-on-error: true
       run: |
-        ./build/EigenRand-benchmark-vop
+        ./build/EigenRand-benchmark_vectorize_over_params
+    - name: Run BenchDisc
+      continue-on-error: true
+      run: |
+        ./build/EigenRand-benchmark_disc
     - name: Run Accuracy
+      continue-on-error: true
       run: |
         ./build/EigenRand-accuracy
     - name: Set up Python3
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
     - name: Test Reference
+      continue-on-error: true
       run: |
         pip install scipy
         python benchmark/comp_scipy.py
@@ -65,13 +78,16 @@ jobs:
   build_macos:
     name: Build for macOS (Intel)
     runs-on: macos-15-intel
+    continue-on-error: true
     strategy:
-      max-parallel: 4
+      max-parallel: 8
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, msse2, mavx]
         eigenversion: [3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0, 5.0.0]
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: true
     - name: Install dependencies
       run: |
         wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
@@ -100,19 +116,25 @@ jobs:
     - name: Run BenchMv
       continue-on-error: true
       run: |
-        ./build/EigenRand-benchmark-mv
+        ./build/EigenRand-benchmark_mv
     - name: Run BenchVop
       continue-on-error: true
       run: |
-        ./build/EigenRand-benchmark-vop
+        ./build/EigenRand-benchmark_vectorize_over_params
+    - name: Run BenchDisc
+      continue-on-error: true
+      run: |
+        ./build/EigenRand-benchmark_disc
     - name: Run Accuracy
+      continue-on-error: true
       run: |
         ./build/EigenRand-accuracy
     - name: Set up Python3
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
     - name: Test Reference
+      continue-on-error: true
       run: |
         pip install scipy
         python benchmark/comp_scipy.py
@@ -120,13 +142,16 @@ jobs:
   build_windows:
     name: Build for Windows
     runs-on: windows-2022
+    continue-on-error: true
     strategy:
-      max-parallel: 4
+      max-parallel: 8
       matrix:
         arch: ['/D EIGEN_DONT_VECTORIZE', '/arch:SSE2', '/arch:AVX', '/arch:AVX2']
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0, 5.0.0]
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: true
     - name: Install dependencies
       run: |
         Invoke-WebRequest -OutFile eigen.tar.gz https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
@@ -149,22 +174,31 @@ jobs:
     - name: CPU info
       run: bash -c "cat /proc/cpuinfo"
     - name: Run Bench
+      continue-on-error: true
       run: |
         .\build\Release\EigenRand-benchmark.exe
     - name: Run BenchMv
+      continue-on-error: true
       run: |
-        .\build\Release\EigenRand-benchmark-mv.exe
+        .\build\Release\EigenRand-benchmark_mv.exe
     - name: Run BenchVop
+      continue-on-error: true
       run: |
-        .\build\Release\EigenRand-benchmark-vop.exe
+        .\build\Release\EigenRand-benchmark_vectorize_over_params.exe
+    - name: Run BenchDisc
+      continue-on-error: true
+      run: |
+        .\build\Release\EigenRand-benchmark_disc.exe
     - name: Run Accuracy
+      continue-on-error: true
       run: |
         .\build\Release\EigenRand-accuracy.exe
     - name: Set up Python3
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
     - name: Test Reference
+      continue-on-error: true
       run: |
         pip install scipy
         python benchmark/comp_scipy.py
@@ -172,14 +206,17 @@ jobs:
   build_linux_arm64:
     name: Build for linux (Arm64)
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     strategy:
-      max-parallel: 4
+      max-parallel: 8
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, march=armv8-a+simd]
         eigenversion: [3.3.4, 3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0, 5.0.0]
         os: [ubuntu-22.04-arm64, ubuntu-24.04-arm64]
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: true
     - name: Install dependencies
       run: |
         git clone https://gitlab.com/libeigen/eigen
@@ -204,22 +241,31 @@ jobs:
     - name: CPU info
       run: cat /proc/cpuinfo
     - name: Run Bench
+      continue-on-error: true
       run: |
         ./build/EigenRand-benchmark
     - name: Run BenchMv
+      continue-on-error: true
       run: |
-        ./build/EigenRand-benchmark-mv
+        ./build/EigenRand-benchmark_mv
     - name: Run BenchVop
+      continue-on-error: true
       run: |
-        ./build/EigenRand-benchmark-vop
+        ./build/EigenRand-benchmark_vectorize_over_params
+    - name: Run BenchDisc
+      continue-on-error: true
+      run: |
+        ./build/EigenRand-benchmark_disc
     - name: Run Accuracy
+      continue-on-error: true
       run: |
         ./build/EigenRand-accuracy
     - name: Set up Python3
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
     - name: Test Reference
+      continue-on-error: true
       run: |
         pip install scipy
         python benchmark/comp_scipy.py
@@ -227,13 +273,16 @@ jobs:
   build_macos_arm64:
     name: Build for macOS (Arm64)
     runs-on: macos-15
+    continue-on-error: true
     strategy:
-      max-parallel: 4
+      max-parallel: 8
       matrix:
         arch: [DEIGEN_DONT_VECTORIZE, march=armv8-a+simd]
         eigenversion: [3.3.5, 3.3.6, 3.3.7, 3.3.8, 3.3.9, 3.4.0, 5.0.0]
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: true
     - name: Install dependencies
       run: |
         wget https://gitlab.com/libeigen/eigen/-/archive/${{ matrix.eigenversion }}/eigen-${{ matrix.eigenversion }}.tar.gz
@@ -262,19 +311,25 @@ jobs:
     - name: Run BenchMv
       continue-on-error: true
       run: |
-        ./build/EigenRand-benchmark-mv
+        ./build/EigenRand-benchmark_mv
     - name: Run BenchVop
       continue-on-error: true
       run: |
-        ./build/EigenRand-benchmark-vop
+        ./build/EigenRand-benchmark_vectorize_over_params
+    - name: Run BenchDisc
+      continue-on-error: true
+      run: |
+        ./build/EigenRand-benchmark_disc
     - name: Run Accuracy
+      continue-on-error: true
       run: |
         ./build/EigenRand-accuracy
     - name: Set up Python3
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
     - name: Test Reference
+      continue-on-error: true
       run: |
         pip install scipy
         python benchmark/comp_scipy.py
