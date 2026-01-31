@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 
 project(EigenRand VERSION 0.6.0 DESCRIPTION "EigenRand, Random Number Generator for Eigen")
 
@@ -119,7 +119,7 @@ endif()
 
 set(FETCHCONTENT_SOURCE_DIR_GOOGLETEST ${CMAKE_CURRENT_SOURCE_DIR}/googletest)
 message(STATUS "FETCHCONTENT_SOURCE_DIR_GOOGLETEST: ${FETCHCONTENT_SOURCE_DIR_GOOGLETEST}")
-FetchContent_Declare(googletest GIT_REPOSITORY https://github.com/google/googletest GIT_TAG v1.8.x)
+FetchContent_Declare(googletest GIT_REPOSITORY https://github.com/google/googletest GIT_TAG v1.14.x)
 
 if(EIGENRAND_BUILD_TEST)
   FetchContent_MakeAvailable(googletest)
