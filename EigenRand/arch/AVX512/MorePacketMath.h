@@ -2,10 +2,10 @@
  * @file MorePacketMath.h
  * @author bab2min (bab2min@gmail.com)
  * @brief
- * @version 0.5.1
- * @date 2024-09-08
+ * @version 0.6.0
+ * @date 2026-01-31
  *
- * @copyright Copyright (c) 2020-2024
+ * @copyright Copyright (c) 2020-2026
  *
  */
 
@@ -66,6 +66,11 @@ namespace Eigen
 			}
 #else
 			EIGEN_STRONG_INLINE Packet16i to_int(const Packet8d& x)
+			{
+				return _mm512_castpd_si512(x);
+			}
+
+			EIGEN_STRONG_INLINE Packet16i to_int32(const Packet8d& x)
 			{
 				return _mm512_castpd_si512(x);
 			}

@@ -2,8 +2,8 @@
  * @file Macro.h
  * @author bab2min (bab2min@gmail.com)
  * @brief
- * @version 0.5.1
- * @date 2024-09-08
+ * @version 0.6.0
+ * @date 2026-01-31
  *
  * @copyright Copyright (c) 2020-2021
  *
@@ -13,8 +13,8 @@
 #define EIGENRAND_MACRO_H
 
 #define EIGENRAND_WORLD_VERSION 0
-#define EIGENRAND_MAJOR_VERSION 5
-#define EIGENRAND_MINOR_VERSION 1
+#define EIGENRAND_MAJOR_VERSION 6
+#define EIGENRAND_MINOR_VERSION 0
 
  // Eigen version detection
  // - Eigen 5.x uses Semantic Versioning (MAJOR.MINOR.PATCH)

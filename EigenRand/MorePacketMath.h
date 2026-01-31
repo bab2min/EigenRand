@@ -2,10 +2,10 @@
  * @file MorePacketMath.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.5.1
- * @date 2024-09-08
+ * @version 0.6.0
+ * @date 2026-01-31
  *
- * @copyright Copyright (c) 2020-2024
+ * @copyright Copyright (c) 2020-2026
  * 
  */
 
@@ -488,6 +488,139 @@ namespace Eigen
 			/* update the sign */
 			s = pxor(xmm1, sign_bit_sin);
 			c = pxor(xmm2, sign_bit_cos);
+		}
+
+		/**
+		 * @brief Compute the inverse error function (erfinv) for float packets.
+		 *
+		 * Based on Mike Giles' approximation (GPU Computing Gems, 2010).
+		 * Two regions, no Newton refinement needed for float precision.
+		 */
+		template<typename Packet>
+		EIGEN_STRONG_INLINE typename std::enable_if<
+			IsFloatPacket<Packet>::value, Packet
+		>::type perfinv(const Packet& x)
+		{
+			// w = -log((1-x)*(1+x))
+			Packet w = pnegate(plog(pmul(psub(pset1<Packet>(1.f), x), padd(pset1<Packet>(1.f), x))));
+			const Packet threshold = pset1<Packet>(5.f);
+
+			// Region 1: w < 5
+			Packet w1 = psub(w, pset1<Packet>(2.5f));
+			Packet r1 = pset1<Packet>(2.81022636e-08f);
+			r1 = padd(pmul(r1, w1), pset1<Packet>(3.43273939e-07f));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-3.5233877e-06f));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-4.39150654e-06f));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(0.00021858087f));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-0.00125372503f));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-0.00417768164f));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(0.246640727f));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(1.50140941f));
+
+			// Region 2: w >= 5
+			Packet w2 = psub(psqrt(w), pset1<Packet>(3.f));
+			Packet r2 = pset1<Packet>(-0.000200214257f);
+			r2 = padd(pmul(r2, w2), pset1<Packet>(0.000100950558f));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(0.00134934322f));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(-0.00367342844f));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(0.00573950773f));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(-0.0076224613f));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(0.00943887047f));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(1.00167406f));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(2.83297682f));
+
+			auto mask = pcmplt(w, threshold);
+			Packet p = pblendv(mask, r1, r2);
+			return pmul(p, x);
+		}
+
+		/**
+		 * @brief Compute the inverse error function (erfinv) for double packets.
+		 *
+		 * Based on Mike Giles' approximation (GPU Computing Gems, 2010).
+		 * Three regions for full double precision, no Newton refinement needed.
+		 */
+		template<typename Packet>
+		EIGEN_STRONG_INLINE typename std::enable_if<
+			IsDoublePacket<Packet>::value, Packet
+		>::type perfinv(const Packet& x)
+		{
+			Packet w = pnegate(plog(pmul(psub(pset1<Packet>(1.0), x), padd(pset1<Packet>(1.0), x))));
+
+			// Region 1: w < 6.25
+			Packet w1 = psub(w, pset1<Packet>(3.125));
+			Packet r1 = pset1<Packet>(-3.6444120640178196996e-21);
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-1.685059138182016589e-19));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(1.2858480715256400167e-18));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(1.115787767802518096e-17));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-1.333171662854620906e-16));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(2.0972767875968561637e-17));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(6.6376381343583238325e-15));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-4.0545662729752068639e-14));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-8.1519341976054721522e-14));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(2.6335093153082322977e-12));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-1.2975133253453532498e-11));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-5.4154120542946279317e-11));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(1.051212273321532285e-09));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-4.1126339803469836976e-09));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-2.9070369957882005086e-08));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(4.2347877827932403518e-07));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-1.3654692000834678645e-06));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-1.3882523362786468719e-05));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(0.0001867342080340571352));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-0.00074070253416626697512));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(-0.0060336708714301490533));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(0.24015818242558961693));
+			r1 = padd(pmul(r1, w1), pset1<Packet>(1.6536545626831027356));
+
+			// Region 2: 6.25 <= w < 16
+			Packet w2 = psub(psqrt(w), pset1<Packet>(3.25));
+			Packet r2 = pset1<Packet>(2.2137376921775787049e-09);
+			r2 = padd(pmul(r2, w2), pset1<Packet>(9.0756561938885390979e-08));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(-2.7517406297064545428e-07));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(1.8239629214389227755e-08));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(1.5027403968909827627e-06));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(-4.013867526981545969e-06));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(2.9234449089955446044e-06));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(1.2475304481671778723e-05));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(-4.7318229009055733981e-05));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(6.8284851459573175448e-05));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(2.4031110387097893999e-05));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(-0.0003550375203628474796));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(0.00095328937973738049703));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(-0.0016882755560235047313));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(0.0024914420961078508066));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(-0.0037512085075692412107));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(0.005370914553590063617));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(1.0052589676941592334));
+			r2 = padd(pmul(r2, w2), pset1<Packet>(3.0838856104922207635));
+
+			// Region 3: w >= 16
+			Packet w3 = psub(psqrt(w), pset1<Packet>(5.0));
+			Packet r3 = pset1<Packet>(-2.7109920616438573243e-11);
+			r3 = padd(pmul(r3, w3), pset1<Packet>(-2.5556418169965252055e-10));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(1.5076572693500548083e-09));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(-3.7894654401267369937e-09));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(7.6157012080783393804e-09));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(-1.4960026627149240478e-08));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(2.9147953450901080826e-08));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(-6.7711997758452339498e-08));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(2.2900482228026654717e-07));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(-9.9298272942317002539e-07));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(4.5260625972231537039e-06));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(-1.9681778105531670567e-05));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(7.5995277030017761139e-05));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(-0.00021503011930044477347));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(-0.00013871931833623122026));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(1.0103004648645343977));
+			r3 = padd(pmul(r3, w3), pset1<Packet>(4.8499064014085844221));
+
+			// Select region: w < 6.25 ? r1 : (w < 16 ? r2 : r3)
+			auto mask1 = pcmplt(w, pset1<Packet>(6.25));
+			auto mask2 = pcmplt(w, pset1<Packet>(16.0));
+			Packet p = pblendv(mask2, r2, r3);
+			p = pblendv(mask1, r1, p);
+			return pmul(p, x);
 		}
 
 		template<typename Packet>

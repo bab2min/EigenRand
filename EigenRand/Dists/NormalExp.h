@@ -2,10 +2,10 @@
  * @file NormalExp.h
  * @author bab2min (bab2min@gmail.com)
  * @brief 
- * @version 0.5.1
- * @date 2024-09-08
+ * @version 0.6.0
+ * @date 2026-01-31
  *
- * @copyright Copyright (c) 2020-2024
+ * @copyright Copyright (c) 2020-2026
  * 
  */
 
@@ -82,18 +82,21 @@ namespace Eigen
 			}
 		};
 
+		template<typename> class TruncGen;
+
 		/**
 		 * @brief Generator of reals on a normal distribution
-		 * 
-		 * @tparam _Scalar 
+		 *
+		 * @tparam _Scalar
 		 */
 		template<typename _Scalar>
 		class NormalGen : public GenBase<NormalGen<_Scalar>, _Scalar>
 		{
+			template<typename> friend class TruncGen;
 			static_assert(std::is_floating_point<_Scalar>::value, "normalDist needs floating point types.");
 			StdNormalGen<_Scalar> stdnorm;
 			_Scalar mean = 0, stdev = 1;
-		
+
 		public:
 			using Scalar = _Scalar;
 
@@ -167,6 +170,7 @@ namespace Eigen
 		template<typename _Scalar>
 		class LognormalGen : public GenBase<LognormalGen<_Scalar>, _Scalar>
 		{
+			template<typename> friend class TruncGen;
 			static_assert(std::is_floating_point<_Scalar>::value, "lognormalDist needs floating point types.");
 			NormalGen<_Scalar> norm;
 
@@ -353,6 +357,7 @@ namespace Eigen
 		class ExponentialGen : public GenBase<ExponentialGen<_Scalar>, _Scalar>
 		{
 			friend GammaGen<_Scalar>;
+			template<typename> friend class TruncGen;
 			static_assert(std::is_floating_point<_Scalar>::value, "expDist needs floating point types.");
 			StdUniformRealGen<_Scalar> ur;
 			_Scalar lambda = 1;
@@ -608,6 +613,7 @@ namespace Eigen
 		template<typename _Scalar>
 		class WeibullGen : public GenBase<WeibullGen<_Scalar>, _Scalar>
 		{
+			template<typename> friend class TruncGen;
 			static_assert(std::is_floating_point<_Scalar>::value, "weilbullDist needs floating point types.");
 			StdUniformRealGen<_Scalar> ur;
 			_Scalar a = 1, b = 1;
@@ -683,6 +689,7 @@ namespace Eigen
 		template<typename _Scalar>
 		class ExtremeValueGen : public GenBase<ExtremeValueGen<_Scalar>, _Scalar>
 		{
+			template<typename> friend class TruncGen;
 			static_assert(std::is_floating_point<_Scalar>::value, "extremeValueDist needs floating point types.");
 			StdUniformRealGen<_Scalar> ur;
 			_Scalar a = 0, b = 1;
@@ -802,6 +809,7 @@ namespace Eigen
 		template<typename _Scalar>
 		class CauchyGen : public GenBase<CauchyGen<_Scalar>, _Scalar>
 		{
+			template<typename> friend class TruncGen;
 			static_assert(std::is_floating_point<_Scalar>::value, "cauchyDist needs floating point types.");
 			StdUniformRealGen<_Scalar> ur;
 			_Scalar a = 0, b = 1;

@@ -12,7 +12,7 @@
  You can get 5~10 times speed by just replacing old Eigen's Random 
  or unvectorizable c++11 random number generators with EigenRand.
  
- EigenRand currently supports only x86-64 architecture (SSE, AVX, AVX2) and ARM64 NEON.
+ EigenRand supports x86-64 architecture (SSE, AVX, AVX2, AVX512) and ARM64 NEON.
 
  EigenRand is distributed under the MIT License.
 
@@ -29,7 +29,7 @@
 
  You can install EigenRand by just downloading the source codes from [the repository](https://github.com/bab2min/EigenRand/releases). 
  Since EigenRand is a header-only library like Eigen, none of binaries needs to be installed. 
- All you need is [Eigen 3.3.4 ~ 3.4.0](http://eigen.tuxfamily.org/index.php?title=Main_Page) and C++11 compiler.
+ All you need is [Eigen 3.3.4 ~ 3.4.0 or Eigen 5.0.x](http://eigen.tuxfamily.org/index.php?title=Main_Page) and a C++11 compiler (C++14 or later is required for Eigen 5.0.x).
 
  @section getting_started_2 Simple Random Matrix Generators
  @code
@@ -208,6 +208,63 @@
  }
  @endcode
 
+ @section getting_started_7 Truncated Distributions (Experimental)
+ EigenRand provides truncated distribution generators that restrict the output range of any base distribution.
+
+ @code
+ #include <iostream>
+ #include <Eigen/Dense>
+ #include <EigenRand/EigenRand>
+
+ using namespace Eigen;
+
+ int main()
+ {
+   Rand::P8_mt19937_64 urng{ 42 };
+
+   // --- Truncated Normal (scalar) ---
+   // generates a 4x4 matrix from Normal(0, 1) truncated to [-1, 2]
+   // Rand::support helper constructs `Rand::Support<Ty>` object for specifying lower and upper bounds.
+   // If you use C++17, you can use class template argument deduction (CTAD) instead of Rand::support helper.
+   MatrixXf mat = Rand::truncatedNormal<MatrixXf>(4, 4, urng, 0.0f, 1.0f, Rand::support(-1.0f, 2.0f));
+   std::cout << mat << std::endl;
+
+   // You can also use the generator class directly for reuse
+   Rand::TruncNormalGen<float> tng{ 0.0f, 1.0f, Rand::support(-1.0f, 2.0f) };
+   mat = tng.template generate<MatrixXf>(4, 4, urng);
+   std::cout << mat << std::endl;
+
+   // --- Generic TruncGen wrapper ---
+   // Truncate any base distribution: e.g. Gamma(2,1) truncated to [0, 3]
+   Rand::GammaGen<float> gamma_gen{ 2.0f, 1.0f };
+   Rand::TruncGen<Rand::GammaGen<float>> trunc_gamma{ gamma_gen, Rand::support(0.0f, 3.0f) };
+   ArrayXXf arr = trunc_gamma.template generate<ArrayXXf>(1, 10, urng);
+   std::cout << arr << std::endl;
+
+   // --- Truncated Multivariate Normal (Gibbs sampling) ---
+   Vector3f mean{ 1, 2, 3 };
+   Matrix3f cov;
+   cov << 1.0f, 0.3f, 0.1f,
+          0.3f, 1.2f, 0.2f,
+          0.1f, 0.2f, 0.8f;
+   Vector3f lower{ -1, 0, 1 };
+   Vector3f upper{  5, 5, 6 };
+
+   // using the helper function
+   auto mvgen = Rand::makeTruncMvNormalGen(mean, cov, Rand::support(lower, upper));
+
+   // generates one sample ( shape (3, 1) )
+   Vector3f sample = mvgen.generate(urng);
+   std::cout << sample.transpose() << std::endl;
+
+   // generates 1000 samples ( shape (3, 1000) )
+   MatrixXf samples = mvgen.generate(urng, 1000);
+   // all values satisfy: lower[i] <= samples(i, k) <= upper[i]
+
+   return 0;
+ }
+ @endcode
+
  * @page list_of_supported_distribution List of Supported Random Distribution
  * 
  * 
@@ -228,8 +285,10 @@
 | `Eigen::Rand::studentT` | `Eigen::Rand::StudentTGen` | float, double | yes | generates real values on the [Student's t distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution). | `std::student_t_distribution` |
 | `Eigen::Rand::uniformReal` | `Eigen::Rand::StdUniformRealGen`, `Eigen::Rand::UniformRealGen` | float, double | yes | generates real values in the `[0, 1)` range. | `std::generate_canonical` |
 | `Eigen::Rand::weibull` | `Eigen::Rand::WeibullGen` | float, double | yes | generates real values on the [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution). | `std::weibull_distribution` |
+| | `Eigen::Rand::TruncGen` | float, double | | **(experimental)** generates real values on a [truncated distribution](https://en.wikipedia.org/wiki/Truncated_distribution) from any base generator. Specialized inverse CDF implementations for normal, exponential, Cauchy, lognormal, extreme value, Weibull, and uniform distributions. | |
+| `Eigen::Rand::truncatedNormal` | `Eigen::Rand::TruncNormalGen` | float, double | yes | **(experimental)** generates real values on a [truncated normal distribution](https://en.wikipedia.org/wiki/Truncated_normal_distribution) using the inverse CDF method. | |
 
-* VoP indicates 'Vectorization over Parameters'. 
+* VoP indicates 'Vectorization over Parameters'.
 
  @section list_of_supported_distribution_2 Random Distributions for Integer Types
 
@@ -254,6 +313,7 @@
 | `Eigen::Rand::MvNormalGen` | generates real vectors on a [multivariate normal distribution](https://en.wikipedia.org/wiki/Multivariate_normal_distribution) | [scipy.stats.multivariate_normal in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multivariate_normal.html#scipy.stats.multivariate_normal) |
 | `Eigen::Rand::WishartGen` | generates real matrices on a [Wishart distribution](https://en.wikipedia.org/wiki/Wishart_distribution) | [scipy.stats.wishart in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wishart.html#scipy.stats.wishart) |
 | `Eigen::Rand::InvWishartGen` | generates real matrices on a [inverse Wishart distribution](https://en.wikipedia.org/wiki/Inverse-Wishart_distribution) | [scipy.stats.invwishart in Python](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.invwishart.html#scipy.stats.invwishart) |
+| `Eigen::Rand::TruncMvNormalGen` | **(experimental)** generates real vectors on a [truncated multivariate normal distribution](https://en.wikipedia.org/wiki/Truncated_normal_distribution) with component-wise bounds via Gibbs sampling | |
 
  @section list_of_distribution_4 Random Number Engines
 
